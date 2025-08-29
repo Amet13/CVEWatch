@@ -1,0 +1,97 @@
+# Binaries
+/cvewatch
+/cvewatch.exe
+build/
+releases/
+
+# Configuration (contains sensitive data)
+config.yaml
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build cache
+go.sum
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swp~
+*.swo
+*.swo~
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage.out
+coverage.html
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+.#*
+
+# Old Python files (if any remain)
+*.py
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Old configuration files
+products.txt
+config.ini
+.env
+.env.local
+.env.*.local
+
+# Documentation
+README_GO.md
+README_PYTHON.md
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.bmp
+
+# Archives
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# Backup files
+*.bak
+*.backup
+*.old

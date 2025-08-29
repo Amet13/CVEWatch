@@ -1,144 +1,301 @@
-# vulncontrol [![Actions Status](https://github.com/Amet13/vulncontrol/workflows/vulncontrol/badge.svg)](https://github.com/Amet13/vulncontrol/actions)
+# CVEWatch 🔍
 
-Python script for monitoring www.cvedetails.com vulnerabilities database
+A modern, fast, and efficient Common Vulnerability and Exposure (CVE) monitoring tool built in Go. CVEWatch provides real-time vulnerability monitoring using the official National Vulnerability Database (NVD) API with advanced filtering, multiple output formats, and comprehensive product monitoring.
 
-## Usage
+## ✨ Features
 
-```
-$ git clone https://github.com/Amet13/vulncontrol
-$ cd vulncontrol/
-```
+- **🔍 Real-time CVE Monitoring**: Search and monitor vulnerabilities using the official NVD API
+- **📊 Multiple Output Formats**: Support for JSON, YAML, CSV, table, and simple text formats
+- **🎯 Advanced Filtering**: Filter by CVSS score, date range, and product keywords
+- **🏗️ Product-based Monitoring**: Monitor specific software products with keyword and CPE pattern matching
+- **⚡ High Performance**: Built in Go for speed and efficiency
+- **🔄 Retry Logic**: Robust API interaction with automatic retry and rate limiting
+- **📝 YAML Configuration**: Modern YAML-based configuration with environment variable support
+- **🔒 Security Focused**: Built-in security checks and SSL verification
+- **📱 Cross-platform**: Runs on Linux, macOS, and Windows
 
-First go [here](https://www.cvedetails.com/product-search.php), find your software and add links to `products.txt`.
+## 🚀 Quick Start
 
-Script parameters:
+### Prerequisites
 
-* `-t` Telegram token and ID (no usage by default)
-* `-d` Date in format `YYYY-MM-DD` (today by default, it can be incorrectly works with custom data, because cvedetails has bad API)
-* `-m` Min CVSS (by default 0)
+- Go 1.21 or later
+- Internet connection for NVD API access
 
-Then you can run script in two ways.
+### Installation
 
-**First way** without Telegram support:
+#### Option 1: Build from source
 
-```
-$ ./vulncontrol.py
-There are no available vulnerabilities at 2017-02-28
-
-$ ./vulncontrol.py -d 2017-02-18 -m 5
-CVE-2017-6074 9.3 http://www.cvedetails.com/cve/CVE-2017-6074/
-CVE-2017-6001 7.6 http://www.cvedetails.com/cve/CVE-2017-6001/
-CVE-2017-5986 7.1 http://www.cvedetails.com/cve/CVE-2017-5986/
-Telegram alert did not sent
-```
-
-**Second way** with Telegram support:
-
-* go to [@BotFather](https://t.me/BotFather) and create `/newbot`, for example `VulncontrolBot`
-* then you have token like `111111111:ABCDE...`
-* after go to [@MyTelegramID_bot](https://t.me/MyTelegramID_bot) and `/start` it
-* then you have your telegram ID like `123456789`
-
-Now you can run script with your token and ID:
-
-```
-$ ./vulncontrol.py -t 111111111:ABCDE 123456789
-There are no available vulnerabilities at 2017-02-28
-
-$ ./vulncontrol.py -t 111111111:ABCDE 123456789 -d 2017-02-18 -m 5
-CVE-2017-6074 9.3 http://www.cvedetails.com/cve/CVE-2017-6074/
-CVE-2017-6001 7.6 http://www.cvedetails.com/cve/CVE-2017-6001/
-CVE-2017-5986 7.1 http://www.cvedetails.com/cve/CVE-2017-5986/
-Telegram alert sent
+```bash
+git clone https://github.com/yourusername/cvewatch.git
+cd cvewatch
+make build
 ```
 
-Check your Telegram messages:
+#### Option 2: Install directly
 
-![](https://raw.githubusercontent.com/Amet13/vulncontrol/master/tscreen.png)
-
-## Autorun
-
-You can add script to you monitoring system (Nagios/Icinga2, Zabbix, etc) or cron.
-
-Example for cron:
-
-```
-$ crontab -e
-* */12 * * * /path/to/vulncontrol.py -t 111111111:ABCDE 123456789 -m 5
+```bash
+make install
 ```
 
-## Exit codes
+### First Run
 
-| Code | Description                                                                 |
-| ---- | --------------------------------------------------------------------------- |
-| 0    | There are no available vulnerabilities                                      |
-| 1    | Vulnerabilities available, Telegram alert did not sent                          |
-| 2    | Vulnerabilities available, Telegram alert sent                              |
-| 3    | Vulnerabilities available, Telegram alert did not sent, check your token and ID |
+1. **Initialize configuration**:
 
-## Customizing output
+   ```bash
+   cvewatch init
+   ```
 
-You can customize `result` with more keys.
-Available keys:
+2. **Search for vulnerabilities**:
 
-* `cve_id`
-* `cvss_score`
-* `cwe_id`
-* `exploit_count`
-* `publish_date`
-* `summary`
-* `update_date`
-* `url`
+   ```bash
+   cvewatch search --date 2024-01-01 --min-cvss 7.0
+   ```
 
-Example of JSON-output:
+3. **Get CVE details**:
+   ```bash
+   cvewatch info CVE-2023-1234
+   ```
 
+## 📖 Usage
+
+### Commands
+
+#### `cvewatch init`
+
+Creates a default configuration file with predefined product monitoring rules.
+
+#### `cvewatch search [flags]`
+
+Search for CVEs based on specified criteria.
+
+**Flags:**
+
+- `--date, -d`: Date in YYYY-MM-DD format (default: today)
+- `--min-cvss, -m`: Minimum CVSS score (0-10)
+- `--max-cvss, -M`: Maximum CVSS score (0-10)
+- `--max-results, -r`: Maximum number of results (1-2000)
+- `--output, -o`: Output format (simple, json, yaml, table, csv)
+- `--api-key, -k`: NVD API key (optional, increases rate limits)
+
+#### `cvewatch info [CVE-ID]`
+
+Get detailed information about a specific CVE.
+
+#### `cvewatch config`
+
+Display current configuration and product information.
+
+#### `cvewatch version`
+
+Show version and build information.
+
+### Examples
+
+```bash
+# Search for high-severity vulnerabilities from yesterday
+cvewatch search --date 2024-01-01 --min-cvss 7.0 --max-results 10
+
+# Search for vulnerabilities affecting Linux kernel
+cvewatch search --min-cvss 5.0 --output json
+
+# Get detailed information about a specific CVE
+cvewatch info CVE-2023-1234
+
+# Search with custom date range and output format
+cvewatch search --date 2024-01-01 --min-cvss 8.0 --output table
 ```
-{
-    "cve_id": "CVE-2017-5551",
-    "cvss_score": "3.6",
-    "cwe_id": "264",
-    "exploit_count": "0",
-    "publish_date": "2017-02-06",
-    "summary": "The simple_set_acl function in fs/posix_acl.c in the Linux kernel before 4.9.6 preserves the setgid bit during a setxattr call involving a tmpfs filesystem, which allows local users to gain group privileges by leveraging the existence of a setgid program with restrictions on execute permissions.  NOTE: this vulnerability exists because of an incomplete fix for CVE-2016-7097.",
-    "update_date": "2017-02-09",
-    "url": "http://www.cvedetails.com/cve/CVE-2017-5551/"
-}
+
+## ⚙️ Configuration
+
+CVEWatch uses a YAML configuration file located at `~/.cvewatch/config.yaml`. The configuration includes:
+
+### Application Settings
+
+- Application name and version
+- Log level and timeout settings
+- Security configuration
+
+### NVD API Settings
+
+- Base URL and rate limiting
+- Timeout and retry configuration
+- API key configuration
+
+### Product Monitoring
+
+- Product names and descriptions
+- Keyword matching rules
+- CPE pattern matching
+- Priority levels
+
+### Output Settings
+
+- Default output format
+- Color and truncation settings
+- Available output formats
+
+### Example Configuration
+
+```yaml
+app:
+  name: CVEWatch
+  version: 2.0.0
+  log_level: info
+  timeout: 60
+
+nvd:
+  base_url: https://services.nvd.nist.gov/rest/json/cves/2.0
+  rate_limit: 1000
+  timeout: 30
+  retry_attempts: 3
+  retry_delay: 5
+
+products:
+  - name: Linux Kernel
+    keywords: [linux, kernel, linux kernel]
+    cpe_patterns: [cpe:2.3:o:*:linux:*:*:*:*:*:*:*]
+    description: Linux operating system kernel
+    priority: high
+
+output:
+  default_format: simple
+  formats: [simple, json, table, csv, yaml]
+  colors: true
+  truncate_length: 100
 ```
 
-# www.cvedetails.com API
+## 🧪 Development
 
+### Prerequisites
+
+- Go 1.21+
+- Make
+- golangci-lint (optional)
+
+### Setup Development Environment
+
+```bash
+make dev-setup
 ```
-curl "https://www.cvedetails.com/json-feed.php?key1=value1&key2=value2..."
+
+### Common Commands
+
+```bash
+make build          # Build the application
+make test           # Run all tests
+make test-coverage  # Run tests with coverage
+make lint           # Run linters
+make format         # Format code
+make clean          # Clean build artifacts
+make release        # Build for multiple platforms
 ```
 
-Custom parameters:
+### Running Tests
 
-| Key          | Value | Description                                                    |
-| ------------ | ----- | -------------------------------------------------------------- |
-| year         | 2017  | [Year](http://www.cvedetails.com/browse-by-date.php)           |
-| month        | 1-12  | Month                                                          |
-| vendor_id    | 33    | [Vendor ID](http://www.cvedetails.com/vendor.php)              |
-| product_id   | 47    | [Product ID](http://www.cvedetails.com/product-list.php)       |
-| orderby      | 1-3   | Sort type (1 - Publish Date, 2 - Last Update Date, 3 - CVE ID) |
-| cvssscoremin | 0-10  | Min CVSS                                                       |
-| cvssscoremax | 0-10  | Max CVSS                                                       |
-| numrows      | 0-30  | Number of rows                                                 |
+```bash
+# Run all tests
+go test -v ./...
 
-Boolean parameters (0 by default, 1 - yes):
+# Run tests with race detection
+go test -race -v ./...
 
-| Key       | Value | Description                |
-| --------- | ----- | -------------------------- |
-| hasexp    | 0     | Has exploits               |
-| opec      | 0     | Code execution             |
-| opov      | 0     | Overflows                  |
-| opcsrf    | 0     | Cross Site Request Forgery |
-| opfileinc | 0     | File inclusion             |
-| opgpriv   | 0     | Gain privilege             |
-| opsqli    | 0     | Sql injection              |
-| opxss     | 0     | Cross site scripting       |
-| opdirt    | 0     | Directory traversal        |
-| opmemc    | 0     | Memory corruption          |
-| ophttprs  | 0     | Http response splitting    |
-| opbyp     | 0     | Bypass something           |
-| opginf    | 0     | Gain information           |
-| opdos     | 0     | Denial of service          |
+# Run tests with coverage
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage.html
+```
+
+## 🔧 API Integration
+
+CVEWatch integrates with the NVD API v2.0 to fetch vulnerability data. The API provides:
+
+- Real-time CVE information
+- CVSS scoring data
+- CPE configuration details
+- Reference links and descriptions
+- Publication and modification dates
+
+### Rate Limiting
+
+- Without API key: 100 requests per hour
+- With API key: 1000 requests per hour
+
+### API Endpoints
+
+- Base URL: `https://services.nvd.nist.gov/rest/json/cves/2.0`
+- Search endpoint: `/rest/json/cves/2.0`
+- CVE details: `/rest/json/cves/2.0?cveId={CVE-ID}`
+
+## 📊 Output Formats
+
+### Simple Text
+
+Human-readable format with clear vulnerability information and summaries.
+
+### JSON
+
+Structured JSON output for programmatic processing and integration.
+
+### YAML
+
+YAML format for configuration and data exchange.
+
+### Table
+
+Formatted table output for easy reading and analysis.
+
+### CSV
+
+Comma-separated values for spreadsheet analysis and reporting.
+
+## 🚨 Security Features
+
+- SSL/TLS verification enabled by default
+- Secure HTTP headers
+- Rate limiting and retry logic
+- Input validation and sanitization
+- Secure configuration file handling
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Code Quality
+
+- All code must pass linting checks
+- Tests are required for new functionality
+- Follow Go coding standards
+- Use meaningful commit messages
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [NVD](https://nvd.nist.gov/) for providing the vulnerability database
+- [Go](https://golang.org/) for the excellent programming language
+- [Cobra](https://github.com/spf13/cobra) for the CLI framework
+- [Viper](https://github.com/spf13/viper) for configuration management
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/cvewatch/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/cvewatch/discussions)
+- **Documentation**: [Wiki](https://github.com/yourusername/cvewatch/wiki)
+
+## 🔄 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes and releases.
+
+---
+
+**CVEWatch** - Making vulnerability monitoring simple, fast, and effective. 🔍✨

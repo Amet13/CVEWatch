@@ -1,0 +1,74 @@
+# CVEWatch Configuration Example
+# Copy this file to config.yaml and modify as needed
+
+# Application settings
+app:
+  name: "CVEWatch"
+  version: "2.0.0"
+  log_level: "info"
+  timeout: 60
+
+# NVD API configuration
+nvd:
+  base_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+  rate_limit: 1000 # requests per hour
+  timeout: 30
+  retry_attempts: 3
+  retry_delay: 5
+
+# Default search settings
+search:
+  default_date: "today"
+  default_min_cvss: 0.0
+  default_max_cvss: 10.0
+  default_max_results: 100
+  date_format: "2006-01-02"
+
+# Output settings
+output:
+  default_format: "simple"
+  formats: ["simple", "json", "yaml", "table", "csv"]
+  colors: true
+  truncate_length: 100
+
+# Security settings
+security:
+  enable_ssl_verification: true
+  user_agent: "Mozilla/5.0 (compatible; CVEWatch/2.0.0; +https://github.com/yourusername/cvewatch)"
+  request_headers:
+    Accept: "application/json"
+    Accept-Encoding: "gzip"
+
+# Products to monitor
+products:
+  - name: "Linux Kernel"
+    keywords: ["linux", "kernel", "linux kernel"]
+    cpe_patterns: ["cpe:2.3:o:*:linux:*:*:*:*:*:*:*"]
+    description: "Linux operating system kernel"
+    priority: "high"
+
+  - name: "OpenSSL"
+    keywords: ["openssl", "ssl", "tls", "cryptography"]
+    cpe_patterns: ["cpe:2.3:a:openssl:openssl:*:*:*:*:*:*:*"]
+    description: "OpenSSL cryptography library"
+    priority: "critical"
+
+  - name: "Apache HTTP Server"
+    keywords: ["apache", "httpd", "web server", "http server"]
+    cpe_patterns: ["cpe:2.3:a:apache:http_server:*:*:*:*:*:*:*"]
+    description: "Apache HTTP web server"
+    priority: "high"
+
+  - name: "PHP"
+    keywords: ["php", "web", "scripting", "language"]
+    cpe_patterns: ["cpe:2.3:a:php:php:*:*:*:*:*:*:*"]
+    description: "PHP scripting language"
+    priority: "high"
+
+  - name: "Python"
+    keywords: ["python", "scripting", "programming", "language"]
+    cpe_patterns: ["cpe:2.3:a:python:python:*:*:*:*:*:*:*"]
+    description: "Python programming language"
+    priority: "medium"
+
+
