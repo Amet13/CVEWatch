@@ -34,6 +34,39 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -ldflags="-X cvewatch/pkg/version.Version=$VERSION -s -w" -o cvewatch-linux-amd64 ./cmd/cvewatch
           GOOS=darwin GOARCH=amd64 go build -ldflags="-X cvewatch/pkg/version.Version=$VERSION -s -w" -o cvewatch-darwin-amd64 ./cmd/cvewatch
           GOOS=windows GOARCH=amd64 go build -ldflags="-X cvewatch/pkg/version.Version=$VERSION -s -w" -o cvewatch-windows-amd64.exe ./cmd/cvewatch
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: CVEWatch ${{ github.ref }}
+          body: |
+            ## CVEWatch ${{ github.ref }}
+            
+            ### What's New
+            - Complete Go rewrite from Python
+            - NVD API v2.0 integration
+            - Modern YAML-based configuration
+            - Multiple output formats
+            - Product-based filtering with CPE patterns
+            - CVSS score filtering and severity mapping
+            - Comprehensive testing and benchmarking
+            - Simplified CI/CD pipeline
+            
+            ### Breaking Changes
+            - Configuration format changed from products.txt to YAML
+            - Command-line interface completely redesigned
+            - API endpoints changed from cvedetails.com to NVD
+            - Python dependencies no longer required
+            
+            ### Downloads
+            - Linux AMD64: cvewatch-linux-amd64
+            - macOS AMD64: cvewatch-darwin-amd64
+            - Windows AMD64: cvewatch-windows-amd64.exe
+          draft: false
+          prerelease: false
+
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,6 +75,7 @@ jobs:
           asset_path: ./cvewatch-linux-amd64
           asset_name: cvewatch-linux-amd64
           asset_content_type: application/octet-stream
+
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,6 +84,7 @@ jobs:
           asset_path: ./cvewatch-darwin-amd64
           asset_name: cvewatch-darwin-amd64
           asset_content_type: application/octet-stream
+
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
