@@ -1,3 +1,4 @@
+//nolint:testpackage // We need to test internal package functions
 package nvd
 
 import (
@@ -10,19 +11,19 @@ import (
 )
 
 func TestNewNVDClient(t *testing.T) {
-	cm := config.NewConfigManager()
+	configMgr := config.NewConfigManager()
 	config := &types.AppConfig{}
-	client := NewNVDClient(config, cm, "")
+	client := NewNVDClient(config, configMgr, "")
 
 	assert.NotNil(t, client)
-	assert.Equal(t, cm, client.configMgr)
-	assert.Equal(t, "", client.apiKey)
+	assert.Equal(t, configMgr, client.configMgr)
+	assert.Empty(t, client.apiKey)
 }
 
 func TestMatchesCVSSRange(t *testing.T) {
-	cm := config.NewConfigManager()
+	configMgr := config.NewConfigManager()
 	config := &types.AppConfig{}
-	client := NewNVDClient(config, cm, "")
+	client := NewNVDClient(config, configMgr, "")
 
 	// Test CVE with CVSS v3.1 score
 	cve := types.CVE{
@@ -56,7 +57,7 @@ func TestMatchesCVSSRange(t *testing.T) {
 }
 
 func TestMatchesProduct(t *testing.T) {
-	cm := config.NewConfigManager()
+	configMgr := config.NewConfigManager()
 	// Create a test config with products
 	testConfig := &types.AppConfig{
 		Products: []types.Product{
@@ -66,9 +67,9 @@ func TestMatchesProduct(t *testing.T) {
 			},
 		},
 	}
-	cm.SetConfig(testConfig)
+	configMgr.SetConfig(testConfig)
 
-	client := NewNVDClient(testConfig, cm, "")
+	client := NewNVDClient(testConfig, configMgr, "")
 
 	// Test CVE that matches product keywords
 	cve := types.CVE{
@@ -93,9 +94,9 @@ func TestMatchesProduct(t *testing.T) {
 }
 
 func TestCPEMatchesPattern(t *testing.T) {
-	cm := config.NewConfigManager()
+	configMgr := config.NewConfigManager()
 	config := &types.AppConfig{}
-	client := NewNVDClient(config, cm, "")
+	client := NewNVDClient(config, configMgr, "")
 
 	// Test exact match
 	assert.True(t, client.cpeMatchesPattern("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"))

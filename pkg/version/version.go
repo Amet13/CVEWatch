@@ -1,10 +1,11 @@
 package version
 
 // Version information - these will be set during build
+//nolint:gochecknoglobals // These are build-time constants that need to be globally accessible
 var (
-	Version   = "dev"
-	BuildTime = "unknown"
-	GitCommit = "unknown"
+	Version   string = "dev"
+	BuildTime string = "unknown"
+	GitCommit string = "unknown"
 )
 
 // GetVersion returns the version string

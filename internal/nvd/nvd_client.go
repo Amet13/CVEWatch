@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -41,93 +42,137 @@ func NewNVDClient(config *types.AppConfig, configMgr *config.ConfigManager, apiK
 // SearchCVEs searches for CVEs based on the given criteria
 func (n *NVDClient) SearchCVEs(request *types.SearchRequest) (*types.SearchResult, error) {
 	startTime := time.Now()
+	
+	searchURL := n.buildSearchURL(request)
+	
+	resp, err := n.executeSearchRequest(searchURL)
+	if err != nil {
+		return nil, err
+	}
+	defer n.closeResponseBody(resp)
+	
+	nvdResp, err := n.parseResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+	
+	filteredCVEs := n.filterCVEsByProducts(nvdResp.Vulnerabilities, request)
+	queryTime := time.Since(startTime).String()
+	
+	return n.buildSearchResult(filteredCVEs, request, queryTime), nil
+}
 
-	// Build search parameters
+// buildSearchURL constructs the search URL with query parameters
+func (n *NVDClient) buildSearchURL(request *types.SearchRequest) string {
 	params := url.Values{}
-
-	// Date range (search for CVEs published on the specified date)
-	// NVD API expects dates in ISO 8601 format
+	
 	if request.Date != "" {
 		startDate := request.Date + "T00:00:00.000Z"
 		endDate := request.Date + "T23:59:59.999Z"
 		params.Set("pubStartDate", startDate)
 		params.Set("pubEndDate", endDate)
 	}
-
-	// Results limit
+	
 	params.Set("resultsPerPage", strconv.Itoa(request.MaxResults))
-
-	// Add API key if provided
+	
 	if n.apiKey != "" {
 		params.Set("apiKey", n.apiKey)
 	}
+	
+	return n.config.NVD.BaseURL + "?" + params.Encode()
+}
 
-	// Build search URL
-	searchURL := n.config.NVD.BaseURL + "?" + params.Encode()
-
-	// Create request with context
+// executeSearchRequest executes the HTTP request with retry logic
+func (n *NVDClient) executeSearchRequest(searchURL string) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(n.config.NVD.Timeout)*time.Second)
 	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
+	
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+	
+	n.setRequestHeaders(req)
+	
+	return n.executeWithRetry(req)
+}
 
-	// Set headers from configuration
+// setRequestHeaders sets the required headers for the request
+func (n *NVDClient) setRequestHeaders(req *http.Request) {
 	req.Header.Set("User-Agent", n.config.Security.UserAgent)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Encoding", "gzip")
 	for key, value := range n.config.Security.RequestHeaders {
 		req.Header.Set(key, value)
 	}
+}
 
-	// Execute request with retry logic
+// executeWithRetry executes the request with retry logic
+func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
+	var err error
+	
 	for attempt := 1; attempt <= n.config.NVD.RetryAttempts; attempt++ {
 		resp, err = n.httpClient.Do(req)
 		if err == nil {
 			break
 		}
-
+		
 		if attempt < n.config.NVD.RetryAttempts {
 			time.Sleep(time.Duration(n.config.NVD.RetryDelay) * time.Second)
+			
 			continue
 		}
-
+	}
+	
+	if err != nil {
 		return nil, fmt.Errorf("failed to fetch CVE data after %d attempts: %w", n.config.NVD.RetryAttempts, err)
 	}
-	defer resp.Body.Close()
+	
+	return resp, nil
+}
 
-	// Check response status
+// closeResponseBody safely closes the response body
+func (n *NVDClient) closeResponseBody(resp *http.Response) {
+	if err := resp.Body.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to close response body: %v\n", err)
+	}
+}
+
+// parseResponse parses the HTTP response into an NVD response
+func (n *NVDClient) parseResponse(resp *http.Response) (*types.NVDResponse, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("NVD API returned status %d: %s", resp.StatusCode, resp.Status)
 	}
-
-	// Parse JSON response
+	
+	reader := n.getResponseReader(resp)
+	
 	var nvdResp types.NVDResponse
-
-	// Handle gzipped responses
-	var reader io.Reader = resp.Body
-	if resp.Header.Get("Content-Encoding") == "gzip" {
-		gzReader, err := gzip.NewReader(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-		}
-		defer gzReader.Close()
-		reader = gzReader
-	}
-
 	if err := json.NewDecoder(reader).Decode(&nvdResp); err != nil {
 		return nil, fmt.Errorf("failed to decode JSON response: %w", err)
 	}
+	
+	return &nvdResp, nil
+}
 
-	// Filter CVEs by products and CVSS scores
-	filteredCVEs := n.filterCVEsByProducts(nvdResp.Vulnerabilities, request)
+// getResponseReader returns an appropriate reader for the response
+func (n *NVDClient) getResponseReader(resp *http.Response) io.Reader {
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		gzReader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			// Fallback to regular body if gzip fails
+			return resp.Body
+		}
 
-	queryTime := time.Since(startTime).String()
+		return gzReader
+	}
 
-	result := &types.SearchResult{
+	return resp.Body
+}
+
+// buildSearchResult constructs the final search result
+func (n *NVDClient) buildSearchResult(filteredCVEs []types.CVE, request *types.SearchRequest, queryTime string) *types.SearchResult {
+	return &types.SearchResult{
 		CVEs:       filteredCVEs,
 		TotalFound: len(filteredCVEs),
 		Date:       request.Date,
@@ -136,13 +181,11 @@ func (n *NVDClient) SearchCVEs(request *types.SearchRequest) (*types.SearchResul
 		Products:   request.Products,
 		QueryTime:  queryTime,
 	}
-
-	return result, nil
 }
 
 // filterCVEsByProducts filters CVEs based on product keywords and CVSS scores
 func (n *NVDClient) filterCVEsByProducts(vulnerabilities []types.Vulnerability, request *types.SearchRequest) []types.CVE {
-	var filteredCVEs []types.CVE
+	filteredCVEs := make([]types.CVE, 0, len(vulnerabilities))
 
 	for _, vuln := range vulnerabilities {
 		cve := vuln.CVE
@@ -168,11 +211,12 @@ func (n *NVDClient) matchesCVSSRange(cve types.CVE, request *types.SearchRequest
 	// Get the highest CVSS score (prefer v3.1 over v2)
 	var score float64
 
-	if len(cve.Metrics.CVSSMetricV31) > 0 {
+	switch {
+	case len(cve.Metrics.CVSSMetricV31) > 0:
 		score = cve.Metrics.CVSSMetricV31[0].CVSSData.BaseScore
-	} else if len(cve.Metrics.CVSSMetricV2) > 0 {
+	case len(cve.Metrics.CVSSMetricV2) > 0:
 		score = cve.Metrics.CVSSMetricV2[0].CVSSData.BaseScore
-	} else {
+	default:
 		score = 0
 	}
 
@@ -191,40 +235,67 @@ func (n *NVDClient) matchesCVSSRange(cve types.CVE, request *types.SearchRequest
 
 // matchesProduct checks if a CVE matches any of the specified products
 func (n *NVDClient) matchesProduct(cve types.CVE, productNames []string) bool {
-	// Get the English description
-	var description string
-	for _, desc := range cve.Descriptions {
-		if desc.Lang == "en" {
-			description = strings.ToLower(desc.Value)
-			break
-		}
-	}
-
+	description := n.getEnglishDescription(cve)
 	if description == "" {
 		return false
 	}
+	
+	return n.matchesAnyProduct(cve, productNames, description)
+}
 
-	// Check if any of the specified products match
+// getEnglishDescription extracts the English description from a CVE
+func (n *NVDClient) getEnglishDescription(cve types.CVE) string {
+	for _, desc := range cve.Descriptions {
+		if desc.Lang == "en" {
+			return strings.ToLower(desc.Value)
+		}
+	}
+
+	return ""
+}
+
+// matchesAnyProduct checks if the CVE matches any of the specified products
+func (n *NVDClient) matchesAnyProduct(cve types.CVE, productNames []string, description string) bool {
 	for _, productName := range productNames {
-		product := n.configMgr.GetProductByName(productName)
-		if product == nil {
-			continue
+		if n.matchesSingleProduct(cve, productName, description) {
+			return true
 		}
+	}
 
-		// Check keywords
-		for _, keyword := range product.Keywords {
-			if strings.Contains(description, strings.ToLower(keyword)) {
-				return true
-			}
+	return false
+}
+
+// matchesSingleProduct checks if the CVE matches a specific product
+func (n *NVDClient) matchesSingleProduct(cve types.CVE, productName, description string) bool {
+	product := n.configMgr.GetProductByName(productName)
+	if product == nil {
+		return false
+	}
+	
+	return n.matchesProductKeywords(product, description) || 
+		   n.matchesProductCPEPatterns(cve, product)
+}
+
+// matchesProductKeywords checks if the description matches any product keywords
+func (n *NVDClient) matchesProductKeywords(product *types.Product, description string) bool {
+	for _, keyword := range product.Keywords {
+		if strings.Contains(description, strings.ToLower(keyword)) {
+			return true
 		}
+	}
 
-		// Check CPE patterns if enabled
-		if len(product.CPEPatterns) > 0 {
-			for _, cpePattern := range product.CPEPatterns {
-				if n.matchesCPEPattern(cve, cpePattern) {
-					return true
-				}
-			}
+	return false
+}
+
+// matchesProductCPEPatterns checks if the CVE matches any CPE patterns
+func (n *NVDClient) matchesProductCPEPatterns(cve types.CVE, product *types.Product) bool {
+	if len(product.CPEPatterns) == 0 {
+		return false
+	}
+	
+	for _, cpePattern := range product.CPEPatterns {
+		if n.matchesCPEPattern(cve, cpePattern) {
+			return true
 		}
 	}
 
@@ -242,6 +313,7 @@ func (n *NVDClient) matchesCPEPattern(cve types.CVE, cpePattern string) bool {
 			}
 		}
 	}
+
 	return false
 }
 
@@ -272,56 +344,83 @@ func (n *NVDClient) cpeMatchesPattern(cpe, pattern string) bool {
 
 // GetCVEDetails fetches detailed information for a specific CVE
 func (n *NVDClient) GetCVEDetails(cveID string) (*types.CVE, error) {
-	searchURL := fmt.Sprintf("%s?cveId=%s", n.config.NVD.BaseURL, cveID)
+	searchURL := n.buildCVEDetailsURL(cveID)
+	
+	resp, err := n.fetchCVEDetails(searchURL)
+	if err != nil {
+		return nil, err
+	}
+	defer n.closeResponseBody(resp)
+	
+	if err := n.checkResponseStatus(resp); err != nil {
+		return nil, err
+	}
+	
+	nvdResp, err := n.parseCVEDetailsResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+	
+	return n.extractCVEDetails(nvdResp, cveID)
+}
 
+// buildCVEDetailsURL constructs the URL for fetching CVE details
+func (n *NVDClient) buildCVEDetailsURL(cveID string) string {
+	searchURL := fmt.Sprintf("%s?cveId=%s", n.config.NVD.BaseURL, cveID)
 	if n.apiKey != "" {
 		searchURL += "&apiKey=" + n.apiKey
 	}
 
+	return searchURL
+}
+
+// fetchCVEDetails executes the HTTP request to fetch CVE details
+func (n *NVDClient) fetchCVEDetails(searchURL string) (*http.Response, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(n.config.NVD.Timeout)*time.Second)
 	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
+	
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-
-	req.Header.Set("User-Agent", n.config.Security.UserAgent)
-	for key, value := range n.config.Security.RequestHeaders {
-		req.Header.Set(key, value)
-	}
-
+	
+	n.setRequestHeaders(req)
+	
 	resp, err := n.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch CVE details: %w", err)
 	}
-	defer resp.Body.Close()
+	
+	return resp, nil
+}
 
+// checkResponseStatus verifies the response status is OK
+func (n *NVDClient) checkResponseStatus(resp *http.Response) error {
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("NVD API returned status %d: %s", resp.StatusCode, resp.Status)
+		return fmt.Errorf("NVD API returned status %d: %s", resp.StatusCode, resp.Status)
 	}
 
+	return nil
+}
+
+// parseCVEDetailsResponse parses the CVE details response
+func (n *NVDClient) parseCVEDetailsResponse(resp *http.Response) (*types.NVDResponse, error) {
+	reader := n.getResponseReader(resp)
+	
 	var nvdResp types.NVDResponse
-
-	// Handle gzipped responses
-	var reader io.Reader = resp.Body
-	if resp.Header.Get("Content-Encoding") == "gzip" {
-		gzReader, err := gzip.NewReader(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-		}
-		defer gzReader.Close()
-		reader = gzReader
-	}
-
 	if err := json.NewDecoder(reader).Decode(&nvdResp); err != nil {
 		return nil, fmt.Errorf("failed to decode JSON response: %w", err)
 	}
+	
+	return &nvdResp, nil
+}
 
+// extractCVEDetails extracts the CVE from the response
+func (n *NVDClient) extractCVEDetails(nvdResp *types.NVDResponse, cveID string) (*types.CVE, error) {
 	if len(nvdResp.Vulnerabilities) == 0 {
 		return nil, fmt.Errorf("CVE not found: %s", cveID)
 	}
-
+	
 	return &nvdResp.Vulnerabilities[0].CVE, nil
 }
 

@@ -1,3 +1,4 @@
+//nolint:testpackage // We need to test internal package functions
 package config
 
 import (
@@ -7,12 +8,13 @@ import (
 	"cvewatch/internal/types"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewConfigManager(t *testing.T) {
-	cm := NewConfigManager()
-	assert.NotNil(t, cm)
-	assert.NotNil(t, cm.viper)
+	configMgr := NewConfigManager()
+	assert.NotNil(t, configMgr)
+	assert.NotNil(t, configMgr.viper)
 }
 
 func TestGetDefaultProducts(t *testing.T) {
@@ -33,124 +35,162 @@ func TestGetDefaultProducts(t *testing.T) {
 }
 
 func TestConfigManagerMethods(t *testing.T) {
-	cm := NewConfigManager()
+	configMgr := NewConfigManager()
 
 	// Test GetProductByName with nil config
-	product := cm.GetProductByName("nonexistent")
+	product := configMgr.GetProductByName("nonexistent")
 	assert.Nil(t, product)
 
 	// Test GetProductsByPriority with nil config
-	products := cm.GetProductsByPriority("high")
+	products := configMgr.GetProductsByPriority("high")
 	assert.Empty(t, products)
 
 	// Test GetConfig with nil config
-	config := cm.GetConfig()
+	config := configMgr.GetConfig()
 	assert.Nil(t, config)
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	cm := NewConfigManager()
+	configMgr := NewConfigManager()
 
 	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "TestCreateDefaultConfig")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	tempDir := t.TempDir()
+	        defer func() {
+            if err := os.RemoveAll(tempDir); err != nil {
+                t.Errorf("failed to remove temp dir: %v", err)
+            }
+        }()
 
 	// Create the default config
-	err = cm.CreateDefaultConfig()
-	assert.NoError(t, err)
+			err := configMgr.CreateDefaultConfig()
+		require.NoError(t, err)
 
 	// Verify the config was created
-	assert.NotNil(t, cm.config)
-	assert.Equal(t, "CVEWatch", cm.config.App.Name)
-	assert.Equal(t, "2.0.0", cm.config.App.Version)
-	assert.Equal(t, "https://services.nvd.nist.gov/rest/json/cves/2.0", cm.config.NVD.BaseURL)
+	assert.NotNil(t, configMgr.config)
+	assert.Equal(t, "CVEWatch", configMgr.config.App.Name)
+	assert.Equal(t, "2.0.0", configMgr.config.App.Version)
+	assert.Equal(t, "https://services.nvd.nist.gov/rest/json/cves/2.0", configMgr.config.NVD.BaseURL)
 
 	// Verify products were created
-	assert.NotEmpty(t, cm.config.Products)
+	assert.NotEmpty(t, configMgr.config.Products)
 
 	// Verify output settings
-	assert.NotEmpty(t, cm.config.Output.Formats)
-	assert.Contains(t, cm.config.Output.Formats, "simple")
-	assert.Contains(t, cm.config.Output.Formats, "json")
+	assert.NotEmpty(t, configMgr.config.Output.Formats)
+	assert.Contains(t, configMgr.config.Output.Formats, "simple")
+	assert.Contains(t, configMgr.config.Output.Formats, "json")
 
 	// Verify security settings
-	assert.NotEmpty(t, cm.config.Security.UserAgent)
-	assert.NotEmpty(t, cm.config.Security.RequestHeaders)
+	assert.NotEmpty(t, configMgr.config.Security.UserAgent)
+	assert.NotEmpty(t, configMgr.config.Security.RequestHeaders)
 }
 
 func TestValidateConfig(t *testing.T) {
-	cm := NewConfigManager()
+	configMgr := NewConfigManager()
+	
+	t.Run("valid config", func(t *testing.T) {
+		validConfig := createValidTestConfig()
+		err := configMgr.validateConfig(validConfig)
+		assert.NoError(t, err)
+	})
+	
+	t.Run("invalid config - missing NVD base URL", func(t *testing.T) {
+		invalidConfig := createInvalidTestConfig()
+		err := configMgr.validateConfig(invalidConfig)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "NVD settings: base URL cannot be empty")
+	})
+}
 
-	// Test with valid config
-	validConfig := &types.AppConfig{
-		App: types.AppSettings{
-			Name:     "Test",
-			Version:  "1.0.0",
-			LogLevel: "info",
-			Timeout:  30,
-		},
-		NVD: types.NVDSettings{
-			BaseURL:       "https://test.example.com",
-			RateLimit:     1000,
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-		Search: types.SearchSettings{
-			DefaultDate:       "today",
-			DefaultMinCVSS:    0.0,
-			DefaultMaxCVSS:    10.0,
-			DefaultMaxResults: 100,
-			DateFormat:        "2006-01-02",
-		},
-		Output: types.OutputSettings{
-			DefaultFormat:  "simple",
-			Formats:        []string{"simple", "json"},
-			Colors:         true,
-			TruncateLength: 100,
-		},
-		Security: types.SecuritySettings{
-			EnableSSLVerification: true,
-			UserAgent:             "Test/1.0",
-			RequestHeaders:        map[string]string{"Accept": "application/json"},
-		},
-		Products: []types.Product{
-			{
-				Name:        "Test Product",
-				Keywords:    []string{"test"},
-				CPEPatterns: []string{"cpe:2.3:a:test:product:*:*:*:*:*:*:*"},
-				Description: "Test product",
-				Priority:    "medium",
-			},
+// createValidTestConfig creates a valid test configuration
+func createValidTestConfig() *types.AppConfig {
+	return &types.AppConfig{
+		App:      createValidAppSettings(),
+		NVD:      createValidNVDSettings(),
+		Search:   createValidSearchSettings(),
+		Output:   createValidOutputSettings(),
+		Security: createValidSecuritySettings(),
+		Products: createValidProducts(),
+	}
+}
+
+// createValidAppSettings creates valid app settings for testing
+func createValidAppSettings() types.AppSettings {
+	return types.AppSettings{
+		Name:     "Test",
+		Version:  "1.0.0",
+		LogLevel: "info",
+		Timeout:  30,
+	}
+}
+
+// createValidNVDSettings creates valid NVD settings for testing
+func createValidNVDSettings() types.NVDSettings {
+	return types.NVDSettings{
+		BaseURL:       "https://test.example.com",
+		RateLimit:     1000,
+		Timeout:       30,
+		RetryAttempts: 3,
+		RetryDelay:    5,
+	}
+}
+
+// createValidSearchSettings creates valid search settings for testing
+func createValidSearchSettings() types.SearchSettings {
+	return types.SearchSettings{
+		DefaultDate:       "today",
+		DefaultMinCVSS:    0.0,
+		DefaultMaxCVSS:    10.0,
+		DefaultMaxResults: 100,
+		DateFormat:        "2006-01-02",
+	}
+}
+
+// createValidOutputSettings creates valid output settings for testing
+func createValidOutputSettings() types.OutputSettings {
+	return types.OutputSettings{
+		DefaultFormat:  "simple",
+		Formats:        []string{"simple", "json"},
+		Colors:         true,
+		TruncateLength: 100,
+	}
+}
+
+// createValidSecuritySettings creates valid security settings for testing
+func createValidSecuritySettings() types.SecuritySettings {
+	return types.SecuritySettings{
+		EnableSSLVerification: true,
+		UserAgent:             "Test/1.0",
+		RequestHeaders:        map[string]string{"Accept": "application/json"},
+	}
+}
+
+// createValidProducts creates valid products for testing
+func createValidProducts() []types.Product {
+	return []types.Product{
+		{
+			Name:        "Test Product",
+			Keywords:    []string{"test"},
+			CPEPatterns: []string{"cpe:2.3:a:test:product:*:*:*:*:*:*:*"},
+			Description: "Test product",
+			Priority:    "medium",
 		},
 	}
+}
 
-	err := cm.validateConfig(validConfig)
-	assert.NoError(t, err)
-
-	// Test with invalid config (missing NVD base URL)
-	invalidConfig := &types.AppConfig{
-		App: types.AppSettings{
-			Name:     "Test",
-			Version:  "1.0.0",
-			LogLevel: "info",
-			Timeout:  30,
-		},
+// createInvalidTestConfig creates an invalid test configuration
+func createInvalidTestConfig() *types.AppConfig {
+	return &types.AppConfig{
+		App: createValidAppSettings(),
 		NVD: types.NVDSettings{
 			BaseURL: "", // Invalid: empty base URL
 		},
 	}
-
-	err = cm.validateConfig(invalidConfig)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "NVD base URL cannot be empty")
 }
 
 func TestLoadCommandLineFlags(t *testing.T) {
 	// Test with valid flags
 	flags, err := LoadCommandLineFlags()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, flags)
 
 	// Test basic validation

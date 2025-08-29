@@ -1,3 +1,4 @@
+//nolint:testpackage // We need to test internal package functions
 package utils
 
 import (

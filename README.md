@@ -18,23 +18,90 @@ A modern, fast, and efficient Common Vulnerability and Exposure (CVE) monitoring
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.25 or later
 - Internet connection for NVD API access
 
 ### Installation
 
-#### Option 1: Build from source
+#### Option 1: Download Latest Release (Recommended)
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/Amet13/CVEWatch/releases/latest):
+
+**macOS (Apple Silicon / ARM64):**
 
 ```bash
-git clone https://github.com/yourusername/cvewatch.git
+# Download and install
+curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-darwin-arm64
+chmod +x cvewatch
+sudo mv cvewatch /usr/local/bin/
+
+# Or install to user directory
+mkdir -p ~/.local/bin
+mv cvewatch ~/.local/bin/
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**macOS (Intel / AMD64):**
+
+```bash
+curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-darwin-amd64
+chmod +x cvewatch
+sudo mv cvewatch /usr/local/bin/
+```
+
+**Linux (AMD64):**
+
+```bash
+curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-linux-amd64
+chmod +x cvewatch
+sudo mv cvewatch /usr/local/bin/
+```
+
+**Linux (ARM64):**
+
+```bash
+curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-linux-arm64
+chmod +x cvewatch
+sudo mv cvewatch /usr/local/bin/
+```
+
+**Windows:**
+Download `cvewatch-windows-amd64.exe` or `cvewatch-windows-arm64.exe` and add to your PATH.
+
+#### Option 2: Build from source
+
+```bash
+git clone https://github.com/Amet13/CVEWatch.git
 cd cvewatch
 make build
 ```
 
-#### Option 2: Install directly
+#### Option 3: Install directly
 
 ```bash
 make install
+```
+
+### Verify Installation
+
+After installation, verify CVEWatch is working:
+
+```bash
+cvewatch version
+```
+
+You should see output similar to:
+
+```
+CVEWatch 2.0.0
+A modern CVE vulnerability monitoring tool
+Built with Go and using the official NVD API
+
+Build Information:
+  Version: 2.0.0
+  Build Time: 2024-08-29_16:22:00
+  Git Commit: abc1234
 ```
 
 ### First Run
@@ -263,7 +330,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
+3. Make your changes using conventional commit messages
 4. Add tests for new functionality
 5. Ensure all tests pass
 6. Submit a pull request
@@ -288,13 +355,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/cvewatch/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/cvewatch/discussions)
-- **Documentation**: [Wiki](https://github.com/yourusername/cvewatch/wiki)
-
-## 🔄 Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes and releases.
+- **Issues**: [GitHub Issues](https://github.com/Amet13/CVEWatch/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Amet13/CVEWatch/discussions)
+- **Documentation**: [Wiki](https://github.com/Amet13/CVEWatch/wiki)
 
 ---
 

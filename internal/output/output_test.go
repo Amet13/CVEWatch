@@ -1,3 +1,4 @@
+//nolint:testpackage // We need to test internal package functions
 package output
 
 import (
@@ -33,7 +34,7 @@ func TestGetCVSSScore(t *testing.T) {
 	}
 
 	score := formatter.getCVSSScore(cve)
-	assert.Equal(t, 8.5, score)
+	assert.InDelta(t, 8.5, score, 0.01)
 
 	// Test CVE with CVSS v2 score (should prefer v3.1)
 	cve.Metrics.CVSSMetricV2 = []types.CVSSMetricV2{
@@ -44,17 +45,17 @@ func TestGetCVSSScore(t *testing.T) {
 		},
 	}
 	score = formatter.getCVSSScore(cve)
-	assert.Equal(t, 8.5, score) // Should still prefer v3.1
+	assert.InDelta(t, 8.5, score, 0.01) // Should still prefer v3.1
 
 	// Test CVE with only CVSS v2 score
 	cve.Metrics.CVSSMetricV31 = nil
 	score = formatter.getCVSSScore(cve)
-	assert.Equal(t, 7.0, score)
+	assert.InDelta(t, 7.0, score, 0.01)
 
 	// Test CVE with no CVSS score
 	cve.Metrics.CVSSMetricV2 = nil
 	score = formatter.getCVSSScore(cve)
-	assert.Equal(t, 0.0, score)
+	assert.InDelta(t, 0.0, score, 0.01)
 }
 
 func TestGetSeverity(t *testing.T) {
@@ -113,12 +114,12 @@ func TestExtractProductName(t *testing.T) {
 	// Test CPE string with wildcards
 	cpe = "cpe:2.3:a:*:product:*:*:*:*:*:*:*"
 	productName = formatter.extractProductName(cpe)
-	assert.Equal(t, "", productName) // Should return empty for wildcard vendor
+	assert.Empty(t, productName) // Should return empty for wildcard vendor
 
 	// Test invalid CPE string
 	cpe = "invalid:cpe:format"
 	productName = formatter.extractProductName(cpe)
-	assert.Equal(t, "", productName)
+	assert.Empty(t, productName)
 }
 
 func TestTruncateString(t *testing.T) {

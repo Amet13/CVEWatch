@@ -15,41 +15,41 @@ type AppConfig struct {
 type AppSettings struct {
 	Name     string `yaml:"name"`
 	Version  string `yaml:"version"`
-	LogLevel string `yaml:"log_level"`
+	LogLevel string `yaml:"logLevel"`
 	Timeout  int    `yaml:"timeout"`
 }
 
 // NVDSettings represents NVD API configuration
 type NVDSettings struct {
-	BaseURL       string `yaml:"base_url"`
-	RateLimit     int    `yaml:"rate_limit"`
+	BaseURL       string `yaml:"baseUrl"`
+	RateLimit     int    `yaml:"rateLimit"`
 	Timeout       int    `yaml:"timeout"`
-	RetryAttempts int    `yaml:"retry_attempts"`
-	RetryDelay    int    `yaml:"retry_delay"`
+	RetryAttempts int    `yaml:"retryAttempts"`
+	RetryDelay    int    `yaml:"retryDelay"`
 }
 
 // SearchSettings represents default search parameters
 type SearchSettings struct {
-	DefaultDate       string  `yaml:"default_date"`
-	DefaultMinCVSS    float64 `yaml:"default_min_cvss"`
-	DefaultMaxCVSS    float64 `yaml:"default_max_cvss"`
-	DefaultMaxResults int     `yaml:"default_max_results"`
-	DateFormat        string  `yaml:"date_format"`
+	DefaultDate       string  `yaml:"defaultDate"`
+	DefaultMinCVSS    float64 `yaml:"defaultMinCvss"`
+	DefaultMaxCVSS    float64 `yaml:"defaultMaxCvss"`
+	DefaultMaxResults int     `yaml:"defaultMaxResults"`
+	DateFormat        string  `yaml:"dateFormat"`
 }
 
 // OutputSettings represents output configuration
 type OutputSettings struct {
-	DefaultFormat  string   `yaml:"default_format"`
+	DefaultFormat  string   `yaml:"defaultFormat"`
 	Formats        []string `yaml:"formats"`
 	Colors         bool     `yaml:"colors"`
-	TruncateLength int      `yaml:"truncate_length"`
+	TruncateLength int      `yaml:"truncateLength"`
 }
 
 // SecuritySettings represents security configuration
 type SecuritySettings struct {
-	EnableSSLVerification bool              `yaml:"enable_ssl_verification"`
-	UserAgent             string            `yaml:"user_agent"`
-	RequestHeaders        map[string]string `yaml:"request_headers"`
+	EnableSSLVerification bool              `yaml:"enableSslVerification"`
+	UserAgent             string            `yaml:"userAgent"`
+	RequestHeaders        map[string]string `yaml:"requestHeaders"`
 }
 
 
@@ -58,7 +58,7 @@ type SecuritySettings struct {
 type Product struct {
 	Name        string   `yaml:"name"`
 	Keywords    []string `yaml:"keywords"`
-	CPEPatterns []string `yaml:"cpe_patterns"`
+	CPEPatterns []string `yaml:"cpePatterns"`
 	Description string   `yaml:"description"`
 	Priority    string   `yaml:"priority"`
 }

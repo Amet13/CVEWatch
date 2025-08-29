@@ -34,7 +34,7 @@ output:
 # Security settings
 security:
   enable_ssl_verification: true
-  user_agent: "Mozilla/5.0 (compatible; CVEWatch/2.0.0; +https://github.com/yourusername/cvewatch)"
+  user_agent: "Mozilla/5.0 (compatible; CVEWatch/2; +https://github.com/Amet13/CVEWatch)"
   request_headers:
     Accept: "application/json"
     Accept-Encoding: "gzip"

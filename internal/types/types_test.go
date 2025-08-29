@@ -1,3 +1,4 @@
+//nolint:testpackage // We need to test internal package functions
 package types
 
 import (
@@ -22,7 +23,7 @@ func TestCVEStruct(t *testing.T) {
 	}
 
 	assert.Equal(t, "CVE-2023-1234", cve.ID)
-	assert.Equal(t, 1, len(cve.Descriptions))
+	assert.Len(t, cve.Descriptions, 1)
 	assert.Equal(t, "en", cve.Descriptions[0].Lang)
 	assert.Equal(t, "Test description", cve.Descriptions[0].Value)
 }
@@ -43,9 +44,9 @@ func TestMetricsStruct(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, 1, len(metrics.CVSSMetricV31))
+	assert.Len(t, metrics.CVSSMetricV31, 1)
 	assert.Equal(t, "nvd@nist.gov", metrics.CVSSMetricV31[0].Source)
-	assert.Equal(t, 8.5, metrics.CVSSMetricV31[0].CVSSData.BaseScore)
+	assert.InDelta(t, 8.5, metrics.CVSSMetricV31[0].CVSSData.BaseScore, 0.01)
 	assert.Equal(t, "HIGH", metrics.CVSSMetricV31[0].CVSSData.BaseSeverity)
 }
 
@@ -60,7 +61,7 @@ func TestProductStruct(t *testing.T) {
 	}
 
 	assert.Equal(t, "Test Product", product.Name)
-	assert.Equal(t, 2, len(product.Keywords))
+	assert.Len(t, product.Keywords, 2)
 	assert.Equal(t, "high", product.Priority)
 	assert.Equal(t, "Test product description", product.Description)
 }
@@ -86,5 +87,5 @@ func TestNVDResponseStruct(t *testing.T) {
 	assert.Equal(t, 10, response.ResultsPerPage)
 	assert.Equal(t, 100, response.TotalResults)
 	assert.Equal(t, "2.0", response.Version)
-	assert.Equal(t, 1, len(response.Vulnerabilities))
+	assert.Len(t, response.Vulnerabilities, 1)
 }

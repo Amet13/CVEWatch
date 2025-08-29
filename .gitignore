@@ -4,6 +4,10 @@
 build/
 releases/
 
+# Release binaries (should never be committed)
+cvewatch-*
+*.exe
+
 # Configuration (contains sensitive data)
 config.yaml
 

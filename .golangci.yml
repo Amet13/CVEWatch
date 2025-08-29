@@ -1,17 +1,65 @@
-version: 1.0
+version: "2"
 
 run:
   timeout: 5m
-  go: "1.22"
+  go: "1.25"
 
 linters:
   enable:
-    - gofmt
-    - goimports
     - govet
     - errcheck
     - staticcheck
-    - gosimple
     - ineffassign
     - unused
     - misspell
+    - cyclop
+    - gosec
+    - gocritic
+    - gocyclo
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocognit
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosmopolitan
+    - grouper
+    - importas
+    - inamedparam
+    - interfacebloat
+    - intrange
+    - loggercheck
+    - maintidx
+    - makezero
+    - mirror
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - tagalign
+    - tagliatelle
+    - testifylint
+    - testpackage
+    - thelper
+    - unconvert
+    - unparam
+    - usetesting
+    - usestdlibvars
+    - varnamelen
+    - wastedassign
+    - wrapcheck

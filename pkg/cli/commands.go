@@ -145,58 +145,96 @@ func (cmds *Commands) createCommands(configManager *config.ConfigManager) {
 
 // runSearch executes the search command
 func (cmds *Commands) runSearch(cmd *cobra.Command, args []string) error {
-	// Load configuration
+	configManager, config, err := cmds.loadConfiguration()
+	if err != nil {
+		return err
+	}
+	
+	flags, err := cmds.loadAndOverrideFlags(config)
+	if err != nil {
+		return err
+	}
+	
+	if err := cmds.validateOutputFormat(flags, config); err != nil {
+		return err
+	}
+	
+	searchRequest := cmds.createSearchRequest(flags)
+	
+	if !viper.GetBool("quiet") {
+		cmds.displaySearchParameters(searchRequest)
+	}
+	
+	result, err := cmds.executeSearch(config, configManager, searchRequest)
+	if err != nil {
+		return err
+	}
+	
+	return cmds.outputResults(flags, config, result)
+}
+
+// loadConfiguration loads and validates the configuration
+func (cmds *Commands) loadConfiguration() (*config.ConfigManager, *types.AppConfig, error) {
 	configFile := viper.GetString("config")
 	configManager := config.NewConfigManager()
 	if err := configManager.LoadConfig(configFile); err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return nil, nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
-
+	
 	config := configManager.GetConfig()
 
-	// Load and validate command line flags
+	return configManager, config, nil
+}
+
+// loadAndOverrideFlags loads command line flags and overrides defaults
+func (cmds *Commands) loadAndOverrideFlags(config *types.AppConfig) (*types.CommandLineFlags, error) {
 	flags, err := cmds.loadCommandLineFlags()
 	if err != nil {
-		return fmt.Errorf("invalid command line flags: %w", err)
+		return nil, fmt.Errorf("invalid command line flags: %w", err)
 	}
+	
+	cmds.overrideFlagsWithDefaults(flags, config)
 
-	// Override defaults with command line values if specified
-	if viper.IsSet("min-cvss") {
-		flags.MinCVSS = viper.GetFloat64("min-cvss")
-	} else {
+	return flags, nil
+}
+
+// overrideFlagsWithDefaults overrides flags with configuration defaults
+func (cmds *Commands) overrideFlagsWithDefaults(flags *types.CommandLineFlags, config *types.AppConfig) {
+	if !viper.IsSet("min-cvss") {
 		flags.MinCVSS = config.Search.DefaultMinCVSS
 	}
-
-	if viper.IsSet("max-cvss") {
-		flags.MaxCVSS = viper.GetFloat64("max-cvss")
-	} else {
+	
+	if !viper.IsSet("max-cvss") {
 		flags.MaxCVSS = config.Search.DefaultMaxCVSS
 	}
-
-	if viper.IsSet("max-results") {
-		flags.MaxResults = viper.GetInt("max-results")
-	} else {
+	
+	if !viper.IsSet("max-results") {
 		flags.MaxResults = config.Search.DefaultMaxResults
 	}
-
-	if viper.IsSet("output") {
-		flags.OutputFormat = viper.GetString("output")
-	} else {
+	
+	if !viper.IsSet("output") {
 		flags.OutputFormat = config.Output.DefaultFormat
 	}
+}
 
-	// Validate output format
+// validateOutputFormat validates the output format
+func (cmds *Commands) validateOutputFormat(flags *types.CommandLineFlags, config *types.AppConfig) error {
 	validFormats := make(map[string]bool)
 	for _, format := range config.Output.Formats {
 		validFormats[format] = true
 	}
+	
 	if !validFormats[flags.OutputFormat] {
 		return fmt.Errorf("invalid output format: %s (valid formats: %s)",
 			flags.OutputFormat, strings.Join(config.Output.Formats, ", "))
 	}
 
-	// Create search request
-	searchRequest := &types.SearchRequest{
+	return nil
+}
+
+// createSearchRequest creates the search request from flags
+func (cmds *Commands) createSearchRequest(flags *types.CommandLineFlags) *types.SearchRequest {
+	return &types.SearchRequest{
 		Date:         flags.Date,
 		MinCVSS:      flags.MinCVSS,
 		MaxCVSS:      flags.MaxCVSS,
@@ -205,98 +243,155 @@ func (cmds *Commands) runSearch(cmd *cobra.Command, args []string) error {
 		APIKey:       flags.APIKey,
 		Products:     []string{"Linux Kernel", "OpenSSL", "Apache HTTP Server", "PHP", "Python"},
 	}
+}
 
-	// Display search parameters
-	if !viper.GetBool("quiet") {
-		fmt.Printf("🔍 Searching for vulnerabilities on %s\n", searchRequest.Date)
-		fmt.Printf("📦 Monitoring %d products\n", len(searchRequest.Products))
-		fmt.Printf("🎯 Minimum CVSS score: %.1f\n", searchRequest.MinCVSS)
-		fmt.Printf("🎯 Maximum CVSS score: %.1f\n", searchRequest.MaxCVSS)
-		fmt.Printf("📊 Output format: %s\n", searchRequest.OutputFormat)
-		fmt.Printf("📈 Max results: %d\n\n", searchRequest.MaxResults)
-	}
+// displaySearchParameters displays the search parameters
+func (cmds *Commands) displaySearchParameters(searchRequest *types.SearchRequest) {
+	fmt.Printf("🔍 Searching for vulnerabilities on %s\n", searchRequest.Date)
+	fmt.Printf("📦 Monitoring %d products\n", len(searchRequest.Products))
+	fmt.Printf("🎯 Minimum CVSS score: %.1f\n", searchRequest.MinCVSS)
+	fmt.Printf("🎯 Maximum CVSS score: %.1f\n", searchRequest.MaxCVSS)
+	fmt.Printf("📊 Output format: %s\n", searchRequest.OutputFormat)
+	fmt.Printf("📈 Max results: %d\n\n", searchRequest.MaxResults)
+}
 
-	// Create NVD client and search for vulnerabilities
+// executeSearch executes the CVE search
+func (cmds *Commands) executeSearch(config *types.AppConfig, configManager *config.ConfigManager, searchRequest *types.SearchRequest) (*types.SearchResult, error) {
 	nvdClient := nvd.NewNVDClient(config, configManager, searchRequest.APIKey)
 	result, err := nvdClient.SearchCVEs(searchRequest)
 	if err != nil {
-		return fmt.Errorf("failed to search CVEs: %w", err)
+		return nil, fmt.Errorf("failed to search CVEs: %w", err)
 	}
 
-	// Output results
+	return result, nil
+}
+
+// outputResults formats and outputs the search results
+func (cmds *Commands) outputResults(flags *types.CommandLineFlags, config *types.AppConfig, result *types.SearchResult) error {
 	formatter := output.NewOutputFormatter(flags.OutputFormat, config)
 	if err := formatter.FormatOutput(result); err != nil {
 		return fmt.Errorf("failed to format output: %w", err)
 	}
-
-	// Print summary
+	
 	if !viper.GetBool("quiet") {
 		formatter.PrintSummary(result)
 	}
-
+	
 	return nil
 }
 
 // runInfo executes the info command
 func (cmds *Commands) runInfo(cveID string, configManager *config.ConfigManager) error {
-	// Validate CVE ID format
+	if err := cmds.validateCVEID(cveID); err != nil {
+		return err
+	}
+	
+	config, err := cmds.loadInfoConfiguration(configManager)
+	if err != nil {
+		return err
+	}
+	
+	cve, err := cmds.fetchCVEDetails(config, configManager, cveID)
+	if err != nil {
+		return err
+	}
+	
+	cmds.displayCVEInfo(cveID, cve)
+
+	return nil
+}
+
+// validateCVEID validates the CVE ID format
+func (cmds *Commands) validateCVEID(cveID string) error {
 	if !utils.IsValidCVEID(cveID) {
 		return fmt.Errorf("invalid CVE ID format: %s", cveID)
 	}
 
-	// Load configuration
+	return nil
+}
+
+// loadInfoConfiguration loads configuration for info command
+func (cmds *Commands) loadInfoConfiguration(configManager *config.ConfigManager) (*types.AppConfig, error) {
 	if err := configManager.LoadConfig(""); err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	config := configManager.GetConfig()
+	return configManager.GetConfig(), nil
+}
 
-	// Create NVD client and fetch CVE details
+// fetchCVEDetails fetches CVE details from NVD
+func (cmds *Commands) fetchCVEDetails(config *types.AppConfig, configManager *config.ConfigManager, cveID string) (*types.CVE, error) {
 	apiKey := viper.GetString("api-key")
 	nvdClient := nvd.NewNVDClient(config, configManager, apiKey)
 	cve, err := nvdClient.GetCVEDetails(cveID)
 	if err != nil {
-		return fmt.Errorf("failed to fetch CVE details: %w", err)
+		return nil, fmt.Errorf("failed to fetch CVE details: %w", err)
 	}
 
-	// Display CVE information
+	return cve, nil
+}
+
+// displayCVEInfo displays comprehensive CVE information
+func (cmds *Commands) displayCVEInfo(cveID string, cve *types.CVE) {
 	fmt.Printf("🔍 Fetching details for %s...\n\n", cveID)
+	
+	cmds.displayBasicInfo(cve)
+	cmds.displayCVSSInfo(cve)
+	cmds.displayDescription(cve)
+	cmds.displayReferences(cve)
+}
+
+// displayBasicInfo displays basic CVE information
+func (cmds *Commands) displayBasicInfo(cve *types.CVE) {
 	fmt.Printf("CVE ID: %s\n", cve.ID)
 	fmt.Printf("Status: %s\n", cve.Status)
 	fmt.Printf("Published: %s\n", cve.Published)
 	fmt.Printf("Modified: %s\n", cve.Modified)
+}
 
-	// CVSS information
+// displayCVSSInfo displays CVSS scoring information
+func (cmds *Commands) displayCVSSInfo(cve *types.CVE) {
 	if len(cve.Metrics.CVSSMetricV31) > 0 {
-		fmt.Printf("CVSS v3.1 Score: %.1f (%s)\n", cve.Metrics.CVSSMetricV31[0].CVSSData.BaseScore, cve.Metrics.CVSSMetricV31[0].CVSSData.BaseSeverity)
-		fmt.Printf("Vector: %s\n", cve.Metrics.CVSSMetricV31[0].CVSSData.VectorString)
+		metric := cve.Metrics.CVSSMetricV31[0]
+		fmt.Printf("CVSS v3.1 Score: %.1f (%s)\n", metric.CVSSData.BaseScore, metric.CVSSData.BaseSeverity)
+		fmt.Printf("Vector: %s\n", metric.CVSSData.VectorString)
 	} else if len(cve.Metrics.CVSSMetricV2) > 0 {
-		fmt.Printf("CVSS v2 Score: %.1f (%s)\n", cve.Metrics.CVSSMetricV2[0].CVSSData.BaseScore, cve.Metrics.CVSSMetricV2[0].CVSSData.BaseSeverity)
-		fmt.Printf("Vector: %s\n", cve.Metrics.CVSSMetricV2[0].CVSSData.VectorString)
+		metric := cve.Metrics.CVSSMetricV2[0]
+		fmt.Printf("CVSS v2 Score: %.1f (%s)\n", metric.CVSSData.BaseScore, metric.CVSSData.BaseSeverity)
+		fmt.Printf("Vector: %s\n", metric.CVSSData.VectorString)
 	}
+}
 
-	// Get English description
-	description := ""
+// displayDescription displays the English description
+func (cmds *Commands) displayDescription(cve *types.CVE) {
+	description := cmds.getEnglishDescription(cve)
+	fmt.Printf("\nDescription:\n%s\n", description)
+}
+
+// getEnglishDescription extracts the English description
+func (cmds *Commands) getEnglishDescription(cve *types.CVE) string {
 	for _, desc := range cve.Descriptions {
 		if desc.Lang == "en" {
-			description = desc.Value
-			break
-		}
-	}
-	fmt.Printf("\nDescription:\n%s\n", description)
-
-	// References
-	if len(cve.References) > 0 {
-		fmt.Printf("\nReferences:\n")
-		for i, ref := range cve.References {
-			fmt.Printf("%d. %s\n", i+1, ref.URL)
-			if ref.Name != "" {
-				fmt.Printf("   Name: %s\n", ref.Name)
-			}
+			return desc.Value
 		}
 	}
 
-	return nil
+	return ""
+}
+
+// displayReferences displays CVE references
+func (cmds *Commands) displayReferences(cve *types.CVE) {
+	if len(cve.References) == 0 {
+		return
+	}
+	
+	fmt.Printf("\nReferences:\n")
+	for i, ref := range cve.References {
+		fmt.Printf("%d. %s\n", i+1, ref.URL)
+		if ref.Name != "" {
+			fmt.Printf("   Name: %s\n", ref.Name)
+		}
+	}
 }
 
 // runConfig executes the config command
@@ -349,7 +444,7 @@ func (cmds *Commands) runConfig(configManager *config.ConfigManager) error {
 }
 
 // runVersion executes the version command
-func (cmds *Commands) runVersion(configManager *config.ConfigManager) error {
+func (cmds *Commands) runVersion(_ *config.ConfigManager) error {
 
 	fmt.Printf("CVEWatch %s\n", version.GetVersion())
 	fmt.Printf("A modern CVE vulnerability monitoring tool\n")
@@ -400,3 +495,4 @@ func (cmds *Commands) loadCommandLineFlags() (*types.CommandLineFlags, error) {
 
 	return flags, nil
 }
+

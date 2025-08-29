@@ -1,3 +1,4 @@
+//nolint:testpackage // We need to test internal package functions
 package cli
 
 import (
@@ -6,6 +7,7 @@ import (
 	"cvewatch/internal/config"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewCommands(t *testing.T) {
@@ -27,7 +29,7 @@ func TestLoadCommandLineFlags(t *testing.T) {
 
 	// Test with valid flags
 	flags, err := cmds.loadCommandLineFlags()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, flags)
 
 	// Test validation functions

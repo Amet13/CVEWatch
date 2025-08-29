@@ -1,3 +1,4 @@
+//nolint:testpackage // We need to test internal package functions
 package nvd
 
 import (
@@ -11,7 +12,7 @@ func BenchmarkNewNVDClient(b *testing.B) {
 	config := &types.AppConfig{}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		NewNVDClient(config, cm, "")
 	}
 }
@@ -40,7 +41,7 @@ func BenchmarkMatchesCVSSRange(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		client.matchesCVSSRange(cve, request)
 	}
 }
@@ -54,7 +55,7 @@ func BenchmarkCPEMatchesPattern(b *testing.B) {
 	pattern := "cpe:2.3:a:vendor:*:*:*:*:*:*:*:*:*"
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		client.cpeMatchesPattern(cpe, pattern)
 	}
 }
@@ -77,7 +78,7 @@ func BenchmarkMatchesProduct(b *testing.B) {
 	products := []string{"Test Product"}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		client.matchesProduct(cve, products)
 	}
 }

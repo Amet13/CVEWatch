@@ -41,7 +41,7 @@ This project is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By partic
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/cvewatch.git
+git clone https://github.com/Amet13/CVEWatch.git
 cd cvewatch
 
 # Run the development setup script

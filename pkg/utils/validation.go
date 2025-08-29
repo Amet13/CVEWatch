@@ -7,24 +7,24 @@ import (
 )
 
 // IsValidCVEID checks if a string is a valid CVE ID format
-func IsValidCVEID(id string) bool {
+func IsValidCVEID(cveID string) bool {
 	// Basic CVE ID format validation: CVE-YYYY-NNNNN
-	if len(id) < 8 {
+	if len(cveID) < 8 {
 		return false
 	}
 
 	// Check if it starts with "CVE-"
-	if id[:4] != "CVE-" {
+	if cveID[:4] != "CVE-" {
 		return false
 	}
 
 	// Check if it contains a year and number
-	if len(id) < 9 {
+	if len(cveID) < 9 {
 		return false
 	}
 
 	// Check for valid format: CVE-YYYY-NNNNN
-	parts := strings.Split(id, "-")
+	parts := strings.Split(cveID, "-")
 	if len(parts) != 3 {
 		return false
 	}
@@ -55,6 +55,7 @@ func IsValidDate(date string) bool {
 
 	pattern := `^\d{4}-\d{2}-\d{2}$`
 	matched, _ := regexp.MatchString(pattern, date)
+	
 	return matched
 }
 
@@ -64,8 +65,8 @@ func IsValidCVSSScore(score float64) bool {
 }
 
 // IsValidMaxResults checks if max results is within valid range
-func IsValidMaxResults(max int) bool {
-	return max >= 1 && max <= 2000
+func IsValidMaxResults(maxResults int) bool {
+	return maxResults >= 1 && maxResults <= 2000
 }
 
 // IsValidOutputFormat checks if output format is valid
@@ -76,5 +77,6 @@ func IsValidOutputFormat(format string) bool {
 			return true
 		}
 	}
+	
 	return false
 }

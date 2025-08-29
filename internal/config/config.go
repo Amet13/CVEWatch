@@ -32,82 +32,124 @@ func (cm *ConfigManager) SetConfig(config *types.AppConfig) {
 
 // LoadConfig loads configuration from file and environment variables
 func (cm *ConfigManager) LoadConfig(configFile string) error {
-	// Set default configuration
 	cm.setDefaults()
+	cm.setupViper(configFile)
+	cm.setupEnvironment()
+	
+	if err := cm.readConfigFile(); err != nil {
+		return err
+	}
+	
+	return nil
+}
 
-	// Set config file
+// setupViper configures viper for config file discovery
+func (cm *ConfigManager) setupViper(configFile string) {
 	if configFile != "" {
 		cm.viper.SetConfigFile(configFile)
-	} else {
-		// Look for config files in common locations
-		cm.viper.SetConfigName("config")
-		cm.viper.SetConfigType("yaml")
-		cm.viper.AddConfigPath(".")
-		cm.viper.AddConfigPath("$HOME/.cvewatch")
-		cm.viper.AddConfigPath("/etc/cvewatch")
+		
+		return
+	}
+	
+	// Look for config files in common locations
+	cm.viper.SetConfigName("config")
+	cm.viper.SetConfigType("yaml")
+	cm.viper.AddConfigPath(".")
+	cm.viper.AddConfigPath("$HOME/.cvewatch")
+	cm.viper.AddConfigPath("/etc/cvewatch")
+	
+	// Try to find default config in home directory
+	cm.tryFindDefaultConfig()
+}
 
-		// If no specific config file is specified, try to find the default one
-		if homeDir, err := os.UserHomeDir(); err == nil {
-			defaultConfigPath := filepath.Join(homeDir, ".cvewatch", "config.yaml")
-			if _, err := os.Stat(defaultConfigPath); err == nil {
-				// Default config exists, set it as the config file
-				cm.viper.SetConfigFile(defaultConfigPath)
-			}
+// tryFindDefaultConfig attempts to find a default config file
+func (cm *ConfigManager) tryFindDefaultConfig() {
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		defaultConfigPath := filepath.Join(homeDir, ".cvewatch", "config.yaml")
+		if _, err := os.Stat(defaultConfigPath); err == nil {
+			cm.viper.SetConfigFile(defaultConfigPath)
 		}
 	}
+}
 
-	// Read environment variables
+// setupEnvironment configures environment variable handling
+func (cm *ConfigManager) setupEnvironment() {
 	cm.viper.SetEnvPrefix("CVEWATCH")
 	cm.viper.AutomaticEnv()
+}
 
-	// Try to read config file
+// readConfigFile reads and processes the configuration file
+func (cm *ConfigManager) readConfigFile() error {
 	if err := cm.viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Create default config if none exists
-			if err := cm.CreateDefaultConfig(); err != nil {
-				return err
-			}
-			// After creating default config, validate it
-			return cm.validateConfig(cm.config)
-		}
+		return cm.handleConfigReadError(err)
+	}
+	
+	return cm.processConfigFile()
+}
+
+// handleConfigReadError handles errors when reading config files
+func (cm *ConfigManager) handleConfigReadError(err error) error {
+	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		return cm.createAndValidateDefaultConfig()
+	}
+	
+	return fmt.Errorf("failed to read config file: %w", err)
+}
+
+// createAndValidateDefaultConfig creates a default config and validates it
+func (cm *ConfigManager) createAndValidateDefaultConfig() error {
+	if err := cm.CreateDefaultConfig(); err != nil {
+		return err
+	}
+	
+	return cm.validateConfig(cm.config)
+}
+
+// processConfigFile processes the successfully read config file
+func (cm *ConfigManager) processConfigFile() error {
+	configFile := cm.viper.ConfigFileUsed()
+	if configFile != "" {
+		return cm.loadFromFile(configFile)
+	}
+	
+	return cm.loadFromViper()
+}
+
+// loadFromFile loads configuration from a specific file
+func (cm *ConfigManager) loadFromFile(configFile string) error {
+	//nolint:gosec // configFile is controlled by our application, not user input
+	data, err := os.ReadFile(configFile)
+	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
-
-	// If we got here, we have a config file, so unmarshal it
-	// Since viper unmarshaling seems to have issues, let's use direct YAML unmarshaling
-	configFile = cm.viper.ConfigFileUsed()
-	if configFile != "" {
-		data, err := os.ReadFile(configFile)
-		if err != nil {
-			return fmt.Errorf("failed to read config file: %w", err)
-		}
-
-		var config types.AppConfig
-		if err := yaml.Unmarshal(data, &config); err != nil {
-			return fmt.Errorf("failed to unmarshal config: %w", err)
-		}
-
-		// Validate configuration
-		if err := cm.validateConfig(&config); err != nil {
-			return fmt.Errorf("config validation failed: %w", err)
-		}
-
-		cm.config = &config
-		return nil
+	
+	var config types.AppConfig
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
+	
+	if err := cm.validateConfig(&config); err != nil {
+		return fmt.Errorf("config validation failed: %w", err)
+	}
+	
+	cm.config = &config
+	
+	return nil
+}
 
-	// Fallback to viper unmarshaling if no config file was used
+// loadFromViper loads configuration from viper fallback
+func (cm *ConfigManager) loadFromViper() error {
 	var fallbackConfig types.AppConfig
 	if err := cm.viper.Unmarshal(&fallbackConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
-
-	// Validate configuration
+	
 	if err := cm.validateConfig(&fallbackConfig); err != nil {
 		return fmt.Errorf("config validation failed: %w", err)
 	}
-
+	
 	cm.config = &fallbackConfig
+	
 	return nil
 }
 
@@ -115,149 +157,248 @@ func (cm *ConfigManager) LoadConfig(configFile string) error {
 func (cm *ConfigManager) setDefaults() {
 	cm.viper.SetDefault("app.name", "CVEWatch")
 	cm.viper.SetDefault("app.version", "2.0.0")
-	cm.viper.SetDefault("app.log_level", "info")
+	cm.viper.SetDefault("app.logLevel", "info")
 	cm.viper.SetDefault("app.timeout", 60)
 
-	cm.viper.SetDefault("nvd.base_url", "https://services.nvd.nist.gov/rest/json/cves/1.1")
-	cm.viper.SetDefault("nvd.rate_limit", 1000)
+	cm.viper.SetDefault("nvd.baseUrl", "https://services.nvd.nist.gov/rest/json/cves/1.1")
+	cm.viper.SetDefault("nvd.rateLimit", 1000)
 	cm.viper.SetDefault("nvd.timeout", 30)
-	cm.viper.SetDefault("nvd.retry_attempts", 3)
-	cm.viper.SetDefault("nvd.retry_delay", 5)
+	cm.viper.SetDefault("nvd.retryAttempts", 3)
+	cm.viper.SetDefault("nvd.retryDelay", 5)
 
-	cm.viper.SetDefault("search.default_date", "today")
-	cm.viper.SetDefault("search.default_min_cvss", 0.0)
-	cm.viper.SetDefault("search.default_max_cvss", 10.0)
-	cm.viper.SetDefault("search.default_max_results", 100)
-	cm.viper.SetDefault("search.date_format", "2006-01-02")
+	cm.viper.SetDefault("search.defaultDate", "today")
+	cm.viper.SetDefault("search.defaultMinCvss", 0.0)
+	cm.viper.SetDefault("search.defaultMaxCvss", 10.0)
+	cm.viper.SetDefault("search.defaultMaxResults", 100)
+	cm.viper.SetDefault("search.dateFormat", "2006-01-02")
 
-	cm.viper.SetDefault("output.default_format", "simple")
+	cm.viper.SetDefault("output.defaultFormat", "simple")
 	cm.viper.SetDefault("output.colors", true)
-	cm.viper.SetDefault("output.truncate_length", 100)
+	cm.viper.SetDefault("output.truncateLength", 100)
 
-	cm.viper.SetDefault("security.enable_ssl_verification", true)
-	cm.viper.SetDefault("security.user_agent", "CVEWatch/2.0.0")
+	cm.viper.SetDefault("security.enableSslVerification", true)
+	cm.viper.SetDefault("security.userAgent", "CVEWatch/2")
 }
 
 // CreateDefaultConfig creates a default configuration file
 func (cm *ConfigManager) CreateDefaultConfig() error {
-	defaultConfig := &types.AppConfig{
-		App: types.AppSettings{
-			Name:     "CVEWatch",
-			Version:  "2.0.0",
-			LogLevel: "info",
-			Timeout:  60,
-		},
-		NVD: types.NVDSettings{
-			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
-			RateLimit:     1000,
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-		Search: types.SearchSettings{
-			DefaultDate:       "today",
-			DefaultMinCVSS:    0.0,
-			DefaultMaxCVSS:    10.0,
-			DefaultMaxResults: 100,
-			DateFormat:        "2006-01-02",
-		},
-		Output: types.OutputSettings{
-			DefaultFormat:  "simple",
-			Formats:        []string{"simple", "json", "table", "csv", "yaml"},
-			Colors:         true,
-			TruncateLength: 100,
-		},
-		Security: types.SecuritySettings{
-			EnableSSLVerification: true,
-			UserAgent:             "Mozilla/5.0 (compatible; CVEWatch/2.0.0; +https://github.com/yourusername/cvewatch)",
-			RequestHeaders: map[string]string{
-				"Accept":          "application/json",
-				"Accept-Language": "en-US,en;q=0.9",
-				"Accept-Encoding": "gzip, deflate",
-				"Connection":      "keep-alive",
-			},
-		},
+	defaultConfig := cm.buildDefaultConfig()
+	
+	configDir := cm.getConfigDirectory()
+	
+	if err := cm.createConfigDirectory(configDir); err != nil {
+		return err
+	}
+	
+	configFile, err := cm.writeDefaultConfig(configDir, defaultConfig)
+	if err != nil {
+		return err
+	}
+	
+	cm.config = defaultConfig
+	cm.notifyConfigCreated(configFile)
+
+	return nil
+}
+
+// buildDefaultConfig creates the default configuration structure
+func (cm *ConfigManager) buildDefaultConfig() *types.AppConfig {
+	return &types.AppConfig{
+		App:      cm.getDefaultAppSettings(),
+		NVD:      cm.getDefaultNVDSettings(),
+		Search:   cm.getDefaultSearchSettings(),
+		Output:   cm.getDefaultOutputSettings(),
+		Security: cm.getDefaultSecuritySettings(),
 		Products: getDefaultProducts(),
 	}
+}
 
-	// Create config directory if it doesn't exist
+// getDefaultAppSettings returns default application settings
+func (cm *ConfigManager) getDefaultAppSettings() types.AppSettings {
+	return types.AppSettings{
+		Name:     "CVEWatch",
+		Version:  "2.0.0",
+		LogLevel: "info",
+		Timeout:  60,
+	}
+}
+
+// getDefaultNVDSettings returns default NVD API settings
+func (cm *ConfigManager) getDefaultNVDSettings() types.NVDSettings {
+	return types.NVDSettings{
+		BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
+		RateLimit:     1000,
+		Timeout:       30,
+		RetryAttempts: 3,
+		RetryDelay:    5,
+	}
+}
+
+// getDefaultSearchSettings returns default search settings
+func (cm *ConfigManager) getDefaultSearchSettings() types.SearchSettings {
+	return types.SearchSettings{
+		DefaultDate:       "today",
+		DefaultMinCVSS:    0.0,
+		DefaultMaxCVSS:    10.0,
+		DefaultMaxResults: 100,
+		DateFormat:        "2006-01-02",
+	}
+}
+
+// getDefaultOutputSettings returns default output settings
+func (cm *ConfigManager) getDefaultOutputSettings() types.OutputSettings {
+	return types.OutputSettings{
+		DefaultFormat:  "simple",
+		Formats:        []string{"simple", "json", "table", "csv", "yaml"},
+		Colors:         true,
+		TruncateLength: 100,
+	}
+}
+
+// getDefaultSecuritySettings returns default security settings
+func (cm *ConfigManager) getDefaultSecuritySettings() types.SecuritySettings {
+	return types.SecuritySettings{
+		EnableSSLVerification: true,
+		UserAgent:             "Mozilla/5.0 (compatible; CVEWatch/2; +https://github.com/Amet13/CVEWatch)",
+		RequestHeaders: map[string]string{
+			"Accept":          "application/json",
+			"Accept-Language": "en-US,en;q=0.9",
+			"Accept-Encoding": "gzip, deflate",
+			"Connection":      "keep-alive",
+		},
+	}
+}
+
+// getConfigDirectory determines the configuration directory path
+func (cm *ConfigManager) getConfigDirectory() string {
 	configDir := "$HOME/.cvewatch"
 	if expanded, err := os.UserHomeDir(); err == nil {
 		configDir = filepath.Join(expanded, ".cvewatch")
 	}
 
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	return configDir
+}
+
+// createConfigDirectory creates the configuration directory
+func (cm *ConfigManager) createConfigDirectory(configDir string) error {
+	if err := os.MkdirAll(configDir, 0750); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	// Write default config
+	return nil
+}
+
+// writeDefaultConfig writes the default configuration to file
+func (cm *ConfigManager) writeDefaultConfig(configDir string, defaultConfig *types.AppConfig) (string, error) {
 	configFile := filepath.Join(configDir, "config.yaml")
 	data, err := yaml.Marshal(defaultConfig)
 	if err != nil {
-		return fmt.Errorf("failed to marshal default config: %w", err)
+		return "", fmt.Errorf("failed to marshal default config: %w", err)
 	}
-
-	if err := os.WriteFile(configFile, data, 0644); err != nil {
-		return fmt.Errorf("failed to write default config: %w", err)
+	
+	if err := os.WriteFile(configFile, data, 0600); err != nil {
+		return "", fmt.Errorf("failed to write default config: %w", err)
 	}
+	
+	return configFile, nil
+}
 
-	fmt.Printf("Created default configuration file: %s\n", configFile)
-
-	// Set the config directly instead of trying to unmarshal
-	cm.config = defaultConfig
-	return nil
+// notifyConfigCreated notifies that the configuration file was created
+func (cm *ConfigManager) notifyConfigCreated(configFile string) {
+	fmt.Fprintf(os.Stderr, "Created default configuration file: %s\n", configFile)
 }
 
 // validateConfig validates the configuration
 func (cm *ConfigManager) validateConfig(config *types.AppConfig) error {
-	// Validate app settings
-	if config.App.Name == "" {
-		return fmt.Errorf("app name cannot be empty")
+	if err := cm.validateAppSettings(config.App); err != nil {
+		return fmt.Errorf("app settings: %w", err)
 	}
-	if config.App.Timeout <= 0 {
-		return fmt.Errorf("app timeout must be positive")
+	
+	if err := cm.validateNVDSettings(config.NVD); err != nil {
+		return fmt.Errorf("NVD settings: %w", err)
+	}
+	
+	if err := cm.validateSearchSettings(config.Search); err != nil {
+		return fmt.Errorf("search settings: %w", err)
+	}
+	
+	if err := cm.validateProducts(config.Products); err != nil {
+		return fmt.Errorf("products: %w", err)
+	}
+	
+	return nil
+}
+
+// validateAppSettings validates application-specific settings
+func (cm *ConfigManager) validateAppSettings(app types.AppSettings) error {
+	if app.Name == "" {
+		return fmt.Errorf("name cannot be empty")
+	}
+	if app.Timeout <= 0 {
+		return fmt.Errorf("timeout must be positive")
 	}
 
-	// Validate NVD settings
-	if config.NVD.BaseURL == "" {
-		return fmt.Errorf("NVD base URL cannot be empty")
+	return nil
+}
+
+// validateNVDSettings validates NVD API settings
+func (cm *ConfigManager) validateNVDSettings(nvd types.NVDSettings) error {
+	if nvd.BaseURL == "" {
+		return fmt.Errorf("base URL cannot be empty")
 	}
-	if config.NVD.RateLimit <= 0 {
-		return fmt.Errorf("NVD rate limit must be positive")
+	if nvd.RateLimit <= 0 {
+		return fmt.Errorf("rate limit must be positive")
 	}
-	if config.NVD.Timeout <= 0 {
-		return fmt.Errorf("NVD timeout must be positive")
+	if nvd.Timeout <= 0 {
+		return fmt.Errorf("timeout must be positive")
 	}
 
-	// Validate search settings
-	if config.Search.DefaultMinCVSS < 0 || config.Search.DefaultMinCVSS > 10 {
+	return nil
+}
+
+// validateSearchSettings validates search configuration
+func (cm *ConfigManager) validateSearchSettings(search types.SearchSettings) error {
+	if search.DefaultMinCVSS < 0 || search.DefaultMinCVSS > 10 {
 		return fmt.Errorf("default min CVSS must be between 0 and 10")
 	}
-	if config.Search.DefaultMaxCVSS < 0 || config.Search.DefaultMaxCVSS > 10 {
+	if search.DefaultMaxCVSS < 0 || search.DefaultMaxCVSS > 10 {
 		return fmt.Errorf("default max CVSS must be between 0 and 10")
 	}
-	if config.Search.DefaultMinCVSS > config.Search.DefaultMaxCVSS {
+	if search.DefaultMinCVSS > search.DefaultMaxCVSS {
 		return fmt.Errorf("default min CVSS cannot be greater than default max CVSS")
 	}
-	if config.Search.DefaultMaxResults <= 0 || config.Search.DefaultMaxResults > 2000 {
+	if search.DefaultMaxResults <= 0 || search.DefaultMaxResults > 2000 {
 		return fmt.Errorf("default max results must be between 1 and 2000")
 	}
 
-	// Validate products
-	if len(config.Products) == 0 {
+	return nil
+}
+
+// validateProducts validates product configurations
+func (cm *ConfigManager) validateProducts(products []types.Product) error {
+	if len(products) == 0 {
 		return fmt.Errorf("at least one product must be configured")
 	}
+	
+	for idx, product := range products {
+		if err := cm.validateProduct(idx, product); err != nil {
+			return err
+		}
+	}
 
-	for i, product := range config.Products {
-		if product.Name == "" {
-			return fmt.Errorf("product %d: name cannot be empty", i+1)
-		}
-		if len(product.Keywords) == 0 {
-			return fmt.Errorf("product %d: at least one keyword must be specified", i+1)
-		}
-		if product.Priority == "" {
-			return fmt.Errorf("product %d: priority must be specified", i+1)
-		}
+	return nil
+}
+
+// validateProduct validates a single product configuration
+func (cm *ConfigManager) validateProduct(idx int, product types.Product) error {
+	if product.Name == "" {
+		return fmt.Errorf("product %d: name cannot be empty", idx+1)
+	}
+	if len(product.Keywords) == 0 {
+		return fmt.Errorf("product %d: at least one keyword must be specified", idx+1)
+	}
+	if product.Priority == "" {
+		return fmt.Errorf("product %d: priority must be specified", idx+1)
 	}
 
 	return nil
@@ -278,6 +419,7 @@ func (cm *ConfigManager) GetProductByName(name string) *types.Product {
 			return &product
 		}
 	}
+
 	return nil
 }
 
@@ -292,6 +434,7 @@ func (cm *ConfigManager) GetProductsByPriority(priority string) []types.Product 
 			products = append(products, product)
 		}
 	}
+
 	return products
 }
 
@@ -338,7 +481,27 @@ func getDefaultProducts() []types.Product {
 
 // LoadCommandLineFlags loads and validates command line flags
 func LoadCommandLineFlags() (*types.CommandLineFlags, error) {
-	flags := &types.CommandLineFlags{
+	flags := loadFlagsFromViper()
+	setDefaultFlags(flags)
+	
+	if err := validateDateFlag(flags); err != nil {
+		return nil, fmt.Errorf("date validation: %w", err)
+	}
+	
+	if err := validateCVSSFlags(flags); err != nil {
+		return nil, fmt.Errorf("CVSS validation: %w", err)
+	}
+	
+	if err := validateMaxResultsFlag(flags); err != nil {
+		return nil, fmt.Errorf("max results validation: %w", err)
+	}
+	
+	return flags, nil
+}
+
+// loadFlagsFromViper loads all flags from viper configuration
+func loadFlagsFromViper() *types.CommandLineFlags {
+	return &types.CommandLineFlags{
 		Date:         viper.GetString("date"),
 		MinCVSS:      viper.GetFloat64("min-cvss"),
 		MaxCVSS:      viper.GetFloat64("max-cvss"),
@@ -350,43 +513,58 @@ func LoadCommandLineFlags() (*types.CommandLineFlags, error) {
 		IncludeCPE:   viper.GetBool("include-cpe"),
 		IncludeRefs:  viper.GetBool("include-refs"),
 	}
+}
 
-	// Set defaults if not provided
+// setDefaultFlags sets default values for flags if not provided
+func setDefaultFlags(flags *types.CommandLineFlags) {
 	if flags.MaxResults == 0 {
 		flags.MaxResults = 100
 	}
 	if flags.OutputFormat == "" {
 		flags.OutputFormat = "simple"
 	}
-
+	
 	// Set default date to today if not specified, but allow empty dates for testing
-	// Check if the date was explicitly set to empty string
 	if flags.Date == "" && !viper.IsSet("date") {
 		flags.Date = time.Now().Format("2006-01-02")
 	}
+}
 
-	// Validate date format only if date is specified
-	if flags.Date != "" {
-		if _, err := time.Parse("2006-01-02", flags.Date); err != nil {
-			return nil, fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", flags.Date)
-		}
+// validateDateFlag validates the date format if specified
+func validateDateFlag(flags *types.CommandLineFlags) error {
+	if flags.Date == "" {
+		return nil
+	}
+	
+	if _, err := time.Parse("2006-01-02", flags.Date); err != nil {
+		return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", flags.Date)
 	}
 
-	// Validate CVSS score ranges
+	return nil
+}
+
+// validateCVSSFlags validates CVSS score ranges
+func validateCVSSFlags(flags *types.CommandLineFlags) error {
 	if flags.MinCVSS < 0 || flags.MinCVSS > 10 {
-		return nil, fmt.Errorf("invalid minimum CVSS score: %f (must be between 0 and 10)", flags.MinCVSS)
+		return fmt.Errorf("invalid minimum CVSS score: %f (must be between 0 and 10)", flags.MinCVSS)
 	}
+	
 	if flags.MaxCVSS > 0 && (flags.MaxCVSS < 0 || flags.MaxCVSS > 10) {
-		return nil, fmt.Errorf("invalid maximum CVSS score: %f (must be between 0 and 10)", flags.MaxCVSS)
+		return fmt.Errorf("invalid maximum CVSS score: %f (must be between 0 and 10)", flags.MaxCVSS)
 	}
+	
 	if flags.MaxCVSS > 0 && flags.MinCVSS > flags.MaxCVSS {
-		return nil, fmt.Errorf("minimum CVSS score (%f) cannot be greater than maximum CVSS score (%f)", flags.MinCVSS, flags.MaxCVSS)
+		return fmt.Errorf("minimum CVSS score (%f) cannot be greater than maximum CVSS score (%f)", flags.MinCVSS, flags.MaxCVSS)
 	}
 
-	// Validate max results
+	return nil
+}
+
+// validateMaxResultsFlag validates the max results flag
+func validateMaxResultsFlag(flags *types.CommandLineFlags) error {
 	if flags.MaxResults < 1 || flags.MaxResults > 2000 {
-		return nil, fmt.Errorf("invalid max results: %d (must be between 1 and 2000)", flags.MaxResults)
+		return fmt.Errorf("invalid max results: %d (must be between 1 and 2000)", flags.MaxResults)
 	}
 
-	return flags, nil
+	return nil
 }

@@ -32,7 +32,6 @@ Closes #[issue_number]
 - [ ] My changes generate no new warnings
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
-- [ ] I have updated the CHANGELOG.md if this is a user-facing change
 - [ ] I have checked that my changes don't introduce new linting errors
 - [ ] I have run `make lint` and fixed any issues
 - [ ] I have run `make format` to ensure proper code formatting

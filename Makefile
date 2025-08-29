@@ -17,6 +17,8 @@ help:
 	@echo "  install    - Install the application"
 	@echo "  uninstall  - Uninstall the application"
 	@echo "  release    - Build release binaries for multiple platforms"
+	@echo "  changelog  - Generate changelog (VERSION=v2.1.0)"
+	@echo "  changelog-diff - Generate changelog with diff (VERSION=v2.1.0 PREVIOUS=v2.0.0)"
 
 # Build the application
 build:
@@ -25,6 +27,11 @@ build:
 	$(eval BUILD_TIME := $(shell date -u '+%Y-%m-%d_%H:%M:%S'))
 	$(eval GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown"))
 	go build -ldflags="-X cvewatch/pkg/version.Version=$(VERSION) -X cvewatch/pkg/version.BuildTime=$(BUILD_TIME) -X cvewatch/pkg/version.GitCommit=$(GIT_COMMIT) -s -w" -o cvewatch ./cmd/cvewatch
+
+# Build for current platform (useful for development)
+build-native:
+	@echo "Building CVEWatch for current platform..."
+	go build -o cvewatch ./cmd/cvewatch
 
 # Run all tests
 test:
@@ -52,6 +59,8 @@ benchmark:
 clean:
 	@echo "Cleaning build artifacts..."
 	rm -f cvewatch
+	rm -f cvewatch-*
+	rm -f *.exe
 	rm -f coverage.out
 	rm -f coverage.html
 	go clean
@@ -112,16 +121,16 @@ release: clean
 	@echo "Building release binaries..."
 	
 	# Linux
-	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-linux-amd64
-	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-linux-arm64
+	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-linux-amd64 ./cmd/cvewatch
+	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-linux-arm64 ./cmd/cvewatch
 	
 	# macOS
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-darwin-amd64
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-darwin-arm64
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-darwin-amd64 ./cmd/cvewatch
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-darwin-arm64 ./cmd/cvewatch
 	
 	# Windows
-	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-windows-amd64.exe
-	GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-windows-arm64.exe
+	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-windows-amd64.exe ./cmd/cvewatch
+	GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-windows-arm64.exe ./cmd/cvewatch
 	
 	@echo "Release binaries built:"
 	@ls -la cvewatch-*
@@ -140,6 +149,24 @@ dev-setup:
 		go install golang.org/x/tools/cmd/goimports@latest; \
 	fi
 	@echo "Development environment ready."
+
+# Generate changelog
+changelog:
+	@echo "Generating changelog..."
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Usage: make changelog VERSION=v2.1.0"; \
+		exit 1; \
+	fi
+	@./scripts/generate-changelog.sh -v $(VERSION)
+
+# Generate changelog with previous tag
+changelog-diff:
+	@echo "Generating changelog with diff..."
+	@if [ -z "$(VERSION)" ] || [ -z "$(PREVIOUS)" ]; then \
+		echo "Usage: make changelog-diff VERSION=v2.1.0 PREVIOUS=v2.0.0"; \
+		exit 1; \
+	fi
+	@./scripts/generate-changelog.sh -v $(VERSION) -p $(PREVIOUS)
 
 # Pre-commit checks
 pre-commit: check-fmt test lint

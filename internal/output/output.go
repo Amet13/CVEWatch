@@ -47,33 +47,34 @@ func (o *OutputFormatter) FormatOutput(result *types.SearchResult) error {
 // outputSimple outputs results in simple text format
 func (o *OutputFormatter) outputSimple(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
-		fmt.Printf("No vulnerabilities found for %s\n", result.Date)
+		fmt.Fprintf(os.Stderr, "No vulnerabilities found for %s\n", result.Date)
+		
 		return nil
 	}
 
-	fmt.Printf("Found %d vulnerabilities for %s:\n\n", len(result.CVEs), result.Date)
+	fmt.Fprintf(os.Stderr, "Found %d vulnerabilities for %s:\n\n", len(result.CVEs), result.Date)
 
 	for i, cve := range result.CVEs {
 		score := o.getCVSSScore(cve)
 		severity := o.getSeverity(score)
 
-		fmt.Printf("%d. %s - CVSS: %.1f (%s)\n", i+1, cve.ID, score, severity)
+		fmt.Fprintf(os.Stderr, "%d. %s - CVSS: %.1f (%s)\n", i+1, cve.ID, score, severity)
 
 		// Get English description
 		description := o.getEnglishDescription(cve)
-		fmt.Printf("   Description: %s\n", o.truncateString(description, o.config.Output.TruncateLength))
-		fmt.Printf("   Published: %s\n", cve.Published)
+		fmt.Fprintf(os.Stderr, "   Description: %s\n", o.truncateString(description, o.config.Output.TruncateLength))
+		fmt.Fprintf(os.Stderr, "   Published: %s\n", cve.Published)
 
 		if len(cve.References) > 0 {
-			fmt.Printf("   Reference: %s\n", cve.References[0].URL)
+			fmt.Fprintf(os.Stderr, "   Reference: %s\n", cve.References[0].URL)
 		}
 
 		// Show CPE information if available
 		if len(cve.Configurations) > 0 {
-			fmt.Printf("   Affected Products: %s\n", o.getAffectedProducts(cve))
+			fmt.Fprintf(os.Stderr, "   Affected Products: %s\n", o.getAffectedProducts(cve))
 		}
 
-		fmt.Println()
+		fmt.Fprintln(os.Stderr)
 	}
 
 	return nil
@@ -91,7 +92,11 @@ func (o *OutputFormatter) outputJSON(result *types.SearchResult) error {
 		"vulnerabilities": result.CVEs,
 	}
 
-	return json.NewEncoder(os.Stdout).Encode(output)
+	if err := json.NewEncoder(os.Stdout).Encode(output); err != nil {
+		return fmt.Errorf("failed to encode JSON output: %w", err)
+	}
+	
+	return nil
 }
 
 // outputYAML outputs results in YAML format
@@ -106,22 +111,36 @@ func (o *OutputFormatter) outputYAML(result *types.SearchResult) error {
 		"vulnerabilities": result.CVEs,
 	}
 
-	return yaml.NewEncoder(os.Stdout).Encode(output)
+	if err := yaml.NewEncoder(os.Stdout).Encode(output); err != nil {
+		return fmt.Errorf("failed to encode YAML output: %w", err)
+	}
+	
+	return nil
 }
 
 // outputTable outputs results in a formatted table
 func (o *OutputFormatter) outputTable(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
-		fmt.Printf("No vulnerabilities found for %s\n", result.Date)
+		fmt.Fprintf(os.Stderr, "No vulnerabilities found for %s\n", result.Date)
+		
 		return nil
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+	writer := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	defer func() {
+		if err := writer.Flush(); err != nil {
+			// Log error but don't fail the operation
+			fmt.Fprintf(os.Stderr, "Warning: failed to flush table writer: %v\n", err)
+		}
+	}()
 
 	// Header
-	fmt.Fprintln(w, "CVE ID\tCVSS\tSeverity\tPublished\tDescription\tReference")
-	fmt.Fprintln(w, "-------\t-----\t--------\t---------\t-----------\t----------")
+	if _, err := fmt.Fprintln(writer, "CVE ID\tCVSS\tSeverity\tPublished\tDescription\tReference"); err != nil {
+		return fmt.Errorf("failed to write table header: %w", err)
+	}
+	if _, err := fmt.Fprintln(writer, "-------\t-----\t--------\t---------\t-----------\t----------"); err != nil {
+		return fmt.Errorf("failed to write table separator: %w", err)
+	}
 
 	// Data rows
 	for _, cve := range result.CVEs {
@@ -135,13 +154,15 @@ func (o *OutputFormatter) outputTable(result *types.SearchResult) error {
 			reference = cve.References[0].URL
 		}
 
-		fmt.Fprintf(w, "%s\t%.1f\t%s\t%s\t%s\t%s\n",
+		if _, err := fmt.Fprintf(writer, "%s\t%.1f\t%s\t%s\t%s\t%s\n",
 			cve.ID,
 			score,
 			severity,
 			cve.Published,
 			description,
-			reference)
+			reference); err != nil {
+			return fmt.Errorf("failed to write table row: %w", err)
+		}
 	}
 
 	return nil
@@ -151,6 +172,7 @@ func (o *OutputFormatter) outputTable(result *types.SearchResult) error {
 func (o *OutputFormatter) outputCSV(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
 		fmt.Printf("No vulnerabilities found for %s\n", result.Date)
+		
 		return nil
 	}
 
@@ -203,6 +225,7 @@ func (o *OutputFormatter) getCVSSScore(cve types.CVE) float64 {
 	if len(cve.Metrics.CVSSMetricV2) > 0 {
 		return cve.Metrics.CVSSMetricV2[0].CVSSData.BaseScore
 	}
+	
 	return 0.0
 }
 
@@ -229,6 +252,7 @@ func (o *OutputFormatter) getEnglishDescription(cve types.CVE) string {
 			return desc.Value
 		}
 	}
+	
 	return "No description available"
 }
 
@@ -276,6 +300,7 @@ func (o *OutputFormatter) extractProductName(cpe string) string {
 			return fmt.Sprintf("%s %s", vendor, product)
 		}
 	}
+
 	return ""
 }
 
@@ -284,6 +309,7 @@ func (o *OutputFormatter) truncateString(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
+
 	return s[:maxLen-3] + "..."
 }
 
@@ -326,5 +352,5 @@ func (o *OutputFormatter) PrintSummary(result *types.SearchResult) {
 		fmt.Printf("  Low (0.1-3.9): %d\n", low)
 	}
 
-	fmt.Println()
+			fmt.Fprintln(os.Stderr)
 }
