@@ -17,7 +17,6 @@ config.yaml
 *.out
 
 # Go build cache
-go.sum
 
 # IDE
 .vscode/
