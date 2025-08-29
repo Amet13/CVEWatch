@@ -350,24 +350,16 @@ func (cmds *Commands) runConfig(configManager *config.ConfigManager) error {
 
 // runVersion executes the version command
 func (cmds *Commands) runVersion(configManager *config.ConfigManager) error {
-	// Try to load config for additional info, but don't fail if it doesn't work
-	var configVersion string
-	if err := configManager.LoadConfig(""); err == nil {
-		config := configManager.GetConfig()
-		configVersion = config.App.Version
-	}
 
-	fmt.Printf("CVEWatch %s\n", configVersion)
+	fmt.Printf("CVEWatch %s\n", version.GetVersion())
 	fmt.Printf("A modern CVE vulnerability monitoring tool\n")
 	fmt.Printf("Built with Go and using the official NVD API\n")
 
-	// Show embedded version information if available
-	if !version.IsDevelopment() {
-		fmt.Printf("\nBuild Information:\n")
-		fmt.Printf("  Version: %s\n", version.GetVersion())
-		fmt.Printf("  Build Time: %s\n", version.GetBuildTime())
-		fmt.Printf("  Git Commit: %s\n", version.GetGitCommit())
-	}
+	// Show build information
+	fmt.Printf("\nBuild Information:\n")
+	fmt.Printf("  Version: %s\n", version.GetVersion())
+	fmt.Printf("  Build Time: %s\n", version.GetBuildTime())
+	fmt.Printf("  Git Commit: %s\n", version.GetGitCommit())
 
 	return nil
 }
