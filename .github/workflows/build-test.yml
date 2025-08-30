@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
+      
       - uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
@@ -24,94 +24,109 @@ jobs:
       - name: Setup development environment
         run: make dev-setup
 
-      - name: Run complete pipeline
+      - name: Code Quality Checks
         run: |
-          echo "=== Starting CVEWatch Full Pipeline ==="
+          echo "=== Code Quality Checks ==="
           echo "OS: ${{ matrix.os }}"
           echo "Go version: ${{ matrix.go-version }}"
           echo ""
-
-          echo "=== 1. Code Quality Checks ==="
+          
+          echo "Checking code formatting..."
           make check-fmt
+          echo "✓ Code formatting check passed"
+          
+          echo "Running linter..."
           make lint
+          echo "✓ Linting passed"
+          
+          echo "Running security scan..."
           make security-scan
-          echo "✓ Code quality checks passed"
-          echo ""
+          echo "✓ Security scan passed"
 
-          echo "=== 2. Testing ==="
+      - name: Run Tests
+        run: |
+          echo "=== Running Tests ==="
+          
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            echo "Running tests on Windows..."
             make test
           else
+            echo "Running tests with race detection..."
             make test-race
           fi
           echo "✓ Tests passed"
-          echo ""
 
-          echo "=== 3. Test Coverage ==="
+      - name: Generate Test Coverage
+        run: |
+          echo "=== Test Coverage ==="
           make test-coverage
           echo "✓ Coverage report generated"
-          echo ""
 
-          echo "=== 4. Build Process ==="
+      - name: Build Application
+        run: |
+          echo "=== Building Application ==="
           make clean
           make build
           ls -la cvewatch*
           echo "✓ Build completed"
-          echo ""
 
-          echo "=== 5. Application Testing ==="
+      - name: Test Application Functionality
+        run: |
+          echo "=== Application Testing ==="
           ./cvewatch version
           ./cvewatch config
           echo "✓ Application functionality verified"
-          echo ""
 
-          echo "=== 6. Cross-Platform Build Test ==="
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            echo "Testing cross-platform builds on Linux..."
-            GOOS=darwin GOARCH=amd64 make build-native
-            GOOS=windows GOARCH=amd64 make build-native
-            ls -la cvewatch*
-            echo "✓ Cross-platform builds successful"
-          fi
-          echo ""
+      - name: Cross-Platform Build Test
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "=== Cross-Platform Build Test ==="
+          echo "Testing cross-platform builds on Linux..."
+          GOOS=darwin GOARCH=amd64 make build-native
+          GOOS=windows GOARCH=amd64 make build-native
+          ls -la cvewatch*
+          echo "✓ Cross-platform builds successful"
 
-          echo "=== 7. Release Build Test ==="
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            echo "Testing release build process..."
-            make clean
-            make release
-            ls -la cvewatch-*
-            echo "✓ Release builds successful"
-          fi
-          echo ""
+      - name: Release Build Test
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "=== Release Build Test ==="
+          echo "Testing release build process..."
+          make clean
+          make release
+          ls -la cvewatch-*
+          echo "✓ Release builds successful"
 
-          echo "=== 8. Benchmark Tests ==="
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            echo "Running benchmarks..."
-            make benchmark
-            echo "✓ Benchmarks completed"
-          fi
-          echo ""
+      - name: Benchmark Tests
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "=== Benchmark Tests ==="
+          echo "Running benchmarks..."
+          make benchmark
+          echo "✓ Benchmarks completed"
 
-          echo "=== 9. Install/Uninstall Test ==="
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            echo "Testing install process..."
-            make install
-            which cvewatch
-            cvewatch version
-            echo "✓ Installation successful"
-            
-            echo "Testing uninstall process..."
-            make uninstall
-            echo "✓ Uninstallation successful"
-          fi
-          echo ""
+      - name: Install/Uninstall Test
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "=== Install/Uninstall Test ==="
+          echo "Testing install process..."
+          make install
+          which cvewatch
+          cvewatch version
+          echo "✓ Installation successful"
+          
+          echo "Testing uninstall process..."
+          make uninstall
+          echo "✓ Uninstallation successful"
 
-          echo "=== 10. Pre-commit Checks ==="
+      - name: Final Pre-commit Check
+        run: |
+          echo "=== Final Pre-commit Check ==="
           make pre-commit
           echo "✓ All pre-commit checks passed"
-          echo ""
 
+      - name: Pipeline Summary
+        run: |
           echo "=== Pipeline Summary ==="
           echo "✅ All checks passed successfully!"
           echo "✅ Code quality verified"
