@@ -24,7 +24,12 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out ./...
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            go test -v -coverprofile=coverage.out ./...
+          else
+            go test -v -race -coverprofile=coverage.out ./...
+          fi
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

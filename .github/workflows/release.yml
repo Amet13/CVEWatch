@@ -49,43 +49,46 @@ jobs:
           CHORES=$(echo "$CHANGELOG" | \
             grep -i "chore\|clean\|update\|bump" || echo "")
 
-          # Build categorized changelog
+          # Store categorized changelog for release body
           if [ -n "$FEATURES" ]; then
-            echo "## ✨ New Features" >> CHANGELOG.md
-            echo "$FEATURES" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
+            echo "FEATURES<<EOF" >> $GITHUB_OUTPUT
+            echo "## ✨ New Features" >> $GITHUB_OUTPUT
+            echo "$FEATURES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
           if [ -n "$FIXES" ]; then
-            echo "## 🐛 Bug Fixes" >> CHANGELOG.md
-            echo "$FIXES" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
+            echo "FIXES<<EOF" >> $GITHUB_OUTPUT
+            echo "## 🐛 Bug Fixes" >> $GITHUB_OUTPUT
+            echo "$FIXES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
           if [ -n "$BREAKING" ]; then
-            echo "## ⚠️ Breaking Changes" >> CHANGELOG.md
-            echo "$BREAKING" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
+            echo "BREAKING<<EOF" >> $GITHUB_OUTPUT
+            echo "## ⚠️ Breaking Changes" >> $GITHUB_OUTPUT
+            echo "$BREAKING" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
           if [ -n "$DOCS" ]; then
-            echo "## 📚 Documentation" >> CHANGELOG.md
-            echo "$DOCS" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
+            echo "DOCS<<EOF" >> $GITHUB_OUTPUT
+            echo "## 📚 Documentation" >> $GITHUB_OUTPUT
+            echo "$DOCS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
           if [ -n "$CHORES" ]; then
-            echo "## 🔧 Maintenance" >> CHANGELOG.md
-            echo "$CHORES" >> CHANGELOG.md
-            echo "" >> CHANGELOG.md
+            echo "CHORES<<EOF" >> $GITHUB_OUTPUT
+            echo "## 🔧 Maintenance" >> $GITHUB_OUTPUT
+            echo "$CHORES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
-          # Add full changelog
-          echo "## 📋 Full Changelog" >> CHANGELOG.md
-          echo "$CHANGELOG" >> CHANGELOG.md
-
-          # Output changelog content for release
-          cat CHANGELOG.md
+          # Store full changelog
+          echo "FULL_CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Build all architectures
         run: |
@@ -162,7 +165,53 @@ jobs:
             cvewatch-windows-amd64.exe
             cvewatch-windows-arm64.exe
             checksums.txt
-          body_path: CHANGELOG.md
+          body: |
+            ## CVEWatch ${{ github.ref_name }}
+
+            ${{ steps.changelog.outputs.FEATURES || '' }}
+            ${{ steps.changelog.outputs.FIXES || '' }}
+            ${{ steps.changelog.outputs.BREAKING || '' }}
+            ${{ steps.changelog.outputs.DOCS || '' }}
+            ${{ steps.changelog.outputs.CHORES || '' }}
+
+            ## 📋 Full Changelog
+            ${{ steps.changelog.outputs.FULL_CHANGELOG || '' }}
+
+            ### Downloads
+
+            **Linux:**
+            - AMD64: `cvewatch-linux-amd64`
+            - ARM64: `cvewatch-linux-arm64`
+
+            **macOS:**
+            - Intel (AMD64): `cvewatch-darwin-amd64`
+            - Apple Silicon (ARM64): `cvewatch-darwin-arm64`
+
+            **Windows:**
+            - AMD64: `cvewatch-windows-amd64.exe`
+            - ARM64: `cvewatch-windows-arm64.exe`
+
+            ### Installation
+
+            **macOS (Apple Silicon):**
+            ```bash
+            curl -L -o cvewatch \
+              https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-darwin-arm64
+            chmod +x cvewatch
+            sudo mv cvewatch /usr/local/bin/
+            ```
+
+            **Linux (ARM64):**
+            ```bash
+            curl -L -o cvewatch \
+              https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-linux-arm64
+            chmod +x cvewatch
+            sudo mv cvewatch /usr/local/bin/
+            ```
+
+            ### Checksums
+            SHA256 checksums for all binaries are available in the release \
+              assets.
           draft: false
           prerelease: false
         env:

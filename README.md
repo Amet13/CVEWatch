@@ -1,6 +1,21 @@
-# CVEWatch 🔍
+<div align="center">
+  <img src="logo.png" alt="ODYSSEY Logo" width="200" style="border-radius: 20px;">
+  <h1>CVEWatch</h1>
+  <p><strong>A modern, fast, and efficient CVE monitoring tool</strong></p>
+  <p>
+    <a href="https://github.com/Amet13/CVEWatch/actions/workflows/build-test.yml">
+<img src="https://github.com/Amet13/CVEWatch/actions/workflows/build-test.yml/badge.svg" alt="CI/CD Status">
+    </a>
+    <a href="https://github.com/Amet13/CVEWatch/releases">
+      <img src="https://img.shields.io/github/v/release/Amet13/CVEWatch?label=version" alt="Latest Release">
+    </a>
+    <a href="https://github.com/Amet13/CVEWatch/blob/main/LICENSE">
+      <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+    </a>
+  </p>
+</div>
 
-A modern, fast, and efficient Common Vulnerability and Exposure (CVE) monitoring tool built in Go. CVEWatch provides real-time vulnerability monitoring using the official National Vulnerability Database (NVD) API with advanced filtering, multiple output formats, and comprehensive product monitoring.
+CVEWatch provides real-time vulnerability monitoring using the official National Vulnerability Database (NVD) API with advanced filtering, multiple output formats, and comprehensive product monitoring.
 
 ## ✨ Features
 
@@ -25,49 +40,7 @@ A modern, fast, and efficient Common Vulnerability and Exposure (CVE) monitoring
 
 #### Option 1: Download Latest Release (Recommended)
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/Amet13/CVEWatch/releases/latest):
-
-**macOS (Apple Silicon / ARM64):**
-
-```bash
-# Download and install
-curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-darwin-arm64
-chmod +x cvewatch
-sudo mv cvewatch /usr/local/bin/
-
-# Or install to user directory
-mkdir -p ~/.local/bin
-mv cvewatch ~/.local/bin/
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-**macOS (Intel / AMD64):**
-
-```bash
-curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-darwin-amd64
-chmod +x cvewatch
-sudo mv cvewatch /usr/local/bin/
-```
-
-**Linux (AMD64):**
-
-```bash
-curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-linux-amd64
-chmod +x cvewatch
-sudo mv cvewatch /usr/local/bin/
-```
-
-**Linux (ARM64):**
-
-```bash
-curl -L -o cvewatch https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-linux-arm64
-chmod +x cvewatch
-sudo mv cvewatch /usr/local/bin/
-```
-
-**Windows:**
-Download `cvewatch-windows-amd64.exe` or `cvewatch-windows-arm64.exe` and add to your PATH.
+Download the latest release for your platform from [GitHub Releases](https://github.com/Amet13/CVEWatch/releases/latest)
 
 #### Option 2: Build from source
 
@@ -89,19 +62,6 @@ After installation, verify CVEWatch is working:
 
 ```bash
 cvewatch version
-```
-
-You should see output similar to:
-
-```
-CVEWatch 2.0.0
-A modern CVE vulnerability monitoring tool
-Built with Go and using the official NVD API
-
-Build Information:
-  Version: 2.0.0
-  Build Time: 2024-08-29_16:22:00
-  Git Commit: abc1234
 ```
 
 ### First Run
@@ -235,7 +195,7 @@ output:
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.25+
 - Make
 - golangci-lint (optional)
 
@@ -255,20 +215,6 @@ make lint           # Run linters
 make format         # Format code
 make clean          # Clean build artifacts
 make release        # Build for multiple platforms
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-go test -v ./...
-
-# Run tests with race detection
-go test -race -v ./...
-
-# Run tests with coverage
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out -o coverage.html
 ```
 
 ## 🔧 API Integration
@@ -322,43 +268,6 @@ Comma-separated values for spreadsheet analysis and reporting.
 - Input validation and sanitization
 - Secure configuration file handling
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes using conventional commit messages
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
-
-### Code Quality
-
-- All code must pass linting checks
-- Tests are required for new functionality
-- Follow Go coding standards
-- Use meaningful commit messages
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [NVD](https://nvd.nist.gov/) for providing the vulnerability database
-- [Go](https://golang.org/) for the excellent programming language
-- [Cobra](https://github.com/spf13/cobra) for the CLI framework
-- [Viper](https://github.com/spf13/viper) for configuration management
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/Amet13/CVEWatch/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Amet13/CVEWatch/discussions)
-- **Documentation**: [Wiki](https://github.com/Amet13/CVEWatch/wiki)
-
----
-
-**CVEWatch** - Making vulnerability monitoring simple, fast, and effective. 🔍✨

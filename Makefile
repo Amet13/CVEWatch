@@ -150,23 +150,7 @@ dev-setup:
 	fi
 	@echo "Development environment ready."
 
-# Generate changelog
-changelog:
-	@echo "Generating changelog..."
-	@if [ -z "$(VERSION)" ]; then \
-		echo "Usage: make changelog VERSION=v2.1.0"; \
-		exit 1; \
-	fi
-	@./scripts/generate-changelog.sh -v $(VERSION)
 
-# Generate changelog with previous tag
-changelog-diff:
-	@echo "Generating changelog with diff..."
-	@if [ -z "$(VERSION)" ] || [ -z "$(PREVIOUS)" ]; then \
-		echo "Usage: make changelog-diff VERSION=v2.1.0 PREVIOUS=v2.0.0"; \
-		exit 1; \
-	fi
-	@./scripts/generate-changelog.sh -v $(VERSION) -p $(PREVIOUS)
 
 # Pre-commit checks
 pre-commit: check-fmt test lint
