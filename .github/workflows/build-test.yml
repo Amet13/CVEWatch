@@ -25,9 +25,11 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Setup development environment
+        shell: bash
         run: make dev-setup
 
       - name: Code Quality Checks
+        shell: bash
         run: |
           echo "=== Code Quality Checks ==="
           echo "OS: ${{ matrix.os }}"
@@ -47,9 +49,10 @@ jobs:
           echo "✓ Security scan passed"
 
       - name: Run Tests
+        shell: bash
         run: |
           echo "=== Running Tests ==="
-
+          
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
             echo "Running tests on Windows..."
             make test
@@ -60,12 +63,14 @@ jobs:
           echo "✓ Tests passed"
 
       - name: Generate Test Coverage
+        shell: bash
         run: |
           echo "=== Test Coverage ==="
           make test-coverage
           echo "✓ Coverage report generated"
 
       - name: Build Application
+        shell: bash
         run: |
           echo "=== Building Application ==="
           make clean
@@ -74,6 +79,7 @@ jobs:
           echo "✓ Build completed"
 
       - name: Test Application Functionality
+        shell: bash
         run: |
           echo "=== Application Testing ==="
           ./cvewatch version
@@ -82,6 +88,7 @@ jobs:
 
       - name: Cross-Platform Build Test
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
           echo "=== Cross-Platform Build Test ==="
           echo "Testing cross-platform builds on Linux..."
@@ -92,6 +99,7 @@ jobs:
 
       - name: Release Build Test
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
           echo "=== Release Build Test ==="
           echo "Testing release build process..."
@@ -102,6 +110,7 @@ jobs:
 
       - name: Benchmark Tests
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
           echo "=== Benchmark Tests ==="
           echo "Running benchmarks..."
@@ -110,6 +119,7 @@ jobs:
 
       - name: Install/Uninstall Test
         if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
           echo "=== Install/Uninstall Test ==="
           echo "Testing install process..."
@@ -123,12 +133,14 @@ jobs:
           echo "✓ Uninstallation successful"
 
       - name: Final Pre-commit Check
+        shell: bash
         run: |
           echo "=== Final Pre-commit Check ==="
           make pre-commit
           echo "✓ All pre-commit checks passed"
 
       - name: Pipeline Summary
+        shell: bash
         run: |
           echo "=== Pipeline Summary ==="
           echo "✅ All checks passed successfully!"
