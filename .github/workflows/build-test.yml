@@ -9,6 +9,9 @@ on:
 
 jobs:
   full-pipeline:
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     strategy:
       matrix:
         go-version: [1.25]
