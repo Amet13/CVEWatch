@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
@@ -30,14 +30,14 @@ jobs:
           echo "OS: ${{ matrix.os }}"
           echo "Go version: ${{ matrix.go-version }}"
           echo ""
-          
+
           echo "=== 1. Code Quality Checks ==="
           make check-fmt
           make lint
           make security-scan
           echo "✓ Code quality checks passed"
           echo ""
-          
+
           echo "=== 2. Testing ==="
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             make test
@@ -46,25 +46,25 @@ jobs:
           fi
           echo "✓ Tests passed"
           echo ""
-          
+
           echo "=== 3. Test Coverage ==="
           make test-coverage
           echo "✓ Coverage report generated"
           echo ""
-          
+
           echo "=== 4. Build Process ==="
           make clean
           make build
           ls -la cvewatch*
           echo "✓ Build completed"
           echo ""
-          
+
           echo "=== 5. Application Testing ==="
           ./cvewatch version
           ./cvewatch config
           echo "✓ Application functionality verified"
           echo ""
-          
+
           echo "=== 6. Cross-Platform Build Test ==="
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             echo "Testing cross-platform builds on Linux..."
@@ -74,7 +74,7 @@ jobs:
             echo "✓ Cross-platform builds successful"
           fi
           echo ""
-          
+
           echo "=== 7. Release Build Test ==="
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             echo "Testing release build process..."
@@ -84,7 +84,7 @@ jobs:
             echo "✓ Release builds successful"
           fi
           echo ""
-          
+
           echo "=== 8. Benchmark Tests ==="
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             echo "Running benchmarks..."
@@ -92,7 +92,7 @@ jobs:
             echo "✓ Benchmarks completed"
           fi
           echo ""
-          
+
           echo "=== 9. Install/Uninstall Test ==="
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             echo "Testing install process..."
@@ -106,12 +106,12 @@ jobs:
             echo "✓ Uninstallation successful"
           fi
           echo ""
-          
+
           echo "=== 10. Pre-commit Checks ==="
           make pre-commit
           echo "✓ All pre-commit checks passed"
           echo ""
-          
+
           echo "=== Pipeline Summary ==="
           echo "✅ All checks passed successfully!"
           echo "✅ Code quality verified"
