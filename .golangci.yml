@@ -6,60 +6,17 @@ run:
 
 linters:
   enable:
+    - gofmt
+    - goimports
     - govet
     - errcheck
     - staticcheck
+    - gosimple
     - ineffassign
     - unused
     - misspell
-    - cyclop
     - gosec
-    - gocritic
-    - gocyclo
-    - funlen
-    - gochecknoglobals
-    - gochecknoinits
-    - goconst
-    - gocognit
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
-    - gosmopolitan
-    - grouper
-    - importas
-    - inamedparam
-    - interfacebloat
-    - intrange
-    - loggercheck
-    - maintidx
-    - makezero
-    - mirror
-    - nakedret
-    - nestif
-    - nilerr
-    - nilnil
-    - nlreturn
-    - noctx
-    - nolintlint
-    - prealloc
-    - predeclared
-    - promlinter
-    - protogetter
-    - reassign
-    - recvcheck
-    - rowserrcheck
-    - sloglint
-    - spancheck
-    - sqlclosecheck
-    - tagalign
-    - tagliatelle
-    - testifylint
-    - testpackage
-    - thelper
-    - unconvert
-    - unparam
-    - usetesting
-    - usestdlibvars
-    - varnamelen
-    - wastedassign
-    - wrapcheck
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

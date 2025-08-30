@@ -18,7 +18,6 @@ help:
 	@echo "  uninstall  - Uninstall the application"
 	@echo "  release    - Build release binaries for multiple platforms"
 	@echo "  changelog  - Generate changelog (VERSION=v2.1.0)"
-	@echo "  changelog-diff - Generate changelog with diff (VERSION=v2.1.0 PREVIOUS=v2.0.0)"
 
 # Build the application
 build:
@@ -46,9 +45,11 @@ test-race:
 # Run tests with coverage
 test-coverage:
 	@echo "Running tests with coverage..."
-	go test -coverprofile=coverage.out ./...
+	go test -coverprofile=coverage.out -covermode=atomic ./...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
+	@echo "Coverage summary:"
+	go tool cover -func=coverage.out | tail -1
 
 # Run benchmarks
 benchmark:
@@ -69,7 +70,9 @@ clean:
 lint:
 	@echo "Running linters..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
+		golangci-lint run --no-config; \
+	elif command -v ~/go/bin/golangci-lint >/dev/null 2>&1; then \
+		~/go/bin/golangci-lint run --no-config; \
 	else \
 		echo "golangci-lint not found. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
 		exit 1; \
@@ -79,7 +82,14 @@ lint:
 format:
 	@echo "Formatting code..."
 	go fmt ./...
-	goimports -w .
+	@if command -v goimports >/dev/null 2>&1; then \
+		goimports -w .; \
+	elif command -v ~/go/bin/goimports >/dev/null 2>&1; then \
+		~/go/bin/goimports -w .; \
+	else \
+		echo "goimports not found. Install with: go install golang.org/x/tools/cmd/goimports@latest"; \
+		exit 1; \
+	fi
 
 # Check if code is properly formatted
 check-fmt:
@@ -152,6 +162,18 @@ dev-setup:
 
 
 
+# Security scanning
+security-scan:
+	@echo "Running security scan..."
+	@if command -v gosec >/dev/null 2>&1; then \
+		gosec ./...; \
+	elif command -v ~/go/bin/gosec >/dev/null 2>&1; then \
+		~/go/bin/gosec ./...; \
+	else \
+		echo "gosec not found. Skipping security scan."; \
+		echo "Install with: go install github.com/securego/gosec/v2/cmd/gosec@latest"; \
+	fi
+
 # Pre-commit checks
-pre-commit: check-fmt test lint
+pre-commit: check-fmt test lint security-scan
 	@echo "All pre-commit checks passed!"

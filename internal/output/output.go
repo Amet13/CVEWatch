@@ -48,7 +48,7 @@ func (o *OutputFormatter) FormatOutput(result *types.SearchResult) error {
 func (o *OutputFormatter) outputSimple(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
 		fmt.Fprintf(os.Stderr, "No vulnerabilities found for %s\n", result.Date)
-		
+
 		return nil
 	}
 
@@ -95,7 +95,7 @@ func (o *OutputFormatter) outputJSON(result *types.SearchResult) error {
 	if err := json.NewEncoder(os.Stdout).Encode(output); err != nil {
 		return fmt.Errorf("failed to encode JSON output: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -114,7 +114,7 @@ func (o *OutputFormatter) outputYAML(result *types.SearchResult) error {
 	if err := yaml.NewEncoder(os.Stdout).Encode(output); err != nil {
 		return fmt.Errorf("failed to encode YAML output: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -122,7 +122,7 @@ func (o *OutputFormatter) outputYAML(result *types.SearchResult) error {
 func (o *OutputFormatter) outputTable(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
 		fmt.Fprintf(os.Stderr, "No vulnerabilities found for %s\n", result.Date)
-		
+
 		return nil
 	}
 
@@ -172,7 +172,7 @@ func (o *OutputFormatter) outputTable(result *types.SearchResult) error {
 func (o *OutputFormatter) outputCSV(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
 		fmt.Printf("No vulnerabilities found for %s\n", result.Date)
-		
+
 		return nil
 	}
 
@@ -225,7 +225,7 @@ func (o *OutputFormatter) getCVSSScore(cve types.CVE) float64 {
 	if len(cve.Metrics.CVSSMetricV2) > 0 {
 		return cve.Metrics.CVSSMetricV2[0].CVSSData.BaseScore
 	}
-	
+
 	return 0.0
 }
 
@@ -252,7 +252,7 @@ func (o *OutputFormatter) getEnglishDescription(cve types.CVE) string {
 			return desc.Value
 		}
 	}
-	
+
 	return "No description available"
 }
 
@@ -352,5 +352,5 @@ func (o *OutputFormatter) PrintSummary(result *types.SearchResult) {
 		fmt.Printf("  Low (0.1-3.9): %d\n", low)
 	}
 
-			fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr)
 }

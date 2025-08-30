@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"cvewatch/internal/types"
@@ -35,11 +36,11 @@ func (cm *ConfigManager) LoadConfig(configFile string) error {
 	cm.setDefaults()
 	cm.setupViper(configFile)
 	cm.setupEnvironment()
-	
+
 	if err := cm.readConfigFile(); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -47,17 +48,17 @@ func (cm *ConfigManager) LoadConfig(configFile string) error {
 func (cm *ConfigManager) setupViper(configFile string) {
 	if configFile != "" {
 		cm.viper.SetConfigFile(configFile)
-		
+
 		return
 	}
-	
+
 	// Look for config files in common locations
 	cm.viper.SetConfigName("config")
 	cm.viper.SetConfigType("yaml")
 	cm.viper.AddConfigPath(".")
 	cm.viper.AddConfigPath("$HOME/.cvewatch")
 	cm.viper.AddConfigPath("/etc/cvewatch")
-	
+
 	// Try to find default config in home directory
 	cm.tryFindDefaultConfig()
 }
@@ -83,7 +84,7 @@ func (cm *ConfigManager) readConfigFile() error {
 	if err := cm.viper.ReadInConfig(); err != nil {
 		return cm.handleConfigReadError(err)
 	}
-	
+
 	return cm.processConfigFile()
 }
 
@@ -92,7 +93,7 @@ func (cm *ConfigManager) handleConfigReadError(err error) error {
 	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 		return cm.createAndValidateDefaultConfig()
 	}
-	
+
 	return fmt.Errorf("failed to read config file: %w", err)
 }
 
@@ -101,7 +102,7 @@ func (cm *ConfigManager) createAndValidateDefaultConfig() error {
 	if err := cm.CreateDefaultConfig(); err != nil {
 		return err
 	}
-	
+
 	return cm.validateConfig(cm.config)
 }
 
@@ -111,29 +112,29 @@ func (cm *ConfigManager) processConfigFile() error {
 	if configFile != "" {
 		return cm.loadFromFile(configFile)
 	}
-	
+
 	return cm.loadFromViper()
 }
 
 // loadFromFile loads configuration from a specific file
 func (cm *ConfigManager) loadFromFile(configFile string) error {
 	//nolint:gosec // configFile is controlled by our application, not user input
-	data, err := os.ReadFile(configFile)
+	data, err := os.ReadFile(filepath.Clean(configFile))
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
-	
+
 	var config types.AppConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
-	
+
 	if err := cm.validateConfig(&config); err != nil {
 		return fmt.Errorf("config validation failed: %w", err)
 	}
-	
+
 	cm.config = &config
-	
+
 	return nil
 }
 
@@ -143,13 +144,13 @@ func (cm *ConfigManager) loadFromViper() error {
 	if err := cm.viper.Unmarshal(&fallbackConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
-	
+
 	if err := cm.validateConfig(&fallbackConfig); err != nil {
 		return fmt.Errorf("config validation failed: %w", err)
 	}
-	
+
 	cm.config = &fallbackConfig
-	
+
 	return nil
 }
 
@@ -160,7 +161,7 @@ func (cm *ConfigManager) setDefaults() {
 	cm.viper.SetDefault("app.logLevel", "info")
 	cm.viper.SetDefault("app.timeout", 60)
 
-	cm.viper.SetDefault("nvd.baseUrl", "https://services.nvd.nist.gov/rest/json/cves/1.1")
+	cm.viper.SetDefault("nvd.baseUrl", "https://services.nvd.nist.gov/rest/json/cves/2.0")
 	cm.viper.SetDefault("nvd.rateLimit", 1000)
 	cm.viper.SetDefault("nvd.timeout", 30)
 	cm.viper.SetDefault("nvd.retryAttempts", 3)
@@ -183,18 +184,18 @@ func (cm *ConfigManager) setDefaults() {
 // CreateDefaultConfig creates a default configuration file
 func (cm *ConfigManager) CreateDefaultConfig() error {
 	defaultConfig := cm.buildDefaultConfig()
-	
+
 	configDir := cm.getConfigDirectory()
-	
+
 	if err := cm.createConfigDirectory(configDir); err != nil {
 		return err
 	}
-	
+
 	configFile, err := cm.writeDefaultConfig(configDir, defaultConfig)
 	if err != nil {
 		return err
 	}
-	
+
 	cm.config = defaultConfig
 	cm.notifyConfigCreated(configFile)
 
@@ -295,11 +296,16 @@ func (cm *ConfigManager) writeDefaultConfig(configDir string, defaultConfig *typ
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal default config: %w", err)
 	}
-	
+
 	if err := os.WriteFile(configFile, data, 0600); err != nil {
 		return "", fmt.Errorf("failed to write default config: %w", err)
 	}
-	
+
+	// Ensure proper permissions even if umask was set
+	if err := os.Chmod(configFile, 0600); err != nil {
+		return "", fmt.Errorf("failed to set config file permissions: %w", err)
+	}
+
 	return configFile, nil
 }
 
@@ -313,19 +319,19 @@ func (cm *ConfigManager) validateConfig(config *types.AppConfig) error {
 	if err := cm.validateAppSettings(config.App); err != nil {
 		return fmt.Errorf("app settings: %w", err)
 	}
-	
+
 	if err := cm.validateNVDSettings(config.NVD); err != nil {
 		return fmt.Errorf("NVD settings: %w", err)
 	}
-	
+
 	if err := cm.validateSearchSettings(config.Search); err != nil {
 		return fmt.Errorf("search settings: %w", err)
 	}
-	
+
 	if err := cm.validateProducts(config.Products); err != nil {
 		return fmt.Errorf("products: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -346,11 +352,32 @@ func (cm *ConfigManager) validateNVDSettings(nvd types.NVDSettings) error {
 	if nvd.BaseURL == "" {
 		return fmt.Errorf("base URL cannot be empty")
 	}
+
+	// Validate URL format
+	if !strings.HasPrefix(nvd.BaseURL, "https://") {
+		return fmt.Errorf("base URL must use HTTPS: %s", nvd.BaseURL)
+	}
+
 	if nvd.RateLimit <= 0 {
 		return fmt.Errorf("rate limit must be positive")
 	}
+	if nvd.RateLimit > 10000 {
+		return fmt.Errorf("rate limit cannot exceed 10000 requests per hour")
+	}
+
 	if nvd.Timeout <= 0 {
 		return fmt.Errorf("timeout must be positive")
+	}
+	if nvd.Timeout > 300 {
+		return fmt.Errorf("timeout cannot exceed 300 seconds")
+	}
+
+	if nvd.RetryAttempts < 0 || nvd.RetryAttempts > 10 {
+		return fmt.Errorf("retry attempts must be between 0 and 10")
+	}
+
+	if nvd.RetryDelay < 0 || nvd.RetryDelay > 60 {
+		return fmt.Errorf("retry delay must be between 0 and 60 seconds")
 	}
 
 	return nil
@@ -379,7 +406,7 @@ func (cm *ConfigManager) validateProducts(products []types.Product) error {
 	if len(products) == 0 {
 		return fmt.Errorf("at least one product must be configured")
 	}
-	
+
 	for idx, product := range products {
 		if err := cm.validateProduct(idx, product); err != nil {
 			return err
@@ -483,19 +510,19 @@ func getDefaultProducts() []types.Product {
 func LoadCommandLineFlags() (*types.CommandLineFlags, error) {
 	flags := loadFlagsFromViper()
 	setDefaultFlags(flags)
-	
+
 	if err := validateDateFlag(flags); err != nil {
 		return nil, fmt.Errorf("date validation: %w", err)
 	}
-	
+
 	if err := validateCVSSFlags(flags); err != nil {
 		return nil, fmt.Errorf("CVSS validation: %w", err)
 	}
-	
+
 	if err := validateMaxResultsFlag(flags); err != nil {
 		return nil, fmt.Errorf("max results validation: %w", err)
 	}
-	
+
 	return flags, nil
 }
 
@@ -523,7 +550,7 @@ func setDefaultFlags(flags *types.CommandLineFlags) {
 	if flags.OutputFormat == "" {
 		flags.OutputFormat = "simple"
 	}
-	
+
 	// Set default date to today if not specified, but allow empty dates for testing
 	if flags.Date == "" && !viper.IsSet("date") {
 		flags.Date = time.Now().Format("2006-01-02")
@@ -535,7 +562,7 @@ func validateDateFlag(flags *types.CommandLineFlags) error {
 	if flags.Date == "" {
 		return nil
 	}
-	
+
 	if _, err := time.Parse("2006-01-02", flags.Date); err != nil {
 		return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", flags.Date)
 	}
@@ -548,11 +575,11 @@ func validateCVSSFlags(flags *types.CommandLineFlags) error {
 	if flags.MinCVSS < 0 || flags.MinCVSS > 10 {
 		return fmt.Errorf("invalid minimum CVSS score: %f (must be between 0 and 10)", flags.MinCVSS)
 	}
-	
+
 	if flags.MaxCVSS > 0 && (flags.MaxCVSS < 0 || flags.MaxCVSS > 10) {
 		return fmt.Errorf("invalid maximum CVSS score: %f (must be between 0 and 10)", flags.MaxCVSS)
 	}
-	
+
 	if flags.MaxCVSS > 0 && flags.MinCVSS > flags.MaxCVSS {
 		return fmt.Errorf("minimum CVSS score (%f) cannot be greater than maximum CVSS score (%f)", flags.MinCVSS, flags.MaxCVSS)
 	}
