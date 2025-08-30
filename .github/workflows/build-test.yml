@@ -50,7 +50,7 @@ jobs:
         run: |
           echo "=== Running Tests ==="
 
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
             echo "Running tests on Windows..."
             make test
           else
@@ -138,13 +138,7 @@ jobs:
           echo "✅ Application functional"
           echo "✅ Ready for production"
 
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.out
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: "false"
+
 
       - name: Upload build artifacts
         if: matrix.os == 'ubuntu-latest'
