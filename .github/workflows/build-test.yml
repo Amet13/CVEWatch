@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
@@ -30,15 +30,15 @@ jobs:
           echo "OS: ${{ matrix.os }}"
           echo "Go version: ${{ matrix.go-version }}"
           echo ""
-          
+
           echo "Checking code formatting..."
           make check-fmt
           echo "✓ Code formatting check passed"
-          
+
           echo "Running linter..."
           make lint
           echo "✓ Linting passed"
-          
+
           echo "Running security scan..."
           make security-scan
           echo "✓ Security scan passed"
@@ -46,7 +46,7 @@ jobs:
       - name: Run Tests
         run: |
           echo "=== Running Tests ==="
-          
+
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             echo "Running tests on Windows..."
             make test
@@ -114,7 +114,7 @@ jobs:
           which cvewatch
           cvewatch version
           echo "✓ Installation successful"
-          
+
           echo "Testing uninstall process..."
           make uninstall
           echo "✓ Uninstallation successful"
