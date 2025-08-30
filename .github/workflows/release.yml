@@ -131,41 +131,6 @@ jobs:
 
             ## 📋 Full Changelog
             ${{ steps.changelog.outputs.FULL_CHANGELOG || '' }}
-
-            ### Downloads
-
-            **Linux:**
-            - AMD64: `cvewatch-linux-amd64`
-            - ARM64: `cvewatch-linux-arm64`
-
-            **macOS:**
-            - Intel (AMD64): `cvewatch-darwin-amd64`
-            - Apple Silicon (ARM64): `cvewatch-darwin-arm64`
-
-            **Windows:**
-            - AMD64: `cvewatch-windows-amd64.exe`
-            - ARM64: `cvewatch-windows-arm64.exe`
-
-            ### Installation
-
-            **macOS (Apple Silicon):**
-            ```bash
-            curl -L -o cvewatch \
-              https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-darwin-arm64
-            chmod +x cvewatch
-            sudo mv cvewatch /usr/local/bin/
-            ```
-
-            **Linux (ARM64):**
-            ```bash
-            curl -L -o cvewatch \
-              https://github.com/Amet13/CVEWatch/releases/latest/download/cvewatch-linux-arm64
-            chmod +x cvewatch
-            sudo mv cvewatch /usr/local/bin/
-            ```
-
-            ### Checksums
-            SHA256 checksums for all binaries are available in the release assets.
           draft: false
           prerelease: false
         env:
