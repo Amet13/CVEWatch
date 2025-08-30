@@ -55,15 +55,15 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	// Create a temporary directory for testing
 	tempDir := t.TempDir()
-	        defer func() {
-            if err := os.RemoveAll(tempDir); err != nil {
-                t.Errorf("failed to remove temp dir: %v", err)
-            }
-        }()
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// Create the default config
-			err := configMgr.CreateDefaultConfig()
-		require.NoError(t, err)
+	err := configMgr.CreateDefaultConfig()
+	require.NoError(t, err)
 
 	// Verify the config was created
 	assert.NotNil(t, configMgr.config)
@@ -86,13 +86,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	configMgr := NewConfigManager()
-	
+
 	t.Run("valid config", func(t *testing.T) {
 		validConfig := createValidTestConfig()
 		err := configMgr.validateConfig(validConfig)
 		assert.NoError(t, err)
 	})
-	
+
 	t.Run("invalid config - missing NVD base URL", func(t *testing.T) {
 		invalidConfig := createInvalidTestConfig()
 		err := configMgr.validateConfig(invalidConfig)

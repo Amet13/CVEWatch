@@ -2,13 +2,12 @@ package types
 
 // AppConfig represents the main application configuration
 type AppConfig struct {
-	App           AppSettings          `yaml:"app"`
-	NVD           NVDSettings          `yaml:"nvd"`
-	Search        SearchSettings       `yaml:"search"`
-	Products      []Product            `yaml:"products"`
-	Output        OutputSettings       `yaml:"output"`
-	Security      SecuritySettings     `yaml:"security"`
-
+	App      AppSettings      `yaml:"app"`
+	NVD      NVDSettings      `yaml:"nvd"`
+	Search   SearchSettings   `yaml:"search"`
+	Products []Product        `yaml:"products"`
+	Output   OutputSettings   `yaml:"output"`
+	Security SecuritySettings `yaml:"security"`
 }
 
 // AppSettings represents application-level settings
@@ -51,8 +50,6 @@ type SecuritySettings struct {
 	UserAgent             string            `yaml:"userAgent"`
 	RequestHeaders        map[string]string `yaml:"requestHeaders"`
 }
-
-
 
 // Product represents a software product to monitor
 type Product struct {

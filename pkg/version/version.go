@@ -1,6 +1,7 @@
 package version
 
 // Version information - these will be set during build
+//
 //nolint:gochecknoglobals // These are build-time constants that need to be globally accessible
 var (
 	Version   string = "dev"

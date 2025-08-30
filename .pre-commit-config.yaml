@@ -8,10 +8,16 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: check-case-conflict
+      - id: check-docstring-first
       - id: check-json
-      - id: check-toml
       - id: check-merge-conflict
+      - id: check-toml
+      - id: check-vcs-permalinks
       - id: debug-statements
+      - id: detect-private-key
+      - id: name-tests-test
+      - id: requirements-txt-fixer
+      - id: fix-byte-order-marker
 
   - repo: https://github.com/dnephin/pre-commit-golang
     rev: v0.5.1
@@ -19,11 +25,10 @@ repos:
       - id: go-fmt
       - id: go-vet
       - id: go-imports
-      - id: go-mod-tidy
-      - id: go-build
-      - id: go-test
-      - id: go-cover
       - id: golangci-lint
+      - id: go-unit-tests
+      - id: go-build
+      - id: go-mod-tidy
 
   - repo: https://github.com/psf/black
     rev: 23.12.1

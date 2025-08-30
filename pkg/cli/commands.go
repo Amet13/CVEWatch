@@ -149,27 +149,27 @@ func (cmds *Commands) runSearch(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	flags, err := cmds.loadAndOverrideFlags(config)
 	if err != nil {
 		return err
 	}
-	
+
 	if err := cmds.validateOutputFormat(flags, config); err != nil {
 		return err
 	}
-	
-	searchRequest := cmds.createSearchRequest(flags)
-	
+
+	searchRequest := cmds.createSearchRequest(flags, config)
+
 	if !viper.GetBool("quiet") {
 		cmds.displaySearchParameters(searchRequest)
 	}
-	
+
 	result, err := cmds.executeSearch(config, configManager, searchRequest)
 	if err != nil {
 		return err
 	}
-	
+
 	return cmds.outputResults(flags, config, result)
 }
 
@@ -178,10 +178,16 @@ func (cmds *Commands) loadConfiguration() (*config.ConfigManager, *types.AppConf
 	configFile := viper.GetString("config")
 	configManager := config.NewConfigManager()
 	if err := configManager.LoadConfig(configFile); err != nil {
+		if strings.Contains(err.Error(), "config file not found") {
+			return nil, nil, fmt.Errorf("configuration file not found. Run 'cvewatch init' to create a default configuration")
+		}
 		return nil, nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
-	
+
 	config := configManager.GetConfig()
+	if config == nil {
+		return nil, nil, fmt.Errorf("configuration is empty or invalid")
+	}
 
 	return configManager, config, nil
 }
@@ -192,7 +198,7 @@ func (cmds *Commands) loadAndOverrideFlags(config *types.AppConfig) (*types.Comm
 	if err != nil {
 		return nil, fmt.Errorf("invalid command line flags: %w", err)
 	}
-	
+
 	cmds.overrideFlagsWithDefaults(flags, config)
 
 	return flags, nil
@@ -203,15 +209,15 @@ func (cmds *Commands) overrideFlagsWithDefaults(flags *types.CommandLineFlags, c
 	if !viper.IsSet("min-cvss") {
 		flags.MinCVSS = config.Search.DefaultMinCVSS
 	}
-	
+
 	if !viper.IsSet("max-cvss") {
 		flags.MaxCVSS = config.Search.DefaultMaxCVSS
 	}
-	
+
 	if !viper.IsSet("max-results") {
 		flags.MaxResults = config.Search.DefaultMaxResults
 	}
-	
+
 	if !viper.IsSet("output") {
 		flags.OutputFormat = config.Output.DefaultFormat
 	}
@@ -223,7 +229,7 @@ func (cmds *Commands) validateOutputFormat(flags *types.CommandLineFlags, config
 	for _, format := range config.Output.Formats {
 		validFormats[format] = true
 	}
-	
+
 	if !validFormats[flags.OutputFormat] {
 		return fmt.Errorf("invalid output format: %s (valid formats: %s)",
 			flags.OutputFormat, strings.Join(config.Output.Formats, ", "))
@@ -233,7 +239,13 @@ func (cmds *Commands) validateOutputFormat(flags *types.CommandLineFlags, config
 }
 
 // createSearchRequest creates the search request from flags
-func (cmds *Commands) createSearchRequest(flags *types.CommandLineFlags) *types.SearchRequest {
+func (cmds *Commands) createSearchRequest(flags *types.CommandLineFlags, config *types.AppConfig) *types.SearchRequest {
+	// Get product names from configuration
+	productNames := make([]string, 0, len(config.Products))
+	for _, product := range config.Products {
+		productNames = append(productNames, product.Name)
+	}
+
 	return &types.SearchRequest{
 		Date:         flags.Date,
 		MinCVSS:      flags.MinCVSS,
@@ -241,7 +253,7 @@ func (cmds *Commands) createSearchRequest(flags *types.CommandLineFlags) *types.
 		MaxResults:   flags.MaxResults,
 		OutputFormat: flags.OutputFormat,
 		APIKey:       flags.APIKey,
-		Products:     []string{"Linux Kernel", "OpenSSL", "Apache HTTP Server", "PHP", "Python"},
+		Products:     productNames,
 	}
 }
 
@@ -272,11 +284,11 @@ func (cmds *Commands) outputResults(flags *types.CommandLineFlags, config *types
 	if err := formatter.FormatOutput(result); err != nil {
 		return fmt.Errorf("failed to format output: %w", err)
 	}
-	
+
 	if !viper.GetBool("quiet") {
 		formatter.PrintSummary(result)
 	}
-	
+
 	return nil
 }
 
@@ -285,17 +297,17 @@ func (cmds *Commands) runInfo(cveID string, configManager *config.ConfigManager)
 	if err := cmds.validateCVEID(cveID); err != nil {
 		return err
 	}
-	
+
 	config, err := cmds.loadInfoConfiguration(configManager)
 	if err != nil {
 		return err
 	}
-	
+
 	cve, err := cmds.fetchCVEDetails(config, configManager, cveID)
 	if err != nil {
 		return err
 	}
-	
+
 	cmds.displayCVEInfo(cveID, cve)
 
 	return nil
@@ -334,7 +346,7 @@ func (cmds *Commands) fetchCVEDetails(config *types.AppConfig, configManager *co
 // displayCVEInfo displays comprehensive CVE information
 func (cmds *Commands) displayCVEInfo(cveID string, cve *types.CVE) {
 	fmt.Printf("🔍 Fetching details for %s...\n\n", cveID)
-	
+
 	cmds.displayBasicInfo(cve)
 	cmds.displayCVSSInfo(cve)
 	cmds.displayDescription(cve)
@@ -384,7 +396,7 @@ func (cmds *Commands) displayReferences(cve *types.CVE) {
 	if len(cve.References) == 0 {
 		return
 	}
-	
+
 	fmt.Printf("\nReferences:\n")
 	for i, ref := range cve.References {
 		fmt.Printf("%d. %s\n", i+1, ref.URL)
@@ -495,4 +507,3 @@ func (cmds *Commands) loadCommandLineFlags() (*types.CommandLineFlags, error) {
 
 	return flags, nil
 }
-

@@ -8,6 +8,13 @@ import (
 
 // IsValidCVEID checks if a string is a valid CVE ID format
 func IsValidCVEID(cveID string) bool {
+	if cveID == "" {
+		return false
+	}
+
+	// Sanitize input - remove any whitespace
+	cveID = strings.TrimSpace(cveID)
+
 	// Basic CVE ID format validation: CVE-YYYY-NNNNN
 	if len(cveID) < 8 {
 		return false
@@ -15,11 +22,6 @@ func IsValidCVEID(cveID string) bool {
 
 	// Check if it starts with "CVE-"
 	if cveID[:4] != "CVE-" {
-		return false
-	}
-
-	// Check if it contains a year and number
-	if len(cveID) < 9 {
 		return false
 	}
 
@@ -34,13 +36,15 @@ func IsValidCVEID(cveID string) bool {
 		return false
 	}
 
-	// Check if year is numeric
-	if _, err := strconv.Atoi(parts[1]); err != nil {
+	// Check if year is numeric and within reasonable range
+	year, err := strconv.Atoi(parts[1])
+	if err != nil || year < 1999 || year > 2100 {
 		return false
 	}
 
-	// Check if number part is numeric
-	if _, err := strconv.Atoi(parts[2]); err != nil {
+	// Check if number part is numeric and positive
+	seq, err := strconv.Atoi(parts[2])
+	if err != nil || seq < 1 {
 		return false
 	}
 
@@ -55,7 +59,7 @@ func IsValidDate(date string) bool {
 
 	pattern := `^\d{4}-\d{2}-\d{2}$`
 	matched, _ := regexp.MatchString(pattern, date)
-	
+
 	return matched
 }
 
@@ -77,6 +81,6 @@ func IsValidOutputFormat(format string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }

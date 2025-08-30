@@ -35,6 +35,7 @@ CVEWatch provides real-time vulnerability monitoring using the official National
 
 - Go 1.25 or later
 - Internet connection for NVD API access
+- NVD API key (optional, but recommended for higher rate limits)
 
 ### Installation
 
@@ -197,7 +198,8 @@ output:
 
 - Go 1.25+
 - Make
-- golangci-lint (optional)
+- golangci-lint
+- pre-commit hooks (optional)
 
 ### Setup Development Environment
 
@@ -215,6 +217,8 @@ make lint           # Run linters
 make format         # Format code
 make clean          # Clean build artifacts
 make release        # Build for multiple platforms
+make security-scan  # Run security scanning
+make pre-commit     # Run all pre-commit checks
 ```
 
 ## 🔧 API Integration

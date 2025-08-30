@@ -3,6 +3,7 @@ package nvd
 
 import (
 	"testing"
+	"time"
 
 	"cvewatch/internal/config"
 	"cvewatch/internal/types"
@@ -106,4 +107,146 @@ func TestCPEMatchesPattern(t *testing.T) {
 
 	// Test no match
 	assert.False(t, client.cpeMatchesPattern("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:a:other:product:*:*:*:*:*:*:*"))
+}
+
+func TestValidateSearchRequest(t *testing.T) {
+	appConfig := &types.AppConfig{
+		NVD: types.NVDSettings{
+			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
+			RateLimit:     1000,
+			Timeout:       30,
+			RetryAttempts: 3,
+			RetryDelay:    5,
+		},
+	}
+
+	configMgr := config.NewConfigManager()
+	client := NewNVDClient(appConfig, configMgr, "")
+
+	tests := []struct {
+		name    string
+		request *types.SearchRequest
+		wantErr bool
+	}{
+		{
+			name: "valid request",
+			request: &types.SearchRequest{
+				Date:       "2024-01-01",
+				MinCVSS:    7.0,
+				MaxCVSS:    10.0,
+				MaxResults: 100,
+				Products:   []string{"Linux Kernel"},
+			},
+			wantErr: false,
+		},
+		{
+			name:    "nil request",
+			request: nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid max results",
+			request: &types.SearchRequest{
+				Date:       "2024-01-01",
+				MinCVSS:    7.0,
+				MaxCVSS:    10.0,
+				MaxResults: 0,
+				Products:   []string{"Linux Kernel"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid min CVSS",
+			request: &types.SearchRequest{
+				Date:       "2024-01-01",
+				MinCVSS:    -1.0,
+				MaxCVSS:    10.0,
+				MaxResults: 100,
+				Products:   []string{"Linux Kernel"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid max CVSS",
+			request: &types.SearchRequest{
+				Date:       "2024-01-01",
+				MinCVSS:    7.0,
+				MaxCVSS:    11.0,
+				MaxResults: 100,
+				Products:   []string{"Linux Kernel"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "min CVSS greater than max CVSS",
+			request: &types.SearchRequest{
+				Date:       "2024-01-01",
+				MinCVSS:    8.0,
+				MaxCVSS:    7.0,
+				MaxResults: 100,
+				Products:   []string{"Linux Kernel"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "no products specified",
+			request: &types.SearchRequest{
+				Date:       "2024-01-01",
+				MinCVSS:    7.0,
+				MaxCVSS:    10.0,
+				MaxResults: 100,
+				Products:   []string{},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := client.validateSearchRequest(tt.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateSearchRequest() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestRateLimiting(t *testing.T) {
+	appConfig := &types.AppConfig{
+		NVD: types.NVDSettings{
+			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
+			RateLimit:     2, // Set low for testing
+			Timeout:       30,
+			RetryAttempts: 3,
+			RetryDelay:    5,
+		},
+	}
+
+	configMgr := config.NewConfigManager()
+	client := NewNVDClient(appConfig, configMgr, "")
+
+	// First two requests should succeed
+	if err := client.checkRateLimit(); err != nil {
+		t.Errorf("First request should succeed: %v", err)
+	}
+	client.updateRateLimit()
+
+	if err := client.checkRateLimit(); err != nil {
+		t.Errorf("Second request should succeed: %v", err)
+	}
+	client.updateRateLimit()
+
+	// Third request should fail
+	if err := client.checkRateLimit(); err == nil {
+		t.Error("Third request should fail due to rate limiting")
+	}
+
+	// Reset rate limit by advancing time
+	client.lastRequest = time.Now().Add(-2 * time.Hour)
+	client.requestCount = 0
+
+	// Should succeed again
+	if err := client.checkRateLimit(); err != nil {
+		t.Errorf("Request after reset should succeed: %v", err)
+	}
 }
