@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           echo "=== Running Tests ==="
-          
+
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
             echo "Running tests on Windows..."
             make test
@@ -149,19 +149,3 @@ jobs:
           echo "✅ Builds completed"
           echo "✅ Application functional"
           echo "✅ Ready for production"
-
-      - name: Upload build artifacts
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-binaries-${{ matrix.go-version }}
-          path: cvewatch-*
-          retention-days: 30
-
-      - name: Upload single binary
-        if: matrix.os != 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cvewatch-${{ matrix.os }}-${{ matrix.go-version }}
-          path: cvewatch*
-          retention-days: 7
