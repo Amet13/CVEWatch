@@ -25,7 +25,7 @@ build:
 	$(eval VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev"))
 	$(eval BUILD_TIME := $(shell date -u '+%Y-%m-%d_%H:%M:%S'))
 	$(eval GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown"))
-	go build -ldflags="-X cvewatch/pkg/version.Version=$(VERSION) -X cvewatch/pkg/version.BuildTime=$(BUILD_TIME) -X cvewatch/pkg/version.GitCommit=$(GIT_COMMIT) -s -w" -o cvewatch ./cmd/cvewatch
+	go build -ldflags="-X 'cvewatch/pkg/version.Version=$(VERSION)' -X 'cvewatch/pkg/version.BuildTime=$(BUILD_TIME)' -X 'cvewatch/pkg/version.GitCommit=$(GIT_COMMIT)' -s -w" -o cvewatch ./cmd/cvewatch
 
 # Build for current platform (useful for development)
 build-native:
@@ -129,18 +129,51 @@ uninstall:
 # Build release binaries for multiple platforms
 release: clean
 	@echo "Building release binaries..."
+	@echo "Version: $(shell git describe --tags --always --dirty)"
+	@echo "Build Time: $(shell date -u '+%Y-%m-%d %H:%M:%S UTC')"
+	@echo "Git Commit: $(shell git rev-parse --short HEAD)"
 	
 	# Linux
-	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-linux-amd64 ./cmd/cvewatch
-	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-linux-arm64 ./cmd/cvewatch
+	GOOS=linux GOARCH=amd64 go build \
+		-ldflags="-s -w \
+		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
+		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
+		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
+		-o cvewatch-linux-amd64 ./cmd/cvewatch
+	GOOS=linux GOARCH=arm64 go build \
+		-ldflags="-s -w \
+		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
+		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
+		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
+		-o cvewatch-linux-arm64 ./cmd/cvewatch
 	
 	# macOS
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-darwin-amd64 ./cmd/cvewatch
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-darwin-arm64 ./cmd/cvewatch
+	GOOS=darwin GOARCH=amd64 go build \
+		-ldflags="-s -w \
+		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
+		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
+		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
+		-o cvewatch-darwin-amd64 ./cmd/cvewatch
+	GOOS=darwin GOARCH=arm64 go build \
+		-ldflags="-s -w \
+		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
+		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
+		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
+		-o cvewatch-darwin-arm64 ./cmd/cvewatch
 	
 	# Windows
-	GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o cvewatch-windows-amd64.exe ./cmd/cvewatch
-	GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o cvewatch-windows-arm64.exe ./cmd/cvewatch
+	GOOS=windows GOARCH=amd64 go build \
+		-ldflags="-s -w \
+		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
+		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
+		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
+		-o cvewatch-windows-amd64.exe ./cmd/cvewatch
+	GOOS=windows GOARCH=arm64 go build \
+		-ldflags="-s -w \
+		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
+		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
+		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
+		-o cvewatch-windows-arm64.exe ./cmd/cvewatch
 	
 	@echo "Release binaries built:"
 	@ls -la cvewatch-*
