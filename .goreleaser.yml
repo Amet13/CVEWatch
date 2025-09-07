@@ -1,0 +1,86 @@
+version: 2
+project_name: cvewatch
+builds:
+  - id: cvewatch
+    main: ./cmd/cvewatch
+    binary: cvewatch
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X cvewatch/pkg/version.Version={{.Version}}
+      - -X cvewatch/pkg/version.Commit={{.ShortCommit}}
+      - -X cvewatch/pkg/version.Date={{.Date}}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+archives:
+  - id: binary
+    ids: [cvewatch]
+    formats: ["binary"]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+checksum:
+  name_template: "checksums.txt"
+release:
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## {{ .ProjectName }} {{ .Tag }}
+
+    ### Installation
+
+    Download the appropriate binary for your platform from the assets below.
+
+    #### Linux/macOS
+    ```bash
+    # Download and install (replace with your platform)
+    curl -sL "https://github.com/Amet13/CVEWatch/releases/download/{{ .Tag }}/cvewatch_linux_amd64" -o cvewatch
+    chmod +x cvewatch
+    sudo mv cvewatch /usr/local/bin/
+
+    # Verify installation
+    cvewatch version
+    ```
+
+    #### Windows
+    ```powershell
+    # Download and install (PowerShell)
+    Invoke-WebRequest -Uri "https://github.com/Amet13/CVEWatch/releases/download/{{ .Tag }}/cvewatch_windows_amd64.exe" -OutFile "cvewatch.exe"
+    # Move to a directory in your PATH
+    ```
+  footer: |
+    **Full Changelog**: https://github.com/Amet13/CVEWatch/compare/{{ .PreviousTag }}...{{ .Tag }}
+changelog:
+  use: github
+  sort: asc
+  abbrev: 7
+  groups:
+    - title: "New Features"
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "Bug Fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: "Security Updates"
+      regexp: "^.*sec[(\\w)]*:+.*$"
+      order: 2
+    - title: "Documentation Updates"
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 3
+    - title: "Other Changes"
+      order: 999
+  filters:
+    exclude:
+      - "^test:"
+      - "^chore:"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+announce:
+  skip: "{{gt .Patch 0}}"

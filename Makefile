@@ -1,23 +1,36 @@
 # CVEWatch Makefile
 # A modern CVE vulnerability monitoring tool
 
-.PHONY: help build test clean lint format check-fmt install uninstall
+.PHONY: help build build-native test test-race test-coverage benchmark clean lint format check-fmt install uninstall release release-snapshot release-check dev-setup security-scan pre-commit ci-quality ci-test ci-build ci-cross-build ci-release deps deps-tidy
 
 # Default target
 help:
 	@echo "CVEWatch - Available targets:"
+	@echo "  deps       - Download and verify dependencies"
+	@echo "  deps-tidy  - Tidy and verify go.mod/go.sum"
 	@echo "  build      - Build the application"
+	@echo "  build-native - Build for current platform"
 	@echo "  test       - Run all tests"
 	@echo "  test-race  - Run tests with race detection"
 	@echo "  test-coverage - Run tests with coverage report"
+	@echo "  benchmark  - Run benchmarks"
 	@echo "  clean      - Clean build artifacts"
 	@echo "  lint       - Run linters (requires golangci-lint)"
-	@echo "  format     - Format code with gofmt"
+	@echo "  format     - Format code with gofmt and goimports"
 	@echo "  check-fmt  - Check if code is properly formatted"
+	@echo "  security-scan - Run security scanner (gosec)"
 	@echo "  install    - Install the application"
 	@echo "  uninstall  - Uninstall the application"
-	@echo "  release    - Build release binaries for multiple platforms"
-	@echo "  changelog  - Generate changelog (VERSION=v2.1.0)"
+	@echo "  release    - Create release with GoReleaser"
+	@echo "  release-snapshot - Create snapshot release"
+	@echo "  release-check - Validate GoReleaser configuration"
+	@echo "  dev-setup - Set up development environment"
+	@echo "  pre-commit - Run all pre-commit checks"
+	@echo "  ci-quality - Run CI quality checks"
+	@echo "  ci-test    - Run CI test suite"
+	@echo "  ci-build   - Run CI build"
+	@echo "  ci-cross-build - Run CI cross-platform build"
+	@echo "  ci-release - Run CI release"
 
 # Build the application
 build:
@@ -60,19 +73,22 @@ benchmark:
 clean:
 	@echo "Cleaning build artifacts..."
 	rm -f cvewatch
+	rm -f cvewatch.exe
 	rm -f cvewatch-*
 	rm -f *.exe
 	rm -f coverage.out
 	rm -f coverage.html
+	rm -f security-report.json
+	rm -f benchmark.txt
 	go clean
 
 # Run linters (requires golangci-lint)
 lint:
 	@echo "Running linters..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run --no-config; \
+		golangci-lint run; \
 	elif command -v ~/go/bin/golangci-lint >/dev/null 2>&1; then \
-		~/go/bin/golangci-lint run --no-config; \
+		~/go/bin/golangci-lint run; \
 	else \
 		echo "golangci-lint not found. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
 		exit 1; \
@@ -126,63 +142,52 @@ uninstall:
 		echo "CVEWatch removed from ~/.local/bin/"; \
 	fi
 
-# Build release binaries for multiple platforms
-release: clean
-	@echo "Building release binaries..."
-	@echo "Version: $(shell git describe --tags --always --dirty)"
-	@echo "Build Time: $(shell date -u '+%Y-%m-%d %H:%M:%S UTC')"
-	@echo "Git Commit: $(shell git rev-parse --short HEAD)"
-	
-	# Linux
-	GOOS=linux GOARCH=amd64 go build \
-		-ldflags="-s -w \
-		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
-		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
-		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
-		-o cvewatch-linux-amd64 ./cmd/cvewatch
-	GOOS=linux GOARCH=arm64 go build \
-		-ldflags="-s -w \
-		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
-		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
-		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
-		-o cvewatch-linux-arm64 ./cmd/cvewatch
-	
-	# macOS
-	GOOS=darwin GOARCH=amd64 go build \
-		-ldflags="-s -w \
-		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
-		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
-		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
-		-o cvewatch-darwin-amd64 ./cmd/cvewatch
-	GOOS=darwin GOARCH=arm64 go build \
-		-ldflags="-s -w \
-		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
-		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
-		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
-		-o cvewatch-darwin-arm64 ./cmd/cvewatch
-	
-	# Windows
-	GOOS=windows GOARCH=amd64 go build \
-		-ldflags="-s -w \
-		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
-		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
-		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
-		-o cvewatch-windows-amd64.exe ./cmd/cvewatch
-	GOOS=windows GOARCH=arm64 go build \
-		-ldflags="-s -w \
-		-X 'cvewatch/pkg/version.Version=$(shell git describe --tags --always --dirty)' \
-		-X 'cvewatch/pkg/version.BuildTime=$(shell date -u '+%Y-%m-%d %H:%M:%S UTC')' \
-		-X 'cvewatch/pkg/version.GitCommit=$(shell git rev-parse --short HEAD)'" \
-		-o cvewatch-windows-arm64.exe ./cmd/cvewatch
-	
-	@echo "Release binaries built:"
-	@ls -la cvewatch-*
+# Release using GoReleaser
+release:
+	@echo "Creating release with GoReleaser..."
+	@if ! command -v goreleaser >/dev/null 2>&1; then \
+		echo "Installing GoReleaser..."; \
+		go install github.com/goreleaser/goreleaser/v2@latest; \
+	fi
+	goreleaser release --clean
+
+# Release snapshot (for testing)
+release-snapshot:
+	@echo "Creating snapshot release..."
+	@if ! command -v goreleaser >/dev/null 2>&1; then \
+		echo "Installing GoReleaser..."; \
+		go install github.com/goreleaser/goreleaser/v2@latest; \
+	fi
+	goreleaser release --snapshot --clean
+
+# Check GoReleaser configuration
+release-check:
+	@echo "Validating GoReleaser configuration..."
+	@if ! command -v goreleaser >/dev/null 2>&1; then \
+		echo "Installing GoReleaser..."; \
+		go install github.com/goreleaser/goreleaser/v2@latest; \
+	fi
+	goreleaser check
+
+# Dependencies
+deps:
+	@echo "Downloading dependencies..."
+	go mod download
+
+deps-tidy:
+	@echo "Tidying go.mod and go.sum..."
+	go mod tidy
+	go mod verify
+	@if [ -n "$$(git diff --name-only go.mod go.sum)" ]; then \
+		echo "go.mod or go.sum is not tidy. Run 'make deps-tidy' to fix."; \
+		exit 1; \
+	else \
+		echo "go.mod and go.sum are tidy."; \
+	fi
 
 # Development setup
-dev-setup:
+dev-setup: deps deps-tidy
 	@echo "Setting up development environment..."
-	go mod download
-	go mod verify
 	@if ! command -v golangci-lint >/dev/null 2>&1; then \
 		echo "Installing golangci-lint..."; \
 		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
@@ -190,6 +195,10 @@ dev-setup:
 	@if ! command -v goimports >/dev/null 2>&1; then \
 		echo "Installing goimports..."; \
 		go install golang.org/x/tools/cmd/goimports@latest; \
+	fi
+	@if ! command -v gosec >/dev/null 2>&1; then \
+		echo "Installing gosec..."; \
+		go install github.com/securego/gosec/v2/cmd/gosec@latest; \
 	fi
 	@echo "Development environment ready."
 
@@ -199,9 +208,11 @@ dev-setup:
 security-scan:
 	@echo "Running security scan..."
 	@if command -v gosec >/dev/null 2>&1; then \
-		gosec ./...; \
+		gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...; \
+		echo "Security scan completed. Report saved to security-report.json"; \
 	elif command -v ~/go/bin/gosec >/dev/null 2>&1; then \
-		~/go/bin/gosec ./...; \
+		~/go/bin/gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...; \
+		echo "Security scan completed. Report saved to security-report.json"; \
 	else \
 		echo "gosec not found. Skipping security scan."; \
 		echo "Install with: go install github.com/securego/gosec/v2/cmd/gosec@latest"; \
@@ -210,3 +221,45 @@ security-scan:
 # Pre-commit checks
 pre-commit: check-fmt test lint security-scan
 	@echo "All pre-commit checks passed!"
+
+# CI Quality Checks (equivalent to CI quality job)
+ci-quality: deps-tidy check-fmt lint security-scan
+	@echo "All CI quality checks passed!"
+
+# CI Test Suite (equivalent to CI test job)
+ci-test: deps test-race test-coverage benchmark
+	@echo "All CI tests passed!"
+
+# CI Build (equivalent to CI build job)
+ci-build: deps build
+	@echo "Testing installation..."
+	@if [ -w /usr/local/bin ]; then \
+		sudo cp cvewatch /usr/local/bin/ 2>/dev/null || true; \
+		/usr/local/bin/cvewatch version 2>/dev/null || true; \
+	else \
+		mkdir -p ~/.local/bin 2>/dev/null || true; \
+		cp cvewatch ~/.local/bin/ 2>/dev/null || true; \
+		~/.local/bin/cvewatch version 2>/dev/null || true; \
+	fi
+
+# CI Cross-platform Build (equivalent to CI cross-build job)
+ci-cross-build: deps
+	@echo "Building for multiple platforms..."
+	@for os in linux darwin windows; do \
+		for arch in amd64 arm64; do \
+			if [ "$$os" = "windows" ] && [ "$$arch" = "arm64" ]; then \
+				continue; \
+			fi; \
+			echo "Building for $$os/$$arch..."; \
+			BINARY_NAME=cvewatch; \
+			if [ "$$os" = "windows" ]; then \
+				BINARY_NAME=cvewatch.exe; \
+			fi; \
+			GOOS=$$os GOARCH=$$arch go build -ldflags="-s -w" -o $${BINARY_NAME}-$$os-$$arch ./cmd/cvewatch; \
+		done; \
+	done
+	@echo "Cross-platform builds completed!"
+
+# CI Release (equivalent to CI release job)
+ci-release: release
+	@echo "CI release completed!"

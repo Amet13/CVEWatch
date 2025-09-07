@@ -1,3 +1,27 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2025 CVEWatch Contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package nvd
 
 import (
@@ -15,6 +39,7 @@ import (
 
 	"cvewatch/internal/config"
 	"cvewatch/internal/types"
+	"cvewatch/pkg/errors"
 )
 
 // NVDClient handles communication with the NVD API
@@ -45,7 +70,8 @@ func NewNVDClient(config *types.AppConfig, configMgr *config.ConfigManager, apiK
 func (n *NVDClient) SearchCVEs(request *types.SearchRequest) (*types.SearchResult, error) {
 	// Validate request parameters
 	if err := n.validateSearchRequest(request); err != nil {
-		return nil, fmt.Errorf("invalid search request: %w", err)
+		return nil, errors.NewValidationError("invalid search request parameters", err).
+			WithSuggestion("Check your search criteria and try again")
 	}
 
 	startTime := time.Now()
@@ -96,7 +122,8 @@ func (n *NVDClient) executeSearchRequest(searchURL string) (*http.Response, erro
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, errors.NewNetworkError("failed to create HTTP request", err).
+			WithSuggestion("Check your network connection and try again")
 	}
 
 	n.setRequestHeaders(req)
@@ -137,7 +164,7 @@ func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) 
 					time.Sleep(time.Duration(n.config.NVD.RetryDelay) * time.Second)
 					continue
 				}
-				return nil, fmt.Errorf("NVD API returned status %d: %s", resp.StatusCode, resp.Status)
+				return nil, errors.NewHTTPError(resp, fmt.Errorf("API request failed with status %d", resp.StatusCode))
 			}
 			break
 		}
@@ -152,7 +179,9 @@ func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) 
 	n.updateRateLimit()
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch CVE data after %d attempts: %w", n.config.NVD.RetryAttempts, err)
+		return nil, errors.NewNetworkError("failed to connect to NVD API", err).
+			WithSuggestion("Check your internet connection and try again").
+			WithContext("attempts", n.config.NVD.RetryAttempts)
 	}
 
 	return resp, nil
@@ -160,6 +189,9 @@ func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) 
 
 // closeResponseBody safely closes the response body
 func (n *NVDClient) closeResponseBody(resp *http.Response) {
+	if resp == nil || resp.Body == nil {
+		return
+	}
 	if err := resp.Body.Close(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to close response body: %v\n", err)
 	}
@@ -171,21 +203,23 @@ func (n *NVDClient) parseResponse(resp *http.Response) (*types.NVDResponse, erro
 		// Try to read error response body for more details
 		body, _ := io.ReadAll(resp.Body)
 		if len(body) > 0 {
-			return nil, fmt.Errorf("NVD API returned status %d: %s - %s", resp.StatusCode, resp.Status, string(body))
+			return nil, errors.NewAPIError("NVD API returned an error", fmt.Errorf("status %d: %s - %s", resp.StatusCode, resp.Status, string(body)))
 		}
-		return nil, fmt.Errorf("NVD API returned status %d: %s", resp.StatusCode, resp.Status)
+		return nil, errors.NewHTTPError(resp, fmt.Errorf("unexpected status code"))
 	}
 
 	reader := n.getResponseReader(resp)
 
 	var nvdResp types.NVDResponse
 	if err := json.NewDecoder(reader).Decode(&nvdResp); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON response: %w", err)
+		return nil, errors.NewParsingError("failed to parse NVD API response", err).
+			WithSuggestion("The API response format may have changed. Try again later or contact support")
 	}
 
 	// Validate response structure
 	if nvdResp.Vulnerabilities == nil {
-		return nil, fmt.Errorf("invalid response: vulnerabilities field is missing")
+		return nil, errors.NewAPIError("invalid API response structure", fmt.Errorf("vulnerabilities field is missing")).
+			WithSuggestion("The API response format may have changed. Try again later")
 	}
 
 	return &nvdResp, nil
@@ -463,28 +497,34 @@ func (n *NVDClient) extractCVEDetails(nvdResp *types.NVDResponse, cveID string) 
 // validateSearchRequest validates the search request parameters
 func (n *NVDClient) validateSearchRequest(request *types.SearchRequest) error {
 	if request == nil {
-		return fmt.Errorf("search request cannot be nil")
+		return errors.NewValidationError("search request is required", fmt.Errorf("request cannot be nil")).
+			WithSuggestion("Provide a valid search request with proper parameters")
 	}
 
 	if request.MaxResults < 1 || request.MaxResults > 2000 {
-		return fmt.Errorf("max results must be between 1 and 2000, got %d", request.MaxResults)
+		return errors.NewValidationError("invalid max results value", fmt.Errorf("max results must be between 1 and 2000, got %d", request.MaxResults)).
+			WithSuggestion("Use a value between 1 and 2000 for max results")
 	}
 
 	if request.MinCVSS < 0 || request.MinCVSS > 10 {
-		return fmt.Errorf("min CVSS score must be between 0 and 10, got %.1f", request.MinCVSS)
+		return errors.NewValidationError("invalid minimum CVSS score", fmt.Errorf("min CVSS score must be between 0 and 10, got %.1f", request.MinCVSS)).
+			WithSuggestion("Use a CVSS score between 0.0 and 10.0")
 	}
 
 	if request.MaxCVSS > 0 && (request.MaxCVSS < 0 || request.MaxCVSS > 10) {
-		return fmt.Errorf("max CVSS score must be between 0 and 10, got %.1f", request.MaxCVSS)
+		return errors.NewValidationError("invalid maximum CVSS score", fmt.Errorf("max CVSS score must be between 0 and 10, got %.1f", request.MaxCVSS)).
+			WithSuggestion("Use a CVSS score between 0.0 and 10.0")
 	}
 
 	if request.MaxCVSS > 0 && request.MinCVSS > request.MaxCVSS {
-		return fmt.Errorf("min CVSS score (%.1f) cannot be greater than max CVSS score (%.1f)",
-			request.MinCVSS, request.MaxCVSS)
+		return errors.NewValidationError("invalid CVSS score range", fmt.Errorf("min CVSS score (%.1f) cannot be greater than max CVSS score (%.1f)",
+			request.MinCVSS, request.MaxCVSS)).
+			WithSuggestion("Ensure minimum CVSS score is less than or equal to maximum CVSS score")
 	}
 
 	if len(request.Products) == 0 {
-		return fmt.Errorf("at least one product must be specified")
+		return errors.NewValidationError("no products specified", fmt.Errorf("at least one product must be specified")).
+			WithSuggestion("Specify at least one product to search for vulnerabilities")
 	}
 
 	return nil
@@ -520,8 +560,9 @@ func (n *NVDClient) checkRateLimit() error {
 	// Check if we've exceeded the rate limit
 	if n.requestCount >= n.config.NVD.RateLimit {
 		timeUntilReset := time.Hour - now.Sub(n.lastRequest)
-		return fmt.Errorf("rate limit exceeded (%d requests/hour). Reset in %v",
-			n.config.NVD.RateLimit, timeUntilReset.Round(time.Minute))
+		return errors.NewRateLimitError("API rate limit exceeded", fmt.Errorf("exceeded %d requests per hour", n.config.NVD.RateLimit)).
+			WithContext("rate_limit", n.config.NVD.RateLimit).
+			WithContext("reset_in", timeUntilReset.Round(time.Minute))
 	}
 
 	return nil

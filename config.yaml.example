@@ -70,5 +70,3 @@ products:
     cpe_patterns: ["cpe:2.3:a:python:python:*:*:*:*:*:*:*"]
     description: "Python programming language"
     priority: "medium"
-
-
