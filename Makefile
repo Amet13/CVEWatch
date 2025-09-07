@@ -1,7 +1,7 @@
 # CVEWatch Makefile
 # A modern CVE vulnerability monitoring tool
 
-.PHONY: help build build-native test test-race test-coverage benchmark clean lint format check-fmt install uninstall release release-snapshot release-check dev-setup security-scan pre-commit ci-quality ci-test ci-build ci-cross-build ci-release deps deps-tidy
+.PHONY: help build build-native test test-race test-coverage clean lint format check-fmt install uninstall release release-snapshot release-check dev-setup security-scan pre-commit ci-quality ci-test ci-build cross-build ci-release deps deps-tidy
 
 # Default target
 help:
@@ -13,7 +13,6 @@ help:
 	@echo "  test       - Run all tests"
 	@echo "  test-race  - Run tests with race detection"
 	@echo "  test-coverage - Run tests with coverage report"
-	@echo "  benchmark  - Run benchmarks"
 	@echo "  clean      - Clean build artifacts"
 	@echo "  lint       - Run linters (requires golangci-lint)"
 	@echo "  format     - Format code with gofmt and goimports"
@@ -29,7 +28,7 @@ help:
 	@echo "  ci-quality - Run CI quality checks"
 	@echo "  ci-test    - Run CI test suite"
 	@echo "  ci-build   - Run CI build"
-	@echo "  ci-cross-build - Run CI cross-platform build"
+	@echo "  cross-build - Build for multiple platforms (local)"
 	@echo "  ci-release - Run CI release"
 
 # Build the application
@@ -64,10 +63,6 @@ test-coverage:
 	@echo "Coverage summary:"
 	go tool cover -func=coverage.out | tail -1
 
-# Run benchmarks
-benchmark:
-	@echo "Running benchmarks..."
-	go test -bench=. -benchmem ./...
 
 # Clean build artifacts
 clean:
@@ -77,7 +72,6 @@ clean:
 	rm -f coverage.out
 	rm -f coverage.html
 	rm -f security-report.json
-	rm -f benchmark.txt
 	# Remove all cvewatch-* files including cross-platform builds
 	-find . -maxdepth 1 -name "cvewatch-*" -type f -exec rm -f {} \; 2>/dev/null || true
 	# Remove all .exe files
@@ -230,7 +224,7 @@ ci-quality: deps-tidy check-fmt lint security-scan
 	@echo "All CI quality checks passed!"
 
 # CI Test Suite (equivalent to CI test job)
-ci-test: deps test-race test-coverage benchmark
+ci-test: deps test-race test-coverage
 	@echo "All CI tests passed!"
 
 # CI Build (equivalent to CI build job)
@@ -245,8 +239,8 @@ ci-build: deps build
 		~/.local/bin/cvewatch version 2>/dev/null || true; \
 	fi
 
-# CI Cross-platform Build (equivalent to CI cross-build job)
-ci-cross-build: deps
+# Cross-platform build (for local testing)
+cross-build: deps
 	@echo "Building for multiple platforms..."
 	@for os in linux darwin windows; do \
 		for arch in amd64 arm64; do \

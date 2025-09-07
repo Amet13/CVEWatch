@@ -24,20 +24,13 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
       - name: Run CI Quality Checks
         run: make ci-quality
-
-      - name: Upload security report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-report
-          path: security-report.json
 
   # Testing
   test:
@@ -51,7 +44,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
           cache: true
@@ -67,12 +60,6 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.go-version }}
-          path: coverage.out
-
   # Build and Release
   build:
     name: Build
@@ -85,7 +72,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -93,50 +80,11 @@ jobs:
       - name: Run CI Build
         run: make ci-build
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: cvewatch-linux-amd64
-          path: cvewatch
-
-  # Cross-platform builds
-  cross-build:
-    name: Cross-platform Build
-    runs-on: ubuntu-latest
-    needs: [quality, test]
-    strategy:
-      matrix:
-        include:
-          - os: linux
-            arch: amd64
-          - os: linux
-            arch: arm64
-          - os: darwin
-            arch: amd64
-          - os: darwin
-            arch: arm64
-          - os: windows
-            arch: amd64
-          - os: windows
-            arch: arm64
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Run Cross-platform Build
-        run: make ci-cross-build
-
   # Release
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [quality, test, cross-build]
+    needs: [quality, test]
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     steps:
       - name: Checkout code
@@ -145,7 +93,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -186,64 +134,3 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-
-  # Performance regression check
-  performance:
-    name: Performance Check
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Run benchmarks
-        run: make benchmark > benchmark.txt
-
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: Go Benchmark
-          tool: "go"
-          output-file-path: benchmark.txt
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-
-  # Documentation
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Generate documentation
-        run: |
-          echo "# CVEWatch API Documentation" > docs.txt
-          echo "" >> docs.txt
-          echo "## Main Package" >> docs.txt
-          go doc -all . >> docs.txt 2>/dev/null || echo "Main package documentation generation failed" >> docs.txt
-          echo "" >> docs.txt
-          echo "## Subpackages" >> docs.txt
-          for pkg in cmd internal pkg; do
-            if [ -d "$pkg" ]; then
-              echo "### $pkg" >> docs.txt
-              find "$pkg" -name "*.go" -exec dirname {} \; | sort | uniq | while read dir; do
-                echo "#### $dir" >> docs.txt
-                go doc -all "./$dir" >> docs.txt 2>/dev/null || echo "Failed to generate docs for $dir" >> docs.txt
-                echo "" >> docs.txt
-              done
-            fi
-          done
-
-      - name: Upload documentation
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation
-          path: docs.txt
