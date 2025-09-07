@@ -1,63 +1,60 @@
 repos:
+  # General hooks for all file types
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+        args: [--maxkb=500]
       - id: check-merge-conflict
       - id: check-case-conflict
-      - id: check-docstring-first
       - id: check-json
-      - id: check-merge-conflict
       - id: check-toml
       - id: check-vcs-permalinks
       - id: debug-statements
       - id: detect-private-key
-      - id: name-tests-test
-      - id: requirements-txt-fixer
       - id: fix-byte-order-marker
+      - id: mixed-line-ending
+        args: [--fix=lf]
 
+  # Go formatting and imports
   - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
+    rev: v0.5.2
     hooks:
       - id: go-fmt
-      - id: go-vet
       - id: go-imports
-      - id: golangci-lint
-      - id: go-unit-tests
-      - id: go-build
       - id: go-mod-tidy
 
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
+  # Go vet (static analysis)
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.2
     hooks:
-      - id: black
-        language_version: python3
-        types: [python]
+      - id: go-vet
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        types: [python]
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        types: [python]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        types: [python]
-        additional_dependencies: [types-all]
-
+  # Conventional commits
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.20.0
+    rev: v3.29.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
+
+  # Markdown linting
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.13.0
+    hooks:
+      - id: markdownlint-cli2
+        files: \.(md|mdown|markdown)$
+
+  # License header checks
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
+    hooks:
+      - id: insert-license
+        files: \.go$
+        args:
+          - --license-filepath
+          - LICENSE
+          - --comment-style
+          - /*| *| */
