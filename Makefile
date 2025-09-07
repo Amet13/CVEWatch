@@ -74,12 +74,14 @@ clean:
 	@echo "Cleaning build artifacts..."
 	rm -f cvewatch
 	rm -f cvewatch.exe
-	rm -f cvewatch-*
-	rm -f *.exe
 	rm -f coverage.out
 	rm -f coverage.html
 	rm -f security-report.json
 	rm -f benchmark.txt
+	# Remove all cvewatch-* files including cross-platform builds
+	-find . -maxdepth 1 -name "cvewatch-*" -type f -exec rm -f {} \; 2>/dev/null || true
+	# Remove all .exe files
+	-find . -maxdepth 1 -name "*.exe" -type f -exec rm -f {} \; 2>/dev/null || true
 	go clean
 
 # Run linters (requires golangci-lint)

@@ -132,12 +132,6 @@ jobs:
       - name: Run Cross-platform Build
         run: make ci-cross-build
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: cvewatch-cross-platform
-          path: cvewatch*
-
   # Release
   release:
     name: Release
