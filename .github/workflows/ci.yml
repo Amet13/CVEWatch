@@ -231,8 +231,22 @@ jobs:
 
       - name: Generate documentation
         run: |
-          go install golang.org/x/tools/cmd/godoc@latest
-          go doc -all ./... > docs.txt
+          echo "# CVEWatch API Documentation" > docs.txt
+          echo "" >> docs.txt
+          echo "## Main Package" >> docs.txt
+          go doc -all . >> docs.txt 2>/dev/null || echo "Main package documentation generation failed" >> docs.txt
+          echo "" >> docs.txt
+          echo "## Subpackages" >> docs.txt
+          for pkg in cmd internal pkg; do
+            if [ -d "$pkg" ]; then
+              echo "### $pkg" >> docs.txt
+              find "$pkg" -name "*.go" -exec dirname {} \; | sort | uniq | while read dir; do
+                echo "#### $dir" >> docs.txt
+                go doc -all "./$dir" >> docs.txt 2>/dev/null || echo "Failed to generate docs for $dir" >> docs.txt
+                echo "" >> docs.txt
+              done
+            fi
+          done
 
       - name: Upload documentation
         uses: actions/upload-artifact@v4

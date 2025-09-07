@@ -97,3 +97,6 @@ README_PYTHON.md
 *.bak
 *.backup
 *.old
+
+# Security report
+security-report.json

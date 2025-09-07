@@ -90,8 +90,9 @@ lint:
 	elif command -v ~/go/bin/golangci-lint >/dev/null 2>&1; then \
 		~/go/bin/golangci-lint run; \
 	else \
-		echo "golangci-lint not found. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
-		exit 1; \
+		echo "Installing golangci-lint..."; \
+		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
+		golangci-lint run; \
 	fi
 
 # Format code
@@ -202,8 +203,6 @@ dev-setup: deps deps-tidy
 	fi
 	@echo "Development environment ready."
 
-
-
 # Security scanning
 security-scan:
 	@echo "Running security scan..."
@@ -214,8 +213,10 @@ security-scan:
 		~/go/bin/gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...; \
 		echo "Security scan completed. Report saved to security-report.json"; \
 	else \
-		echo "gosec not found. Skipping security scan."; \
-		echo "Install with: go install github.com/securego/gosec/v2/cmd/gosec@latest"; \
+		echo "Installing gosec..."; \
+		go install github.com/securego/gosec/v2/cmd/gosec@latest; \
+		gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...; \
+		echo "Security scan completed. Report saved to security-report.json"; \
 	fi
 
 # Pre-commit checks
