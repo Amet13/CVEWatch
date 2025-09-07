@@ -3,8 +3,8 @@
   <h1>CVEWatch</h1>
   <p><strong>A modern, fast, and efficient CVE monitoring tool</strong></p>
   <p>
-    <a href="https://github.com/Amet13/CVEWatch/actions/workflows/build-test.yml">
-<img src="https://github.com/Amet13/CVEWatch/actions/workflows/build-test.yml/badge.svg" alt="CI/CD Status">
+    <a href="https://github.com/Amet13/CVEWatch/actions/workflows/ci.yml">
+<img src="https://github.com/Amet13/CVEWatch/actions/workflows/ci.yml/badge.svg" alt="CI/CD Status">
     </a>
     <a href="https://github.com/Amet13/CVEWatch/releases">
       <img src="https://img.shields.io/github/v/release/Amet13/CVEWatch?label=version" alt="Latest Release">
