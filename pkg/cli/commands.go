@@ -101,18 +101,29 @@ func (cmds *Commands) setupFlags() {
 	cmds.RootCmd.PersistentFlags().BoolP("include-cpe", "", false, "Include CPE information in output")
 	cmds.RootCmd.PersistentFlags().BoolP("include-refs", "", false, "Include reference information in output")
 
-	// Bind flags to viper
-	_ = viper.BindPFlag("config", cmds.RootCmd.PersistentFlags().Lookup("config"))
-	_ = viper.BindPFlag("date", cmds.RootCmd.PersistentFlags().Lookup("date"))
-	_ = viper.BindPFlag("min-cvss", cmds.RootCmd.PersistentFlags().Lookup("min-cvss"))
-	_ = viper.BindPFlag("max-cvss", cmds.RootCmd.PersistentFlags().Lookup("max-cvss"))
-	_ = viper.BindPFlag("output", cmds.RootCmd.PersistentFlags().Lookup("output"))
-	_ = viper.BindPFlag("max-results", cmds.RootCmd.PersistentFlags().Lookup("max-results"))
-	_ = viper.BindPFlag("api-key", cmds.RootCmd.PersistentFlags().Lookup("api-key"))
-	_ = viper.BindPFlag("verbose", cmds.RootCmd.PersistentFlags().Lookup("verbose"))
-	_ = viper.BindPFlag("quiet", cmds.RootCmd.PersistentFlags().Lookup("quiet"))
-	_ = viper.BindPFlag("include-cpe", cmds.RootCmd.PersistentFlags().Lookup("include-cpe"))
-	_ = viper.BindPFlag("include-refs", cmds.RootCmd.PersistentFlags().Lookup("include-refs"))
+	// Bind flags to viper (errors are non-critical and can be ignored)
+	//nolint:errcheck // Flag binding errors are non-critical
+	viper.BindPFlag("config", cmds.RootCmd.PersistentFlags().Lookup("config"))
+	//nolint:errcheck
+	viper.BindPFlag("date", cmds.RootCmd.PersistentFlags().Lookup("date"))
+	//nolint:errcheck
+	viper.BindPFlag("min-cvss", cmds.RootCmd.PersistentFlags().Lookup("min-cvss"))
+	//nolint:errcheck
+	viper.BindPFlag("max-cvss", cmds.RootCmd.PersistentFlags().Lookup("max-cvss"))
+	//nolint:errcheck
+	viper.BindPFlag("output", cmds.RootCmd.PersistentFlags().Lookup("output"))
+	//nolint:errcheck
+	viper.BindPFlag("max-results", cmds.RootCmd.PersistentFlags().Lookup("max-results"))
+	//nolint:errcheck
+	viper.BindPFlag("api-key", cmds.RootCmd.PersistentFlags().Lookup("api-key"))
+	//nolint:errcheck
+	viper.BindPFlag("verbose", cmds.RootCmd.PersistentFlags().Lookup("verbose"))
+	//nolint:errcheck
+	viper.BindPFlag("quiet", cmds.RootCmd.PersistentFlags().Lookup("quiet"))
+	//nolint:errcheck
+	viper.BindPFlag("include-cpe", cmds.RootCmd.PersistentFlags().Lookup("include-cpe"))
+	//nolint:errcheck
+	viper.BindPFlag("include-refs", cmds.RootCmd.PersistentFlags().Lookup("include-refs"))
 }
 
 // createCommands creates all subcommands
@@ -481,7 +492,6 @@ func (cmds *Commands) runConfig(configManager *config.ConfigManager) error {
 
 // runVersion executes the version command
 func (cmds *Commands) runVersion(_ *config.ConfigManager) error {
-
 	fmt.Printf("CVEWatch %s\n", version.GetVersion())
 	fmt.Printf("A modern CVE vulnerability monitoring tool\n")
 	fmt.Printf("Built with Go and using the official NVD API\n")

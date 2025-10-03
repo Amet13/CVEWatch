@@ -201,8 +201,8 @@ func (n *NVDClient) closeResponseBody(resp *http.Response) {
 func (n *NVDClient) parseResponse(resp *http.Response) (*types.NVDResponse, error) {
 	if resp.StatusCode != http.StatusOK {
 		// Try to read error response body for more details
-		body, _ := io.ReadAll(resp.Body)
-		if len(body) > 0 {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil && len(body) > 0 {
 			return nil, errors.NewAPIError("NVD API returned an error", fmt.Errorf("status %d: %s - %s", resp.StatusCode, resp.Status, string(body)))
 		}
 		return nil, errors.NewHTTPError(resp, fmt.Errorf("unexpected status code"))

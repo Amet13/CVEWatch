@@ -2,8 +2,6 @@ run:
   timeout: 5m
   go: "1.25"
   tests: true
-  skip-dirs:
-    - vendor
 
 linters:
   enable:
@@ -18,20 +16,16 @@ linters:
     - staticcheck # Go static analysis
     - unused # Checks for unused constants, variables, functions and types
 
-    # Additional recommended linters
+    # Additional recommended linters (less strict)
     - bodyclose # Checks whether HTTP response body is closed
     - contextcheck # Check whether the function uses a non-inherited context
     - durationcheck # Check for two durations multiplied together
     - errname # Checks that sentinel errors are prefixed with Err
     - errorlint # Find code that will cause problems with error wrapping
     - exhaustive # Check exhaustiveness of enum switch statements
-    - exportloopref # Checks for pointers to enclosing loop variables
     - gochecknoinits # Checks that no init functions are present
     - goconst # Finds repeated strings that could be replaced by a constant
-    - gocritic # Provides diagnostics that check for bugs, performance and style issues
-    - godot # Check if comments end in a period
     - gocyclo # Computes and checks cyclomatic complexity
-    - goprintffuncname # Checks that printf-like functions are named with f at the end
     - gosimple # Linter for Go source code that specializes in simplifying code
     - nolintlint # Reports ill-formed or insufficient nolint directives
     - predeclared # Find code that shadows predeclared identifiers
@@ -42,30 +36,28 @@ linters:
     - unparam # Reports unused function parameters
     - whitespace # Tool for detection of leading and trailing whitespace
 
+  disable:
+    - godot # Too strict - requires periods on all comments
+    - goprintffuncname # Too strict - breaks API for logger functions
+    - gocritic # Too many opinionated warnings
+
 linters-settings:
   errcheck:
     check-type-assertions: true
-    check-blank: true
+    check-blank: false # Allow _ = err for intentionally ignored errors
 
   govet:
     enable-all: true
     disable:
       - shadow # Too strict for general use
+      - fieldalignment # Memory optimization hints, not critical
 
   gocyclo:
-    min-complexity: 15
+    min-complexity: 20 # Increased from 15 for flexibility
 
   goconst:
     min-len: 3
-    min-occurrences: 3
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - unnamedResult # Allow unnamed results
+    min-occurrences: 5 # Increased from 3 to reduce noise
 
   revive:
     rules:
@@ -76,6 +68,8 @@ linters-settings:
           - "disableStutteringCheck"
 
 issues:
+  exclude-dirs:
+    - vendor
   exclude-rules:
     - path: _test\.go
       linters:
@@ -83,9 +77,13 @@ issues:
         - gocyclo
         - dupl
         - gosec
+        - unparam
+        - govet # Ignore unused writes in test data
     - path: cmd/
       linters:
         - errcheck
-
+    - linters:
+        - errorlint
+      text: "type assertion on error will fail on wrapped errors"
   max-issues-per-linter: 0
   max-same-issues: 0

@@ -25,6 +25,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -114,7 +115,8 @@ func (cm *ConfigManager) readConfigFile() error {
 
 // handleConfigReadError handles errors when reading config files
 func (cm *ConfigManager) handleConfigReadError(err error) error {
-	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+	var notFoundErr viper.ConfigFileNotFoundError
+	if errors.As(err, &notFoundErr) {
 		return cm.createAndValidateDefaultConfig()
 	}
 
@@ -142,7 +144,6 @@ func (cm *ConfigManager) processConfigFile() error {
 
 // loadFromFile loads configuration from a specific file
 func (cm *ConfigManager) loadFromFile(configFile string) error {
-	//nolint:gosec // configFile is controlled by our application, not user input
 	data, err := os.ReadFile(filepath.Clean(configFile))
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
@@ -321,12 +322,12 @@ func (cm *ConfigManager) writeDefaultConfig(configDir string, defaultConfig *typ
 		return "", fmt.Errorf("failed to marshal default config: %w", err)
 	}
 
-	if err := os.WriteFile(configFile, data, 0600); err != nil {
+	if err := os.WriteFile(configFile, data, 0o600); err != nil {
 		return "", fmt.Errorf("failed to write default config: %w", err)
 	}
 
 	// Ensure proper permissions even if umask was set
-	if err := os.Chmod(configFile, 0600); err != nil {
+	if err := os.Chmod(configFile, 0o600); err != nil {
 		return "", fmt.Errorf("failed to set config file permissions: %w", err)
 	}
 
