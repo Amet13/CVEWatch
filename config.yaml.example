@@ -1,72 +1,213 @@
-# CVEWatch Configuration Example
-# Copy this file to config.yaml and modify as needed
+# ============================================================================
+# CVEWatch Configuration File
+# ============================================================================
+# This is the main configuration file for CVEWatch.
+# Copy this file to ~/.cvewatch/config.yaml and customize as needed.
+#
+# Quick Start:
+#   1. Copy: cp config.yaml.example ~/.cvewatch/config.yaml
+#   2. Edit: vim ~/.cvewatch/config.yaml
+#   3. Run:  cvewatch search --date 2024-01-01
+#
+# Documentation: https://github.com/Amet13/CVEWatch
+# ============================================================================
 
-# Application settings
+# ----------------------------------------------------------------------------
+# Application Settings
+# ----------------------------------------------------------------------------
+# Core application configuration
 app:
+  # Application name (do not change)
   name: "CVEWatch"
+
+  # Application version (auto-updated during build)
   version: "2.0.0"
+
+  # Logging level: debug, info, warn, error
+  # - debug: Verbose output for troubleshooting
+  # - info:  Standard operational messages (recommended)
+  # - warn:  Warning messages only
+  # - error: Error messages only
   log_level: "info"
+
+  # Global timeout in seconds for all operations
+  # Increase if you have a slow network connection
   timeout: 60
 
-# NVD API configuration
+# ----------------------------------------------------------------------------
+# NVD API Configuration
+# ----------------------------------------------------------------------------
+# Settings for the National Vulnerability Database API
 nvd:
+  # NVD API base URL (official endpoint - do not change)
   base_url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
-  rate_limit: 1000 # requests per hour
+
+  # Rate limit in requests per hour
+  # Without API key: 100 requests/hour (NVD limit)
+  # With API key: 1000 requests/hour (NVD limit)
+  # Note: This is enforced client-side to prevent hitting NVD limits
+  rate_limit: 1000
+
+  # API request timeout in seconds
+  # Increase if NVD API is slow or if you get timeout errors
   timeout: 30
+
+  # Number of retry attempts for failed requests
+  # Recommended: 3 (balances reliability and speed)
   retry_attempts: 3
+
+  # Delay between retry attempts in seconds
+  # Recommended: 5 (gives NVD time to recover)
   retry_delay: 5
 
-# Default search settings
+  # Optional: NVD API Key for higher rate limits
+  # Get your key at: https://nvd.nist.gov/developers/request-an-api-key
+  # Uncomment and add your key below:
+  # api_key: "your-api-key-here"
+
+# ----------------------------------------------------------------------------
+# Search Default Settings
+# ----------------------------------------------------------------------------
+# Default values for CVE searches (can be overridden via command-line flags)
 search:
+  # Default date for searches
+  # Options: "today", "YYYY-MM-DD"
   default_date: "today"
+
+  # Default minimum CVSS score (0.0 - 10.0)
+  # 0.0 = include all vulnerabilities
   default_min_cvss: 0.0
+
+  # Default maximum CVSS score (0.0 - 10.0)
+  # 10.0 = include all severity levels
   default_max_cvss: 10.0
+
+  # Default maximum number of results to return
+  # Range: 1-2000 (NVD API limit)
+  # Recommended: 100 for reasonable response times
   default_max_results: 100
+
+  # Date format for parsing and display
+  # Do not change unless you know what you're doing
   date_format: "2006-01-02"
 
-# Output settings
+# ----------------------------------------------------------------------------
+# Output Settings
+# ----------------------------------------------------------------------------
+# Configure how CVE data is displayed
 output:
+  # Default output format
+  # Options: simple, json, yaml, table, csv
+  # - simple: Human-readable text (recommended for terminal)
+  # - json:   Structured JSON (good for piping to other tools)
+  # - yaml:   YAML format (good for configuration)
+  # - table:  Formatted table (good for terminal)
+  # - csv:    Comma-separated values (good for Excel/spreadsheets)
   default_format: "simple"
+
+  # Available output formats (do not modify)
   formats: ["simple", "json", "yaml", "table", "csv"]
+
+  # Enable colored output in terminal
+  # Set to false if your terminal doesn't support colors
   colors: true
+
+  # Maximum length for truncated descriptions in simple/table output
+  # Longer descriptions will be truncated with "..."
+  # Range: 50-500 (100 is recommended)
   truncate_length: 100
 
-# Security settings
+# ----------------------------------------------------------------------------
+# Security Settings
+# ----------------------------------------------------------------------------
+# Security-related configuration
 security:
+  # Enable SSL/TLS certificate verification
+  # IMPORTANT: Always keep this enabled in production!
+  # Only disable for testing with self-signed certificates
   enable_ssl_verification: true
+
+  # User agent string sent with API requests
+  # Helps NVD identify your application
   user_agent: "Mozilla/5.0 (compatible; CVEWatch/2; +https://github.com/Amet13/CVEWatch)"
+
+  # Custom HTTP headers sent with all requests
+  # Generally, you should not modify these
   request_headers:
     Accept: "application/json"
     Accept-Encoding: "gzip"
 
-# Products to monitor
+# ----------------------------------------------------------------------------
+# Products to Monitor
+# ----------------------------------------------------------------------------
+# Define which software products you want to monitor for vulnerabilities.
+# Each product can have keywords for text matching and CPE patterns for
+# precise identification.
+#
+# Priority levels: critical, high, medium, low
+# - critical: Critical infrastructure components
+# - high:     Important services and libraries
+# - medium:   Supporting tools and frameworks
+# - low:      Optional or development tools
+#
+# You can add or remove products as needed. Examples below:
 products:
+  # Linux Kernel - Core operating system
   - name: "Linux Kernel"
     keywords: ["linux", "kernel", "linux kernel"]
     cpe_patterns: ["cpe:2.3:o:*:linux:*:*:*:*:*:*:*"]
     description: "Linux operating system kernel"
     priority: "high"
 
+  # OpenSSL - Cryptography library (CRITICAL)
   - name: "OpenSSL"
     keywords: ["openssl", "ssl", "tls", "cryptography"]
     cpe_patterns: ["cpe:2.3:a:openssl:openssl:*:*:*:*:*:*:*"]
     description: "OpenSSL cryptography library"
     priority: "critical"
 
+  # Apache HTTP Server - Web server
   - name: "Apache HTTP Server"
     keywords: ["apache", "httpd", "web server", "http server"]
     cpe_patterns: ["cpe:2.3:a:apache:http_server:*:*:*:*:*:*:*"]
     description: "Apache HTTP web server"
     priority: "high"
 
+  # PHP - Server-side scripting language
   - name: "PHP"
     keywords: ["php", "web", "scripting", "language"]
     cpe_patterns: ["cpe:2.3:a:php:php:*:*:*:*:*:*:*"]
     description: "PHP scripting language"
     priority: "high"
 
+  # Python - Programming language
   - name: "Python"
     keywords: ["python", "scripting", "programming", "language"]
     cpe_patterns: ["cpe:2.3:a:python:python:*:*:*:*:*:*:*"]
     description: "Python programming language"
     priority: "medium"
+
+  # Example: Add more products as needed
+  # Uncomment and customize:
+  # - name: "Nginx"
+  #   keywords: ["nginx", "web server"]
+  #   cpe_patterns: ["cpe:2.3:a:nginx:nginx:*:*:*:*:*:*:*"]
+  #   description: "Nginx web server"
+  #   priority: "high"
+  #
+  # - name: "Docker"
+  #   keywords: ["docker", "container"]
+  #   cpe_patterns: ["cpe:2.3:a:docker:docker:*:*:*:*:*:*:*"]
+  #   description: "Docker container platform"
+  #   priority: "high"
+  #
+  # - name: "Kubernetes"
+  #   keywords: ["kubernetes", "k8s"]
+  #   cpe_patterns: ["cpe:2.3:a:kubernetes:kubernetes:*:*:*:*:*:*:*"]
+  #   description: "Kubernetes container orchestration"
+  #   priority: "critical"
+
+# ============================================================================
+# End of Configuration
+# ============================================================================
+# For more information, see: https://github.com/Amet13/CVEWatch/blob/main/README.md

@@ -100,3 +100,60 @@ func TestIsValidOutputFormat(t *testing.T) {
 	assert.False(t, IsValidOutputFormat(""))
 	assert.False(t, IsValidOutputFormat("invalid"))
 }
+
+func TestIsValidDateRange(t *testing.T) {
+	tests := []struct {
+		name      string
+		startDate string
+		endDate   string
+		want      bool
+	}{
+		{"valid range same day", "2024-01-01", "2024-01-01", true},
+		{"valid range sequential", "2024-01-01", "2024-01-02", true},
+		{"valid range month span", "2024-01-15", "2024-02-15", true},
+		{"valid range year span", "2023-12-31", "2024-01-01", true},
+		{"invalid range reversed", "2024-01-02", "2024-01-01", false},
+		{"invalid range far apart reversed", "2024-12-31", "2024-01-01", false},
+		{"empty start date", "", "2024-01-01", true},
+		{"empty end date", "2024-01-01", "", true},
+		{"both empty", "", "", true},
+		{"invalid start date format", "2024/01/01", "2024-01-02", false},
+		{"invalid end date format", "2024-01-01", "2024/01/02", false},
+		{"valid wide range", "2023-01-01", "2024-12-31", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsValidDateRange(tt.startDate, tt.endDate)
+			assert.Equal(t, tt.want, got, "IsValidDateRange(%q, %q)", tt.startDate, tt.endDate)
+		})
+	}
+}
+
+func TestSanitizeCVEID(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"already uppercase", "CVE-2023-1234", "CVE-2023-1234"},
+		{"lowercase", "cve-2023-1234", "CVE-2023-1234"},
+		{"mixed case", "CvE-2023-1234", "CVE-2023-1234"},
+		{"with leading space", " CVE-2023-1234", "CVE-2023-1234"},
+		{"with trailing space", "CVE-2023-1234 ", "CVE-2023-1234"},
+		{"with both spaces", "  CVE-2023-1234  ", "CVE-2023-1234"},
+		{"with tab", "\tCVE-2023-1234", "CVE-2023-1234"},
+		{"with newline", "CVE-2023-1234\n", "CVE-2023-1234"},
+		{"lowercase with spaces", "  cve-2023-1234  ", "CVE-2023-1234"},
+		{"empty string", "", ""},
+		{"only spaces", "   ", ""},
+		{"modern CVE ID", "cve-2023-123456", "CVE-2023-123456"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SanitizeCVEID(tt.input)
+			assert.Equal(t, tt.want, got, "SanitizeCVEID(%q)", tt.input)
+		})
+	}
+}

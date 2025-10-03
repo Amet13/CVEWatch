@@ -215,6 +215,8 @@ type SearchResult struct {
 // SearchRequest represents a search request
 type SearchRequest struct {
 	Date         string
+	StartDate    string // For date range queries
+	EndDate      string // For date range queries
 	MinCVSS      float64
 	MaxCVSS      float64
 	Products     []string

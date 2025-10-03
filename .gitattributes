@@ -1,0 +1,62 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Go source files
+*.go text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+
+# Configuration files
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+LICENSE text eol=lf
+
+# Go module files
+go.mod text eol=lf
+go.sum text eol=lf
+
+# Makefiles
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Git files
+.gitattributes text eol=lf
+.gitignore text eol=lf
+
+# Binary files
+*.exe binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+*.tgz binary
+*.7z binary
+
+# Exclude files from export (git archive)
+.github export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+.golangci.yml export-ignore
+.goreleaser.yml export-ignore
+.pre-commit-config.yaml export-ignore
+Makefile export-ignore
+*.test export-ignore
+coverage.* export-ignore
+
+# Git LFS (if needed in future)
+# *.bin filter=lfs diff=lfs merge=lfs -text
+

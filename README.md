@@ -1,16 +1,19 @@
 <div align="center">
-  <img src="logo.png" alt="ODYSSEY Logo" width="200" style="border-radius: 20px;">
+  <img src="logo.png" alt="CVEWatch Logo" width="200" style="border-radius: 20px;">
   <h1>CVEWatch</h1>
   <p><strong>A modern, fast, and efficient CVE monitoring tool</strong></p>
   <p>
     <a href="https://github.com/Amet13/CVEWatch/actions/workflows/ci.yml">
-<img src="https://github.com/Amet13/CVEWatch/actions/workflows/ci.yml/badge.svg" alt="CI/CD Status">
+      <img src="https://github.com/Amet13/CVEWatch/actions/workflows/ci.yml/badge.svg" alt="CI/CD Status">
     </a>
     <a href="https://github.com/Amet13/CVEWatch/releases">
       <img src="https://img.shields.io/github/v/release/Amet13/CVEWatch?label=version" alt="Latest Release">
     </a>
     <a href="https://github.com/Amet13/CVEWatch/blob/main/LICENSE">
       <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+    </a>
+    <a href="https://goreportcard.com/report/github.com/Amet13/CVEWatch">
+      <img src="https://goreportcard.com/badge/github.com/Amet13/CVEWatch" alt="Go Report Card">
     </a>
   </p>
 </div>
@@ -271,6 +274,16 @@ Comma-separated values for spreadsheet analysis and reporting.
 - Rate limiting and retry logic
 - Input validation and sanitization
 - Secure configuration file handling
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Code of Conduct
+- Development setup
+- How to submit issues
+- How to create pull requests
+- Coding standards
 
 ## 📄 License
 

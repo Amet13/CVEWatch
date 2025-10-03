@@ -39,17 +39,17 @@ func IsValidCVEID(cveID string) bool {
 	// Sanitize input - remove any whitespace
 	cveID = strings.TrimSpace(cveID)
 
-	// Basic CVE ID format validation: CVE-YYYY-NNNNN
-	if len(cveID) < 8 {
+	// Basic CVE ID format validation: CVE-YYYY-NNNNN+
+	if len(cveID) < 13 { // Minimum: CVE-1999-0001
 		return false
 	}
 
 	// Check if it starts with "CVE-"
-	if cveID[:4] != "CVE-" {
+	if !strings.HasPrefix(cveID, "CVE-") {
 		return false
 	}
 
-	// Check for valid format: CVE-YYYY-NNNNN
+	// Check for valid format: CVE-YYYY-NNNNN (4+ digits)
 	parts := strings.Split(cveID, "-")
 	if len(parts) != 3 {
 		return false
@@ -66,12 +66,13 @@ func IsValidCVEID(cveID string) bool {
 		return false
 	}
 
-	// Check if number part is numeric, positive, and has correct length (4-5 digits)
-	if len(parts[2]) < 4 || len(parts[2]) > 5 {
+	// Check if number part is numeric and positive (minimum 4 digits, no maximum)
+	// Modern CVE IDs can have 4-7+ digits (e.g., CVE-2023-1234567)
+	if len(parts[2]) < 4 {
 		return false
 	}
 	seq, err := strconv.Atoi(parts[2])
-	if err != nil || seq < 1 {
+	if err != nil || seq < 0 {
 		return false
 	}
 
@@ -110,4 +111,24 @@ func IsValidOutputFormat(format string) bool {
 	}
 
 	return false
+}
+
+// IsValidDateRange checks if a date range is valid (start <= end)
+func IsValidDateRange(startDate, endDate string) bool {
+	if startDate == "" || endDate == "" {
+		return true // Empty dates are valid
+	}
+
+	// Both dates must be valid formats
+	if !IsValidDate(startDate) || !IsValidDate(endDate) {
+		return false
+	}
+
+	// Simple string comparison works for YYYY-MM-DD format
+	return startDate <= endDate
+}
+
+// SanitizeCVEID sanitizes a CVE ID by trimming whitespace and converting to uppercase
+func SanitizeCVEID(cveID string) string {
+	return strings.ToUpper(strings.TrimSpace(cveID))
 }

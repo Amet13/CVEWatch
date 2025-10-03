@@ -11,8 +11,8 @@ builds:
     ldflags:
       - -s -w
       - -X cvewatch/pkg/version.Version={{.Version}}
-      - -X cvewatch/pkg/version.Commit={{.ShortCommit}}
-      - -X cvewatch/pkg/version.Date={{.Date}}
+      - -X cvewatch/pkg/version.GitCommit={{.ShortCommit}}
+      - -X cvewatch/pkg/version.BuildTime={{.Date}}
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     ignore:

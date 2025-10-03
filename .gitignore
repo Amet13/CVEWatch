@@ -98,5 +98,45 @@ README_PYTHON.md
 *.backup
 *.old
 
-# Security report
+# Security reports and scans
 security-report.json
+gosec-report.*
+trivy-report.*
+snyk-report.*
+
+# Dependency check
+vendor/
+.vendor-new/
+
+# GoReleaser
+dist/
+.goreleaser.yaml.bak
+
+# Air (live reload for development)
+tmp/
+.air.toml
+
+# Benchmarks
+*.bench
+benchstat.txt
+
+# Profiling
+*.prof
+*.pprof
+cpu.out
+mem.out
+trace.out
+
+# Test binaries
+*.test
+testbin/
+
+# Debug files
+debug
+debug.test
+__debug_bin*
+
+# Local development
+.local/
+local.yaml
+dev.yaml
