@@ -111,6 +111,11 @@ jobs:
       - name: Install Task
         run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
 
+      - name: Clean up any uncommitted changes
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+
       - name: Run CI Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
