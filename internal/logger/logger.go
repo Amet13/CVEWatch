@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 
+// Package logger provides simple logging functionality for CVEWatch.
+//
+// It supports multiple log levels (DEBUG, INFO, WARN, ERROR) with
+// formatted output including timestamps and level prefixes.
 package logger
 
 import (
@@ -35,10 +39,21 @@ import (
 type LogLevel int
 
 const (
+	// DEBUG log level for detailed debugging information
 	DEBUG LogLevel = iota
+	// INFO log level for general information
 	INFO
+	// WARN log level for warnings
 	WARN
+	// ERROR log level for errors
 	ERROR
+)
+
+const (
+	debugStr = "debug"
+	infoStr  = "info"
+	warnStr  = "warn"
+	errorStr = "error"
 )
 
 // Logger provides structured logging functionality
@@ -51,13 +66,13 @@ type Logger struct {
 func NewLogger(level string, prefix string) *Logger {
 	var logLevel LogLevel
 	switch strings.ToLower(level) {
-	case "debug":
+	case debugStr:
 		logLevel = DEBUG
-	case "info":
+	case infoStr:
 		logLevel = INFO
-	case "warn":
+	case warnStr:
 		logLevel = WARN
-	case "error":
+	case errorStr:
 		logLevel = ERROR
 	default:
 		logLevel = INFO
@@ -112,13 +127,13 @@ func (l *Logger) log(level, format string, args ...interface{}) {
 // SetLogLevel changes the logging level
 func (l *Logger) SetLogLevel(level string) {
 	switch strings.ToLower(level) {
-	case "debug":
+	case debugStr:
 		l.level = DEBUG
-	case "info":
+	case infoStr:
 		l.level = INFO
-	case "warn":
+	case warnStr:
 		l.level = WARN
-	case "error":
+	case errorStr:
 		l.level = ERROR
 	}
 }

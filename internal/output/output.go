@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 
+// Package output provides formatting and output methods for CVE results.
+//
+// It supports multiple output formats: JSON, YAML, CSV, table/tabular, and simple text.
+// Each format is optimized for its intended use case.
 package output
 
 import (
@@ -36,6 +40,16 @@ import (
 	"cvewatch/internal/types"
 
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	formatJSON   = "json"
+	formatYAML   = "yaml"
+	formatTable  = "table"
+	formatCSV    = "csv"
+	langEnglish  = "en"
+	unknownProduct = "Unknown"
+	noDesc       = "No description available"
 )
 
 // OutputFormatter handles different output formats
@@ -55,13 +69,13 @@ func NewOutputFormatter(format string, config *types.AppConfig) *OutputFormatter
 // FormatOutput formats and displays the CVE results
 func (o *OutputFormatter) FormatOutput(result *types.SearchResult) error {
 	switch o.format {
-	case "json":
+	case formatJSON:
 		return o.outputJSON(result)
-	case "yaml":
+	case formatYAML:
 		return o.outputYAML(result)
-	case "table":
+	case formatTable:
 		return o.outputTable(result)
-	case "csv":
+	case formatCSV:
 		return o.outputCSV(result)
 	default:
 		return o.outputSimple(result)
@@ -272,12 +286,12 @@ func (o *OutputFormatter) getSeverity(score float64) string {
 // getEnglishDescription returns the English description of a CVE
 func (o *OutputFormatter) getEnglishDescription(cve types.CVE) string {
 	for _, desc := range cve.Descriptions {
-		if desc.Lang == "en" {
+		if desc.Lang == langEnglish {
 			return desc.Value
 		}
 	}
 
-	return "No description available"
+	return noDesc
 }
 
 // getAffectedProducts returns a string representation of affected products
@@ -298,7 +312,7 @@ func (o *OutputFormatter) getAffectedProducts(cve types.CVE) string {
 	}
 
 	if len(products) == 0 {
-		return "Unknown"
+		return unknownProduct
 	}
 
 	// Remove duplicates and join

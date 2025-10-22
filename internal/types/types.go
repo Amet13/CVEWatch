@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 
+// Package types defines all data structures used throughout CVEWatch.
+//
+// It provides types for configuration, API requests/responses, CVE data,
+// and command-line arguments. These types mirror the NVD API v2.0 structure.
 package types
 
 // AppConfig represents the main application configuration
@@ -84,17 +88,38 @@ type Product struct {
 	Priority    string   `yaml:"priority"`
 }
 
-// CVE represents a Common Vulnerability and Exposure entry from NVD
+// CVE represents a Common Vulnerability and Exposure entry from NVD.
+//
+// This type mirrors the NVD API v2.0 response structure and contains
+// all available information about a single vulnerability including
+// CVSS scores, descriptions, references, affected products, and weaknesses.
 type CVE struct {
-	ID             string          `json:"id"`
-	Descriptions   []Description   `json:"descriptions"`
-	Metrics        Metrics         `json:"metrics"`
-	Published      string          `json:"published"`
-	Modified       string          `json:"lastModified"`
-	Status         string          `json:"vulnStatus"`
-	References     []Reference     `json:"references"`
+	// CVE identifier in the format CVE-YYYY-NNNNN (e.g., "CVE-2024-1234")
+	ID string `json:"id"`
+
+	// Descriptions in multiple languages
+	Descriptions []Description `json:"descriptions"`
+
+	// CVSS scoring information (v2 and/or v3.1)
+	Metrics Metrics `json:"metrics"`
+
+	// Publication date in ISO 8601 format (e.g., "2024-01-01T00:00:00Z")
+	Published string `json:"published"`
+
+	// Last modification date in ISO 8601 format
+	Modified string `json:"lastModified"`
+
+	// Publication status (e.g., "PUBLISHED", "UNDERREVIEW", "REJECTED")
+	Status string `json:"vulnStatus"`
+
+	// Reference links to advisories, patches, and other resources
+	References []Reference `json:"references"`
+
+	// CPE configurations indicating affected products
 	Configurations []Configuration `json:"configurations"`
-	Weaknesses     []Weakness      `json:"weaknesses"`
+
+	// Weakness classifications (CWE - Common Weakness Enumeration)
+	Weaknesses []Weakness `json:"weaknesses"`
 }
 
 // Description represents a CVE description
@@ -212,19 +237,46 @@ type SearchResult struct {
 	QueryTime  string
 }
 
-// SearchRequest represents a search request
+// SearchRequest represents a search request to the NVD API.
+//
+// All fields except Products are optional and will use configuration defaults
+// if not provided. Products must contain at least one product name.
+//
+// The search will be filtered by CVSS score range and date if provided.
+// Results are further filtered based on product keywords and CPE patterns.
 type SearchRequest struct {
-	Date         string
-	StartDate    string // For date range queries
-	EndDate      string // For date range queries
-	MinCVSS      float64
-	MaxCVSS      float64
-	Products     []string
-	MaxResults   int
-	APIKey       string
-	IncludeCPE   bool
-	IncludeRefs  bool
+	// Date in YYYY-MM-DD format. If empty, uses today's date.
+	Date string
+
+	// StartDate in YYYY-MM-DD format for range queries. Optional.
+	StartDate string
+
+	// EndDate in YYYY-MM-DD format for range queries. Optional.
+	EndDate string
+
+	// Minimum CVSS score (0.0-10.0). If 0, no minimum filter applied.
+	MinCVSS float64
+
+	// Maximum CVSS score (0.0-10.0). If 0, no maximum filter applied.
+	MaxCVSS float64
+
+	// Product names to filter by. Must not be empty.
+	Products []string
+
+	// Maximum number of results to return (1-2000).
+	MaxResults int
+
+	// Optional NVD API key for higher rate limits.
+	APIKey string
+
+	// Output format (simple, json, yaml, table, csv).
 	OutputFormat string
+
+	// Include CPE information in filtered results.
+	IncludeCPE bool
+
+	// Include reference links in results.
+	IncludeRefs bool
 }
 
 // CommandLineFlags represents command line arguments

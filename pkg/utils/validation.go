@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 
+// Package utils provides utility functions for CVEWatch.
+//
+// It includes validation helpers for input parameters, date parsing,
+// and other common utility functions used throughout the application.
 package utils
 
 import (

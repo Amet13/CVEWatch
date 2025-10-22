@@ -22,15 +22,17 @@
  * SOFTWARE.
  */
 
+// Package version provides build-time version information for CVEWatch.
+//
+// Version information is injected during the build process using ldflags.
+// It includes the application version, build timestamp, and git commit hash.
 package version
 
-// Version information - these will be set during build
-//
-//nolint:gochecknoglobals // These are build-time constants that need to be globally accessible
+// Version variables injected during build
 var (
-	Version   string = "dev"
-	BuildTime string = "unknown"
-	GitCommit string = "unknown"
+	Version   = "dev"
+	BuildTime = "unknown"
+	GitCommit = "unknown"
 )
 
 // GetVersion returns the version string

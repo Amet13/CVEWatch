@@ -22,6 +22,11 @@
  * SOFTWARE.
  */
 
+// Package config manages application configuration loading and validation.
+//
+// It supports multiple configuration sources including YAML files,
+// environment variables, and default values. Configuration is validated
+// and provides helpful error messages for invalid settings.
 package config
 
 import (
@@ -38,25 +43,45 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ConfigManager handles application configuration
+// ConfigManager handles application configuration.
+//
+// It manages loading configuration from YAML files, environment variables,
+// and provides sensible defaults. The manager validates all settings before use.
 type ConfigManager struct {
 	config *types.AppConfig
 	viper  *viper.Viper
 }
 
-// NewConfigManager creates a new configuration manager
+// NewConfigManager creates a new configuration manager with defaults.
+//
+// Returns:
+//   - *ConfigManager: A new configuration manager instance
 func NewConfigManager() *ConfigManager {
 	return &ConfigManager{
 		viper: viper.New(),
 	}
 }
 
-// SetConfig sets the configuration directly (useful for testing)
+// SetConfig sets the configuration directly (useful for testing).
+//
+// Parameters:
+//   - config: The configuration to set
 func (cm *ConfigManager) SetConfig(config *types.AppConfig) {
 	cm.config = config
 }
 
-// LoadConfig loads configuration from file and environment variables
+// LoadConfig loads configuration from file and environment variables.
+//
+// Loads configuration in the following order (later overrides earlier):
+// 1. Default values
+// 2. Configuration file (YAML)
+// 3. Environment variables
+//
+// Parameters:
+//   - configFile: Path to configuration file (empty string uses default search paths)
+//
+// Returns:
+//   - error: Non-nil if configuration loading or validation fails
 func (cm *ConfigManager) LoadConfig(configFile string) error {
 	cm.setDefaults()
 	cm.setupViper(configFile)

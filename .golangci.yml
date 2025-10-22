@@ -1,22 +1,39 @@
+version: "2"
+
+# Run configuration
 run:
   timeout: 5m
   go: "1.25"
   tests: true
+  allow-parallel-runners: true
+  skip-dirs:
+    - vendor
+    - .git
+    - .github
 
+  modules-download-mode: readonly
+
+# Output configuration
+output:
+  format: colored-line-number
+  sort-results: true
+
+# Linters configuration
 linters:
+  disable-all: true
   enable:
-    # Default linters
+    # Essential linters
     - errcheck # Check for unchecked errors
-    - gofmt # Check code formatting
-    - goimports # Check import formatting
     - gosec # Security-focused linter
     - govet # Examines Go source code and reports suspicious constructs
-    - ineffassign # Detects ineffectual assignments
-    - misspell # Finds commonly misspelled English words
     - staticcheck # Go static analysis
     - unused # Checks for unused constants, variables, functions and types
 
-    # Additional recommended linters (less strict)
+    # Code quality
+    - ineffassign # Detects ineffectual assignments
+    - misspell # Finds commonly misspelled English words
+
+    # Best practices
     - bodyclose # Checks whether HTTP response body is closed
     - contextcheck # Check whether the function uses a non-inherited context
     - durationcheck # Check for two durations multiplied together
@@ -26,64 +43,44 @@ linters:
     - gochecknoinits # Checks that no init functions are present
     - goconst # Finds repeated strings that could be replaced by a constant
     - gocyclo # Computes and checks cyclomatic complexity
-    - gosimple # Linter for Go source code that specializes in simplifying code
     - nolintlint # Reports ill-formed or insufficient nolint directives
     - predeclared # Find code that shadows predeclared identifiers
-    - revive # Fast, configurable, extensible, flexible, and beautiful linter for Go
-    - stylecheck # Stylecheck is a replacement for golint
     - thelper # Detects test helpers without t.Helper() call
     - unconvert # Remove unnecessary type conversions
     - unparam # Reports unused function parameters
     - whitespace # Tool for detection of leading and trailing whitespace
 
-  disable:
-    - godot # Too strict - requires periods on all comments
-    - goprintffuncname # Too strict - breaks API for logger functions
-    - gocritic # Too many opinionated warnings
-
+# Linters settings
 linters-settings:
   errcheck:
-    check-type-assertions: true
-    check-blank: false # Allow _ = err for intentionally ignored errors
+    check-blank: true
+    check-type-assertions: false
 
   govet:
-    enable-all: true
-    disable:
-      - shadow # Too strict for general use
-      - fieldalignment # Memory optimization hints, not critical
+    check-shadowing: true
+    check-unreachable: true
+    check-rangeloops: true
 
   gocyclo:
-    min-complexity: 20 # Increased from 15 for flexibility
+    min-complexity: 10
 
-  goconst:
-    min-len: 3
-    min-occurrences: 5 # Increased from 3 to reduce noise
+  staticcheck:
+    checks: ["all"]
 
-  revive:
-    rules:
-      - name: exported
-        disabled: false
-        arguments:
-          - "checkPrivateReceivers"
-          - "disableStutteringCheck"
+  gosec:
+    severity: medium
+    confidence: medium
 
+# Issues configuration
 issues:
-  exclude-dirs:
-    - vendor
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gocyclo
-        - dupl
-        - gosec
-        - unparam
-        - govet # Ignore unused writes in test data
-    - path: cmd/
-      linters:
-        - errcheck
-    - linters:
-        - errorlint
-      text: "type assertion on error will fail on wrapped errors"
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    # Allow err assignment in test code
+    - path: "_test\\.go"
+      linters:
+        - unparam
+    # Allow init functions in main
+    - path: "cmd/.*\\.go"
+      linters:
+        - gochecknoinits

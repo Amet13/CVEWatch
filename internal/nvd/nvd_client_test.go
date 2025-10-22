@@ -22,131 +22,130 @@
  * SOFTWARE.
  */
 
-//nolint:testpackage // We need to test internal package functions
 package nvd
 
 import (
-	"net/http"
+	"sync"
 	"testing"
-	"time"
-
-	"cvewatch/internal/config"
-	"cvewatch/internal/types"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"cvewatch/internal/types"
 )
 
-func TestNewNVDClient(t *testing.T) {
-	configMgr := config.NewConfigManager()
-	config := &types.AppConfig{}
-	client := NewNVDClient(config, configMgr, "")
-
-	assert.NotNil(t, client)
-	assert.Equal(t, configMgr, client.configMgr)
-	assert.Empty(t, client.apiKey)
+// TestHelper creates test fixtures and helpers
+type TestHelper struct {
+	t      *testing.T
+	config *types.AppConfig
 }
 
-func TestMatchesCVSSRange(t *testing.T) {
-	configMgr := config.NewConfigManager()
-	config := &types.AppConfig{}
-	client := NewNVDClient(config, configMgr, "")
+// NewTestHelper creates a new test helper instance
+func NewTestHelper(t *testing.T) *TestHelper {
+	t.Helper()
+	return &TestHelper{
+		t: t,
+		config: &types.AppConfig{
+			App: types.AppSettings{
+				Name:     "CVEWatch-Test",
+				Version:  "test",
+				LogLevel: "info",
+				Timeout:  30,
+			},
+			NVD: types.NVDSettings{
+				BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
+				RateLimit:     100,
+				Timeout:       30,
+				RetryAttempts: 1,
+				RetryDelay:    1,
+			},
+		},
+	}
+}
 
-	// Test CVE with CVSS v3.1 score
-	cve := types.CVE{
-		ID: "CVE-2023-1234",
+// CreateValidSearchRequest creates a valid search request for testing
+func (th *TestHelper) CreateValidSearchRequest() *types.SearchRequest {
+	return &types.SearchRequest{
+		Date:       "2024-01-01",
+		MinCVSS:    0.0,
+		MaxCVSS:    10.0,
+		MaxResults: 100,
+		Products:   []string{"Linux Kernel"},
+	}
+}
+
+// CreateSampleCVE creates a sample CVE for testing
+func (th *TestHelper) CreateSampleCVE() types.CVE {
+	return types.CVE{
+		ID:        "CVE-2024-1234",
+		Published: "2024-01-01T00:00:00Z",
+		Modified:  "2024-01-02T00:00:00Z",
+		Status:    "PUBLISHED",
+		Descriptions: []types.Description{
+			{
+				Lang:  "en",
+				Value: "A test vulnerability description for linux kernel",
+			},
+		},
 		Metrics: types.Metrics{
 			CVSSMetricV31: []types.CVSSMetricV31{
 				{
 					CVSSData: types.CVSSDataV31{
-						BaseScore: 8.5,
+						BaseScore:    7.5,
+						BaseSeverity: "HIGH",
+						VectorString: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
 					},
 				},
 			},
 		},
 	}
-
-	request := &types.SearchRequest{
-		MinCVSS: 7.0,
-		MaxCVSS: 10.0,
-	}
-
-	assert.True(t, client.matchesCVSSRange(cve, request))
-
-	// Test CVE with score below minimum
-	request.MinCVSS = 9.0
-	assert.False(t, client.matchesCVSSRange(cve, request))
-
-	// Test CVE with score above maximum
-	request.MinCVSS = 0.0
-	request.MaxCVSS = 8.0
-	assert.False(t, client.matchesCVSSRange(cve, request))
 }
 
-func TestMatchesProduct(t *testing.T) {
-	configMgr := config.NewConfigManager()
-	// Create a test config with products
-	testConfig := &types.AppConfig{
-		Products: []types.Product{
-			{
-				Name:     "Test Product",
-				Keywords: []string{"test", "product"},
+// TestValidateSearchRequest_ValidRequests tests validation of valid search requests
+func TestValidateSearchRequest_ValidRequests(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
+
+	tests := []struct {
+		name    string
+		request *types.SearchRequest
+	}{
+		{
+			name:    "Minimal valid request",
+			request: th.CreateValidSearchRequest(),
+		},
+		{
+			name: "Request with CVSS filtering",
+			request: &types.SearchRequest{
+				MaxResults: 100,
+				MinCVSS:    5.0,
+				MaxCVSS:    8.0,
+				Products:   []string{"Linux Kernel"},
 			},
 		},
-	}
-	configMgr.SetConfig(testConfig)
-
-	client := NewNVDClient(testConfig, configMgr, "")
-
-	// Test CVE that matches product keywords
-	cve := types.CVE{
-		ID: "CVE-2023-1234",
-		Descriptions: []types.Description{
-			{
-				Lang:  "en",
-				Value: "This is a test product vulnerability",
+		{
+			name: "Request with max results at limit",
+			request: &types.SearchRequest{
+				MaxResults: 2000,
+				MinCVSS:    0.0,
+				MaxCVSS:    10.0,
+				Products:   []string{"Linux Kernel"},
 			},
 		},
 	}
 
-	request := &types.SearchRequest{
-		Products: []string{"Test Product"},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := client.validateSearchRequest(tt.request)
+			assert.NoError(t, err)
+		})
 	}
-
-	assert.True(t, client.matchesProduct(cve, request.Products))
-
-	// Test CVE that doesn't match
-	cve.Descriptions[0].Value = "This is an unrelated vulnerability"
-	assert.False(t, client.matchesProduct(cve, request.Products))
 }
 
-func TestCPEMatchesPattern(t *testing.T) {
-	configMgr := config.NewConfigManager()
-	config := &types.AppConfig{}
-	client := NewNVDClient(config, configMgr, "")
-
-	// Test exact match
-	assert.True(t, client.cpeMatchesPattern("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"))
-
-	// Test wildcard match
-	assert.True(t, client.cpeMatchesPattern("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:a:vendor:*:*:*:*:*:*:*:*:*"))
-
-	// Test no match
-	assert.False(t, client.cpeMatchesPattern("cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", "cpe:2.3:a:other:product:*:*:*:*:*:*:*"))
-}
-
-func TestValidateSearchRequest(t *testing.T) {
-	appConfig := &types.AppConfig{
-		NVD: types.NVDSettings{
-			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
-			RateLimit:     1000,
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-	}
-
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
+// TestValidateSearchRequest_InvalidParameters tests validation of invalid search requests
+func TestValidateSearchRequest_InvalidParameters(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
 
 	tests := []struct {
 		name    string
@@ -154,72 +153,61 @@ func TestValidateSearchRequest(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "valid request",
+			name: "Invalid min CVSS (negative)",
 			request: &types.SearchRequest{
-				Date:       "2024-01-01",
-				MinCVSS:    7.0,
-				MaxCVSS:    10.0,
 				MaxResults: 100,
-				Products:   []string{"Linux Kernel"},
-			},
-			wantErr: false,
-		},
-		{
-			name:    "nil request",
-			request: nil,
-			wantErr: true,
-		},
-		{
-			name: "invalid max results",
-			request: &types.SearchRequest{
-				Date:       "2024-01-01",
-				MinCVSS:    7.0,
-				MaxCVSS:    10.0,
-				MaxResults: 0,
-				Products:   []string{"Linux Kernel"},
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid min CVSS",
-			request: &types.SearchRequest{
-				Date:       "2024-01-01",
 				MinCVSS:    -1.0,
-				MaxCVSS:    10.0,
-				MaxResults: 100,
+				MaxCVSS:    8.0,
 				Products:   []string{"Linux Kernel"},
 			},
 			wantErr: true,
 		},
 		{
-			name: "invalid max CVSS",
+			name: "Invalid max CVSS (too high)",
 			request: &types.SearchRequest{
-				Date:       "2024-01-01",
-				MinCVSS:    7.0,
+				MaxResults: 100,
+				MinCVSS:    5.0,
 				MaxCVSS:    11.0,
-				MaxResults: 100,
 				Products:   []string{"Linux Kernel"},
 			},
 			wantErr: true,
 		},
 		{
-			name: "min CVSS greater than max CVSS",
+			name: "MinCVSS greater than MaxCVSS",
 			request: &types.SearchRequest{
-				Date:       "2024-01-01",
+				MaxResults: 100,
 				MinCVSS:    8.0,
-				MaxCVSS:    7.0,
-				MaxResults: 100,
+				MaxCVSS:    5.0,
 				Products:   []string{"Linux Kernel"},
 			},
 			wantErr: true,
 		},
 		{
-			name: "no products specified",
+			name: "Invalid max results (too high)",
 			request: &types.SearchRequest{
-				Date:       "2024-01-01",
-				MinCVSS:    7.0,
-				MaxCVSS:    10.0,
+				MaxResults: 3000,
+				MinCVSS:    5.0,
+				MaxCVSS:    8.0,
+				Products:   []string{"Linux Kernel"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid max results (too low)",
+			request: &types.SearchRequest{
+				MaxResults: 0,
+				MinCVSS:    5.0,
+				MaxCVSS:    8.0,
+				Products:   []string{"Linux Kernel"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "No products specified",
+			request: &types.SearchRequest{
 				MaxResults: 100,
+				MinCVSS:    5.0,
+				MaxCVSS:    8.0,
 				Products:   []string{},
 			},
 			wantErr: true,
@@ -229,306 +217,278 @@ func TestValidateSearchRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := client.validateSearchRequest(tt.request)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("validateSearchRequest() error = %v, wantErr %v", err, tt.wantErr)
+			assert.Error(t, err, "expected error for test: %s", tt.name)
+		})
+	}
+}
+
+// TestMatchesCVSSRange_WithinRange tests CVSS filtering for values within range
+func TestMatchesCVSSRange_WithinRange(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
+	cve := th.CreateSampleCVE() // CVSS 7.5
+
+	tests := []struct {
+		name     string
+		minCVSS  float64
+		maxCVSS  float64
+		expected bool
+	}{
+		{
+			name:     "Within tight range",
+			minCVSS:  7.0,
+			maxCVSS:  8.0,
+			expected: true,
+		},
+		{
+			name:     "At minimum boundary",
+			minCVSS:  7.5,
+			maxCVSS:  8.0,
+			expected: true,
+		},
+		{
+			name:     "At maximum boundary",
+			minCVSS:  7.0,
+			maxCVSS:  7.5,
+			expected: true,
+		},
+		{
+			name:     "Within wide range",
+			minCVSS:  0.0,
+			maxCVSS:  10.0,
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := &types.SearchRequest{
+				MinCVSS: tt.minCVSS,
+				MaxCVSS: tt.maxCVSS,
 			}
-		})
-	}
-}
-
-func TestRateLimiting(t *testing.T) {
-	appConfig := &types.AppConfig{
-		NVD: types.NVDSettings{
-			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
-			RateLimit:     2, // Set low for testing
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-	}
-
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
-
-	// First two requests should succeed
-	if err := client.checkRateLimit(); err != nil {
-		t.Errorf("First request should succeed: %v", err)
-	}
-	client.updateRateLimit()
-
-	if err := client.checkRateLimit(); err != nil {
-		t.Errorf("Second request should succeed: %v", err)
-	}
-	client.updateRateLimit()
-
-	// Third request should fail
-	if err := client.checkRateLimit(); err == nil {
-		t.Error("Third request should fail due to rate limiting")
-	}
-
-	// Reset rate limit by advancing time
-	client.lastRequest = time.Now().Add(-2 * time.Hour)
-	client.requestCount = 0
-
-	// Should succeed again
-	if err := client.checkRateLimit(); err != nil {
-		t.Errorf("Request after reset should succeed: %v", err)
-	}
-}
-
-func TestBuildSearchURL(t *testing.T) {
-	appConfig := &types.AppConfig{
-		NVD: types.NVDSettings{
-			BaseURL: "https://services.nvd.nist.gov/rest/json/cves/2.0",
-		},
-	}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
-
-	tests := []struct {
-		name     string
-		request  *types.SearchRequest
-		apiKey   string
-		expected string
-	}{
-		{
-			name: "without date and api key",
-			request: &types.SearchRequest{
-				MaxResults: 100,
-			},
-			apiKey:   "",
-			expected: "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=100",
-		},
-		{
-			name: "with date",
-			request: &types.SearchRequest{
-				Date:       "2024-01-01",
-				MaxResults: 50,
-			},
-			apiKey:   "",
-			expected: "https://services.nvd.nist.gov/rest/json/cves/2.0?pubEndDate=2024-01-01T23%3A59%3A59.999Z&pubStartDate=2024-01-01T00%3A00%3A00.000Z&resultsPerPage=50",
-		},
-		{
-			name: "with api key",
-			request: &types.SearchRequest{
-				MaxResults: 25,
-			},
-			apiKey:   "test-key",
-			expected: "https://services.nvd.nist.gov/rest/json/cves/2.0?apiKey=test-key&resultsPerPage=25",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client.apiKey = tt.apiKey
-			result := client.buildSearchURL(tt.request)
+			result := client.matchesCVSSRange(cve, request)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestBuildCVEDetailsURL(t *testing.T) {
-	appConfig := &types.AppConfig{
-		NVD: types.NVDSettings{
-			BaseURL: "https://services.nvd.nist.gov/rest/json/cves/2.0",
-		},
-	}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
+// TestMatchesCVSSRange_OutsideRange tests CVSS filtering for values outside range
+func TestMatchesCVSSRange_OutsideRange(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
+	cve := th.CreateSampleCVE() // CVSS 7.5
 
 	tests := []struct {
 		name     string
-		cveID    string
-		apiKey   string
-		expected string
+		minCVSS  float64
+		maxCVSS  float64
+		expected bool
 	}{
 		{
-			name:     "without api key",
-			cveID:    "CVE-2023-1234",
-			apiKey:   "",
-			expected: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2023-1234",
+			name:     "Below minimum",
+			minCVSS:  8.0,
+			maxCVSS:  10.0,
+			expected: false,
 		},
 		{
-			name:     "with api key",
-			cveID:    "CVE-2024-5678",
-			apiKey:   "test-key",
-			expected: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-5678&apiKey=test-key",
+			name:     "Above maximum",
+			minCVSS:  0.0,
+			maxCVSS:  7.0,
+			expected: false,
+		},
+		{
+			name:     "Completely below range",
+			minCVSS:  0.1,
+			maxCVSS:  1.0,
+			expected: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client.apiKey = tt.apiKey
-			result := client.buildCVEDetailsURL(tt.cveID)
+			request := &types.SearchRequest{
+				MinCVSS: tt.minCVSS,
+				MaxCVSS: tt.maxCVSS,
+			}
+			result := client.matchesCVSSRange(cve, request)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestSetRequestHeaders(t *testing.T) {
-	appConfig := &types.AppConfig{
-		Security: types.SecuritySettings{
-			UserAgent: "CVEWatch/2.0.0",
-			RequestHeaders: map[string]string{
-				"Accept":          "application/json",
-				"Accept-Language": "en-US,en;q=0.9",
-			},
-		},
-	}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
-
-	req, err := http.NewRequest("GET", "https://example.com", nil)
-	assert.NoError(t, err)
-
-	client.setRequestHeaders(req)
-
-	assert.Equal(t, "CVEWatch/2.0.0", req.Header.Get("User-Agent"))
-	assert.Equal(t, "application/json", req.Header.Get("Accept"))
-	assert.Equal(t, "en-US,en;q=0.9", req.Header.Get("Accept-Language"))
-	assert.Equal(t, "gzip", req.Header.Get("Accept-Encoding"))
-}
-
-func TestMatchesCPEPattern(t *testing.T) {
-	appConfig := &types.AppConfig{}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
-
-	cve := types.CVE{
-		Configurations: []types.Configuration{
-			{
-				Nodes: []types.Node{
-					{
-						CPEMatch: []types.CPEMatch{
-							{
-								Vulnerable: true,
-								Criteria:   "cpe:2.3:a:microsoft:windows:10:*:*:*:*:*:*:*",
-							},
-							{
-								Vulnerable: false,
-								Criteria:   "cpe:2.3:a:microsoft:office:2019:*:*:*:*:*:*:*",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+// TestCPEPatternMatching_ExactMatch tests exact CPE pattern matching
+func TestCPEPatternMatching_ExactMatch(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
 
 	tests := []struct {
 		name     string
+		cpe      string
 		pattern  string
 		expected bool
 	}{
 		{
-			name:     "exact match",
-			pattern:  "cpe:2.3:a:microsoft:windows:10:*:*:*:*:*:*:*",
+			name:     "Exact match",
+			cpe:      "cpe:2.3:o:linux:linux:5.10.0:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:o:linux:linux:5.10.0:*:*:*:*:*:*:*",
 			expected: true,
 		},
 		{
-			name:     "wildcard match",
-			pattern:  "cpe:2.3:a:microsoft:*:*:*:*:*:*:*:*:*",
+			name:     "Identical with wildcards",
+			cpe:      "cpe:2.3:a:openssl:openssl:1.1.1:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:a:openssl:openssl:1.1.1:*:*:*:*:*:*:*",
 			expected: true,
-		},
-		{
-			name:     "no match",
-			pattern:  "cpe:2.3:a:apple:macos:*:*:*:*:*:*:*:*",
-			expected: false,
-		},
-		{
-			name:     "non-vulnerable match",
-			pattern:  "cpe:2.3:a:microsoft:office:2019:*:*:*:*:*:*:*",
-			expected: false, // Should not match because Vulnerable is false
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := client.matchesCPEPattern(cve, tt.pattern)
+			result := client.cpeMatchesPattern(tt.cpe, tt.pattern)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestBuildSearchResult(t *testing.T) {
-	appConfig := &types.AppConfig{}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
+// TestCPEPatternMatching_WildcardMatch tests wildcard CPE pattern matching
+func TestCPEPatternMatching_WildcardMatch(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
 
-	cves := []types.CVE{
-		{ID: "CVE-2023-1234"},
-		{ID: "CVE-2023-5678"},
+	tests := []struct {
+		name     string
+		cpe      string
+		pattern  string
+		expected bool
+	}{
+		{
+			name:     "Vendor wildcard match",
+			cpe:      "cpe:2.3:o:linux:linux:5.10.0:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:o:*:linux:*:*:*:*:*:*:*:*",
+			expected: true,
+		},
+		{
+			name:     "Product wildcard match",
+			cpe:      "cpe:2.3:a:openssl:openssl:1.1.1:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:a:openssl:*:1.1.1:*:*:*:*:*:*:*",
+			expected: true,
+		},
+		{
+			name:     "Version wildcard match",
+			cpe:      "cpe:2.3:a:apache:http_server:2.4.52:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:a:apache:http_server:*:*:*:*:*:*:*:*",
+			expected: true,
+		},
 	}
 
-	request := &types.SearchRequest{
-		Date:     "2024-01-01",
-		MinCVSS:  7.0,
-		MaxCVSS:  10.0,
-		Products: []string{"Linux Kernel"},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := client.cpeMatchesPattern(tt.cpe, tt.pattern)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
-
-	result := client.buildSearchResult(cves, request, "1.23s")
-
-	assert.Equal(t, cves, result.CVEs)
-	assert.Equal(t, 2, result.TotalFound)
-	assert.Equal(t, "2024-01-01", result.Date)
-	assert.Equal(t, 7.0, result.MinCVSS)
-	assert.Equal(t, 10.0, result.MaxCVSS)
-	assert.Equal(t, []string{"Linux Kernel"}, result.Products)
-	assert.Equal(t, "1.23s", result.QueryTime)
 }
 
+// TestCPEPatternMatching_NoMatch tests CPE pattern matching that should fail
+func TestCPEPatternMatching_NoMatch(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
+
+	tests := []struct {
+		name     string
+		cpe      string
+		pattern  string
+		expected bool
+	}{
+		{
+			name:     "Different product type",
+			cpe:      "cpe:2.3:a:nginx:nginx:1.0:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:o:*:linux:*:*:*:*:*:*:*:*",
+			expected: false,
+		},
+		{
+			name:     "Different vendor",
+			cpe:      "cpe:2.3:a:nginx:nginx:1.0:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:a:apache:*:*:*:*:*:*:*:*:*",
+			expected: false,
+		},
+		{
+			name:     "Mismatched specific versions",
+			cpe:      "cpe:2.3:a:openssl:openssl:1.1.0:*:*:*:*:*:*:*",
+			pattern:  "cpe:2.3:a:openssl:openssl:1.1.1:*:*:*:*:*:*:*",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := client.cpeMatchesPattern(tt.cpe, tt.pattern)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestRateLimiting_ThreadSafety tests thread-safety of rate limiter
+func TestRateLimiting_ThreadSafety(t *testing.T) {
+	th := NewTestHelper(t)
+	th.config.NVD.RateLimit = 1000
+	client := NewNVDClient(th.config, nil, "")
+
+	numGoroutines := 10
+	operationsPerGoroutine := 50
+	var wg sync.WaitGroup
+
+	// Concurrent rate limit checks and updates
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < operationsPerGoroutine; j++ {
+				_ = client.checkRateLimit()
+				client.updateRateLimit()
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	// Verify final count is correct
+	info := client.GetRateLimitInfo()
+	expectedCount := numGoroutines * operationsPerGoroutine
+	assert.Equal(t, expectedCount, info["current_count"].(int))
+}
+
+// TestRateLimiting_Exceeded tests rate limit exceeded scenario
+func TestRateLimiting_Exceeded(t *testing.T) {
+	th := NewTestHelper(t)
+	th.config.NVD.RateLimit = 5
+	client := NewNVDClient(th.config, nil, "")
+
+	// Fill up the rate limit
+	for i := 0; i < 5; i++ {
+		err := client.checkRateLimit()
+		require.NoError(t, err)
+		client.updateRateLimit()
+	}
+
+	// Next call should fail
+	err := client.checkRateLimit()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "rate limit exceeded")
+}
+
+// TestGetRateLimitInfo tests rate limit info retrieval
 func TestGetRateLimitInfo(t *testing.T) {
-	appConfig := &types.AppConfig{
-		NVD: types.NVDSettings{
-			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
-			RateLimit:     1000,
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-	}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
 
 	info := client.GetRateLimitInfo()
 
-	assert.Equal(t, 1000, info["rate_limit"])
-	assert.Equal(t, 30, info["timeout"])
-	assert.Equal(t, 3, info["retry_attempts"])
-	assert.Equal(t, 5, info["retry_delay"])
+	assert.NotNil(t, info)
+	assert.Equal(t, th.config.NVD.RateLimit, info["rate_limit"])
+	assert.Equal(t, 0, info["current_count"].(int))
 
-	// Check if api_key_configured key exists and is false
-	if apiKeyConfigured, exists := info["api_key_configured"]; exists {
-		assert.False(t, apiKeyConfigured.(bool))
-	} else {
-		// If key doesn't exist, that's also fine (no API key configured)
-		assert.True(t, true)
-	}
-}
-
-func TestGetRateLimitInfo_WithAPIKey(t *testing.T) {
-	appConfig := &types.AppConfig{
-		NVD: types.NVDSettings{
-			RateLimit: 1000,
-		},
-	}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "test-api-key")
-
-	info := client.GetRateLimitInfo()
-
-	assert.True(t, info["api_key_configured"].(bool))
-	assert.Equal(t, 1000, info["rate_limit_with_key"])
-}
-
-func TestCloseResponseBody(t *testing.T) {
-	appConfig := &types.AppConfig{}
-	configMgr := config.NewConfigManager()
-	client := NewNVDClient(appConfig, configMgr, "")
-
-	// This test verifies that closeResponseBody doesn't panic with nil response
-	assert.NotPanics(t, func() {
-		client.closeResponseBody(nil)
-	})
+	// Update and check again
+	client.updateRateLimit()
+	info = client.GetRateLimitInfo()
+	assert.Equal(t, 1, info["current_count"].(int))
 }

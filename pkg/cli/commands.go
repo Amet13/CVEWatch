@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 
+// Package cli provides command-line interface commands for CVEWatch.
+//
+// It implements the main user-facing commands: search, info, config, version, and init.
+// Commands are built using the Cobra framework for a professional CLI experience.
 package cli
 
 import (
@@ -101,29 +105,18 @@ func (cmds *Commands) setupFlags() {
 	cmds.RootCmd.PersistentFlags().BoolP("include-cpe", "", false, "Include CPE information in output")
 	cmds.RootCmd.PersistentFlags().BoolP("include-refs", "", false, "Include reference information in output")
 
-	// Bind flags to viper (errors are non-critical and can be ignored)
-	//nolint:errcheck // Flag binding errors are non-critical
-	viper.BindPFlag("config", cmds.RootCmd.PersistentFlags().Lookup("config"))
-	//nolint:errcheck
-	viper.BindPFlag("date", cmds.RootCmd.PersistentFlags().Lookup("date"))
-	//nolint:errcheck
-	viper.BindPFlag("min-cvss", cmds.RootCmd.PersistentFlags().Lookup("min-cvss"))
-	//nolint:errcheck
-	viper.BindPFlag("max-cvss", cmds.RootCmd.PersistentFlags().Lookup("max-cvss"))
-	//nolint:errcheck
-	viper.BindPFlag("output", cmds.RootCmd.PersistentFlags().Lookup("output"))
-	//nolint:errcheck
-	viper.BindPFlag("max-results", cmds.RootCmd.PersistentFlags().Lookup("max-results"))
-	//nolint:errcheck
-	viper.BindPFlag("api-key", cmds.RootCmd.PersistentFlags().Lookup("api-key"))
-	//nolint:errcheck
-	viper.BindPFlag("verbose", cmds.RootCmd.PersistentFlags().Lookup("verbose"))
-	//nolint:errcheck
-	viper.BindPFlag("quiet", cmds.RootCmd.PersistentFlags().Lookup("quiet"))
-	//nolint:errcheck
-	viper.BindPFlag("include-cpe", cmds.RootCmd.PersistentFlags().Lookup("include-cpe"))
-	//nolint:errcheck
-	viper.BindPFlag("include-refs", cmds.RootCmd.PersistentFlags().Lookup("include-refs"))
+	// Bind flags to viper
+	_ = viper.BindPFlag("config", cmds.RootCmd.PersistentFlags().Lookup("config"))
+	_ = viper.BindPFlag("date", cmds.RootCmd.PersistentFlags().Lookup("date"))
+	_ = viper.BindPFlag("min-cvss", cmds.RootCmd.PersistentFlags().Lookup("min-cvss"))
+	_ = viper.BindPFlag("max-cvss", cmds.RootCmd.PersistentFlags().Lookup("max-cvss"))
+	_ = viper.BindPFlag("output", cmds.RootCmd.PersistentFlags().Lookup("output"))
+	_ = viper.BindPFlag("max-results", cmds.RootCmd.PersistentFlags().Lookup("max-results"))
+	_ = viper.BindPFlag("api-key", cmds.RootCmd.PersistentFlags().Lookup("api-key"))
+	_ = viper.BindPFlag("verbose", cmds.RootCmd.PersistentFlags().Lookup("verbose"))
+	_ = viper.BindPFlag("quiet", cmds.RootCmd.PersistentFlags().Lookup("quiet"))
+	_ = viper.BindPFlag("include-cpe", cmds.RootCmd.PersistentFlags().Lookup("include-cpe"))
+	_ = viper.BindPFlag("include-refs", cmds.RootCmd.PersistentFlags().Lookup("include-refs"))
 }
 
 // createCommands creates all subcommands
@@ -133,7 +126,7 @@ func (cmds *Commands) createCommands(configManager *config.ConfigManager) {
 		Use:   "init",
 		Short: "Initialize a new configuration file",
 		Long:  `Create a new configuration file with default product definitions for monitoring.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return configManager.CreateDefaultConfig()
 		},
 	}
@@ -152,7 +145,7 @@ func (cmds *Commands) createCommands(configManager *config.ConfigManager) {
 		Short: "Get detailed information about a specific CVE",
 		Long:  `Fetch detailed information about a specific CVE from the NVD database.`,
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			return cmds.runInfo(args[0], configManager)
 		},
 	}
@@ -162,7 +155,7 @@ func (cmds *Commands) createCommands(configManager *config.ConfigManager) {
 		Use:   "config",
 		Short: "Show configuration information",
 		Long:  `Display current configuration settings and product information.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return cmds.runConfig(configManager)
 		},
 	}
@@ -172,14 +165,14 @@ func (cmds *Commands) createCommands(configManager *config.ConfigManager) {
 		Use:   "version",
 		Short: "Show version information",
 		Long:  `Display CVEWatch version and build information.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return cmds.runVersion(configManager)
 		},
 	}
 }
 
 // runSearch executes the search command
-func (cmds *Commands) runSearch(cmd *cobra.Command, args []string) error {
+func (cmds *Commands) runSearch(_ *cobra.Command, _ []string) error {
 	configManager, config, err := cmds.loadConfiguration()
 	if err != nil {
 		return err

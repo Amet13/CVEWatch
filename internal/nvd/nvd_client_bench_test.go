@@ -22,87 +22,87 @@
  * SOFTWARE.
  */
 
-//nolint:testpackage // We need to test internal package functions
 package nvd
 
 import (
-	"cvewatch/internal/config"
-	"cvewatch/internal/types"
 	"testing"
+
+	"cvewatch/internal/types"
 )
 
-func BenchmarkNewNVDClient(b *testing.B) {
-	cm := config.NewConfigManager()
-	config := &types.AppConfig{}
+// BenchmarkValidateSearchRequest benchmarks search request validation
+func BenchmarkValidateSearchRequest(b *testing.B) {
+	th := NewTestHelper(&testing.T{})
+	client := NewNVDClient(th.config, nil, "")
+	request := th.CreateValidSearchRequest()
 
 	b.ResetTimer()
-	for range b.N {
-		NewNVDClient(config, cm, "")
+	for i := 0; i < b.N; i++ {
+		_ = client.validateSearchRequest(request)
 	}
 }
 
+// BenchmarkMatchesCVSSRange benchmarks CVSS range matching
 func BenchmarkMatchesCVSSRange(b *testing.B) {
-	cm := config.NewConfigManager()
-	config := &types.AppConfig{}
-	client := NewNVDClient(config, cm, "")
-
-	cve := types.CVE{
-		ID: "CVE-2023-1234",
-		Metrics: types.Metrics{
-			CVSSMetricV31: []types.CVSSMetricV31{
-				{
-					CVSSData: types.CVSSDataV31{
-						BaseScore: 8.5,
-					},
-				},
-			},
-		},
-	}
+	th := NewTestHelper(&testing.T{})
+	client := NewNVDClient(th.config, nil, "")
+	cve := th.CreateSampleCVE()
 
 	request := &types.SearchRequest{
-		MinCVSS: 7.0,
-		MaxCVSS: 10.0,
+		MinCVSS: 5.0,
+		MaxCVSS: 9.0,
 	}
 
 	b.ResetTimer()
-	for range b.N {
-		client.matchesCVSSRange(cve, request)
+	for i := 0; i < b.N; i++ {
+		_ = client.matchesCVSSRange(cve, request)
 	}
 }
 
-func BenchmarkCPEMatchesPattern(b *testing.B) {
-	cm := config.NewConfigManager()
-	config := &types.AppConfig{}
-	client := NewNVDClient(config, cm, "")
+const testCPE = "cpe:2.3:o:linux:linux:5.10.0:*:*:*:*:*:*:*"
 
-	cpe := "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*"
-	pattern := "cpe:2.3:a:vendor:*:*:*:*:*:*:*:*:*"
-
+// BenchmarkCPEMatching_Exact benchmarks exact CPE pattern matching
+func BenchmarkCPEMatching_Exact(b *testing.B) {
+	th := NewTestHelper(&testing.T{})
+	client := NewNVDClient(th.config, nil, "")
 	b.ResetTimer()
-	for range b.N {
-		client.cpeMatchesPattern(cpe, pattern)
+	for i := 0; i < b.N; i++ {
+		_ = client.cpeMatchesPattern(testCPE, "cpe:2.3:o:linux:linux:5.10.0:*:*:*:*:*:*:*")
 	}
 }
 
-func BenchmarkMatchesProduct(b *testing.B) {
-	cm := config.NewConfigManager()
-	config := &types.AppConfig{}
-	client := NewNVDClient(config, cm, "")
+// BenchmarkCPEMatching_Wildcard benchmarks wildcard CPE pattern matching
+func BenchmarkCPEMatching_Wildcard(b *testing.B) {
+	th := NewTestHelper(&testing.T{})
+	client := NewNVDClient(th.config, nil, "")
 
-	cve := types.CVE{
-		ID: "CVE-2023-1234",
-		Descriptions: []types.Description{
-			{
-				Lang:  "en",
-				Value: "This is a test product vulnerability",
-			},
-		},
-	}
-
-	products := []string{"Test Product"}
+	cpe := "cpe:2.3:o:linux:linux:5.10.0:*:*:*:*:*:*:*"
+	pattern := "cpe:2.3:o:*:linux:*:*:*:*:*:*:*:*"
 
 	b.ResetTimer()
-	for range b.N {
-		client.matchesProduct(cve, products)
+	for i := 0; i < b.N; i++ {
+		_ = client.cpeMatchesPattern(cpe, pattern)
+	}
+}
+
+// BenchmarkRateLimiting benchmarks rate limit checking
+func BenchmarkRateLimiting(b *testing.B) {
+	th := NewTestHelper(&testing.T{})
+	client := NewNVDClient(th.config, nil, "")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = client.checkRateLimit()
+	}
+}
+
+// BenchmarkGetRateLimitInfo benchmarks rate limit info retrieval
+func BenchmarkGetRateLimitInfo(b *testing.B) {
+	th := NewTestHelper(&testing.T{})
+	client := NewNVDClient(th.config, nil, "")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = client.GetRateLimitInfo()
 	}
 }

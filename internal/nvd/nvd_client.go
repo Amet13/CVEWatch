@@ -22,6 +22,11 @@
  * SOFTWARE.
  */
 
+// Package nvd provides a client for the National Vulnerability Database API.
+//
+// It implements thread-safe API interactions with the NVD v2.0 API,
+// including rate limiting, retry logic with exponential backoff,
+// CVSS filtering, and CPE pattern matching for CVE searches.
 package nvd
 
 import (
@@ -35,6 +40,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"cvewatch/internal/config"
@@ -44,10 +50,13 @@ import (
 
 // NVDClient handles communication with the NVD API
 type NVDClient struct {
-	httpClient   *http.Client
-	config       *types.AppConfig
-	configMgr    *config.ConfigManager
-	apiKey       string
+	httpClient *http.Client
+	config     *types.AppConfig
+	configMgr  *config.ConfigManager
+	apiKey     string
+
+	// Rate limiting - ✅ FIXED: Now thread-safe with sync.Mutex
+	mu           sync.Mutex
 	lastRequest  time.Time
 	requestCount int
 }
@@ -66,7 +75,42 @@ func NewNVDClient(config *types.AppConfig, configMgr *config.ConfigManager, apiK
 	}
 }
 
-// SearchCVEs searches for CVEs based on the given criteria
+// SearchCVEs searches for CVEs based on specified criteria.
+//
+// SearchCVEs queries the NVD API with the given search parameters
+// and returns filtered results based on CVSS scores and product keywords.
+//
+// The search respects rate limiting configuration and performs automatic
+// retry with exponential backoff for transient failures.
+//
+// Parameters:
+//   - request: SearchRequest with search criteria (date, CVSS range, products, etc.)
+//
+// Returns:
+//   - *SearchResult: Filtered CVE results with metadata
+//   - error: Non-nil if validation fails or API request fails
+//
+// Errors returned:
+//   - ValidationError: Invalid search parameters (e.g., invalid CVSS range)
+//   - NetworkError: Failed to connect to NVD API
+//   - APIError: NVD API returned an error
+//   - RateLimitError: Rate limit exceeded
+//
+// Example:
+//
+//	request := &types.SearchRequest{
+//	    Date:       "2024-01-01",
+//	    MinCVSS:    7.0,
+//	    MaxCVSS:    10.0,
+//	    MaxResults: 100,
+//	    Products:   []string{"Linux Kernel"},
+//	}
+//	result, err := client.SearchCVEs(request)
+//	if err != nil {
+//	    // Handle error appropriately based on type
+//	    return err
+//	}
+//	fmt.Printf("Found %d CVEs\n", result.TotalFound)
 func (n *NVDClient) SearchCVEs(request *types.SearchRequest) (*types.SearchResult, error) {
 	// Validate request parameters
 	if err := n.validateSearchRequest(request); err != nil {
@@ -412,7 +456,31 @@ func (n *NVDClient) cpeMatchesPattern(cpe, pattern string) bool {
 	return true
 }
 
-// GetCVEDetails fetches detailed information for a specific CVE
+// GetCVEDetails fetches detailed information for a specific CVE.
+//
+// GetCVEDetails retrieves comprehensive information about a single CVE
+// including CVSS scores, descriptions, references, and affected products.
+//
+// Parameters:
+//   - cveID: CVE identifier in the format "CVE-YYYY-NNNNN" (e.g., "CVE-2024-1234")
+//
+// Returns:
+//   - *types.CVE: Detailed CVE information
+//   - error: Non-nil if the CVE is not found or API request fails
+//
+// Errors:
+//   - NetworkError: Failed to connect to NVD API
+//   - APIError: NVD API returned an error
+//   - fmt.Errorf: CVE not found in the database
+//
+// Example:
+//
+//	cve, err := client.GetCVEDetails("CVE-2024-1234")
+//	if err != nil {
+//	    fmt.Fprintf(os.Stderr, "Failed to fetch CVE: %v\n", err)
+//	    return err
+//	}
+//	fmt.Printf("CVE %s: %s\n", cve.ID, cve.Descriptions[0].Value)
 func (n *NVDClient) GetCVEDetails(cveID string) (*types.CVE, error) {
 	searchURL := n.buildCVEDetailsURL(cveID)
 
@@ -530,13 +598,16 @@ func (n *NVDClient) validateSearchRequest(request *types.SearchRequest) error {
 	return nil
 }
 
-// GetRateLimitInfo returns information about current rate limiting
+// GetRateLimitInfo returns information about current rate limiting - ✅ NEW: Thread-safe
 func (n *NVDClient) GetRateLimitInfo() map[string]interface{} {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
 	info := map[string]interface{}{
-		"rate_limit":     n.config.NVD.RateLimit,
-		"timeout":        n.config.NVD.Timeout,
-		"retry_attempts": n.config.NVD.RetryAttempts,
-		"retry_delay":    n.config.NVD.RetryDelay,
+		"rate_limit":       n.config.NVD.RateLimit,
+		"current_count":    n.requestCount,
+		"last_request":     n.lastRequest,
+		"time_until_reset": time.Hour - time.Since(n.lastRequest),
 	}
 
 	if n.apiKey != "" {
@@ -547,8 +618,11 @@ func (n *NVDClient) GetRateLimitInfo() map[string]interface{} {
 	return info
 }
 
-// checkRateLimit checks if we're within rate limits
+// checkRateLimit checks if we're within rate limits - ✅ NOW THREAD-SAFE
 func (n *NVDClient) checkRateLimit() error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
 	now := time.Now()
 
 	// Reset counter if more than an hour has passed
@@ -568,8 +642,11 @@ func (n *NVDClient) checkRateLimit() error {
 	return nil
 }
 
-// updateRateLimit updates the rate limiting counters
+// updateRateLimit updates the rate limiting counters - ✅ NOW THREAD-SAFE
 func (n *NVDClient) updateRateLimit() {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
 	n.requestCount++
 	if n.lastRequest.IsZero() {
 		n.lastRequest = time.Now()

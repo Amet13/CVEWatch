@@ -1,0 +1,306 @@
+# CVEWatch Taskfile
+# A modern CVE vulnerability monitoring tool
+# Task runner: https://taskfile.dev
+
+version: "3"
+
+vars:
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  BUILD_TIME:
+    sh: date -u '+%Y-%m-%d_%H:%M:%S'
+  GIT_COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+  BINARY_NAME: cvewatch
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task -l
+
+  # Dependencies
+  deps:
+    desc: Download and verify dependencies
+    cmds:
+      - go mod download
+
+  deps-tidy:
+    desc: Tidy and verify go.mod/go.sum
+    cmds:
+      - go mod tidy
+      - go mod verify
+
+  # Building
+  build:
+    desc: Build the application with version info
+    deps:
+      - deps
+    cmds:
+      - echo "Building CVEWatch..."
+      - |
+        go build \
+          -ldflags="-X 'cvewatch/pkg/version.Version={{.VERSION}}' \
+                    -X 'cvewatch/pkg/version.BuildTime={{.BUILD_TIME}}' \
+                    -X 'cvewatch/pkg/version.GitCommit={{.GIT_COMMIT}}' \
+                    -s -w" \
+          -o {{.BINARY_NAME}} ./cmd/cvewatch
+
+  build-native:
+    desc: Build for current platform (development)
+    cmds:
+      - echo "Building CVEWatch for current platform..."
+      - go build -o {{.BINARY_NAME}} ./cmd/cvewatch
+
+  cross-build:
+    desc: Build for multiple platforms (linux, darwin, windows)
+    deps:
+      - deps
+    cmds:
+      - echo "Building for multiple platforms..."
+      - |
+        for os in linux darwin windows; do
+          for arch in amd64 arm64; do
+            if [ "$os" = "windows" ] && [ "$arch" = "arm64" ]; then
+              continue
+            fi
+            echo "Building for $os/$arch..."
+            BINARY_NAME={{.BINARY_NAME}}
+            if [ "$os" = "windows" ]; then
+              BINARY_NAME={{.BINARY_NAME}}.exe
+            fi
+            GOOS=$os GOARCH=$arch go build \
+              -ldflags="-s -w" \
+              -o ${BINARY_NAME}-${os}-${arch} ./cmd/cvewatch
+          done
+        done
+      - echo "Cross-platform builds completed!"
+
+  # Testing
+  test:
+    desc: Run all tests
+    cmds:
+      - echo "Running tests..."
+      - go test -v ./...
+
+  test-race:
+    desc: Run tests with race detection
+    cmds:
+      - echo "Running tests with race detection..."
+      - go test -race -v ./...
+
+  test-coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - echo "Running tests with coverage..."
+      - go test -coverprofile=coverage.out -covermode=atomic ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - |
+        echo "Coverage report generated: coverage.html"
+        echo "Coverage summary:"
+        go tool cover -func=coverage.out | tail -1
+
+  # Code Quality
+  format:
+    desc: Format code with gofmt and goimports
+    cmds:
+      - echo "Formatting code..."
+      - go fmt ./...
+      - |
+        if ! command -v goimports >/dev/null 2>&1; then
+          echo "Installing goimports..."
+          go install golang.org/x/tools/cmd/goimports@v0.21.0
+        fi
+        goimports -w .
+
+  check-fmt:
+    desc: Check if code is properly formatted
+    cmds:
+      - echo "Checking code formatting..."
+      - |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Code is not properly formatted. Run 'task format' to fix."
+          gofmt -l .
+          exit 1
+        fi
+      - echo "Code is properly formatted."
+
+  lint:
+    desc: Run linters (golangci-lint v2)
+    cmds:
+      - echo "Running linters..."
+      - |
+        if ! command -v golangci-lint >/dev/null 2>&1; then
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0
+        fi
+        golangci-lint run
+
+  security-scan:
+    desc: Run security scanner (gosec)
+    cmds:
+      - echo "Running security scan..."
+      - |
+        if command -v gosec >/dev/null 2>&1; then
+          gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
+        else
+          echo "Installing gosec..."
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
+        fi
+      - echo "Security scan completed. Report saved to security-report.json"
+
+  # Installation
+  install:
+    desc: Install the application
+    deps:
+      - build
+    cmds:
+      - echo "Installing CVEWatch..."
+      - |
+        if [ -w /usr/local/bin ]; then
+          sudo cp {{.BINARY_NAME}} /usr/local/bin/
+          echo "CVEWatch installed to /usr/local/bin/"
+        else
+          echo "Installing to ~/.local/bin/"
+          mkdir -p ~/.local/bin
+          cp {{.BINARY_NAME}} ~/.local/bin/
+          echo "CVEWatch installed to ~/.local/bin/"
+          echo "Add ~/.local/bin to your PATH if not already there"
+        fi
+
+  uninstall:
+    desc: Uninstall the application
+    cmds:
+      - echo "Uninstalling CVEWatch..."
+      - |
+        if [ -f /usr/local/bin/{{.BINARY_NAME}} ]; then
+          sudo rm -f /usr/local/bin/{{.BINARY_NAME}}
+          echo "CVEWatch removed from /usr/local/bin/"
+        fi
+      - |
+        if [ -f ~/.local/bin/{{.BINARY_NAME}} ]; then
+          rm -f ~/.local/bin/{{.BINARY_NAME}}
+          echo "CVEWatch removed from ~/.local/bin/"
+        fi
+
+  # Cleanup
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - echo "Cleaning build artifacts..."
+      - rm -f {{.BINARY_NAME}} {{.BINARY_NAME}}.exe
+      - rm -f coverage.out coverage.html
+      - rm -f security-report.json
+      - find . -maxdepth 1 -name "{{.BINARY_NAME}}-*" -type f -delete 2>/dev/null || true
+      - find . -maxdepth 1 -name "*.exe" -type f -delete 2>/dev/null || true
+      - go clean
+
+  # Release
+  release:
+    desc: Create release with GoReleaser
+    cmds:
+      - echo "Creating release with GoReleaser..."
+      - |
+        if ! command -v goreleaser >/dev/null 2>&1; then
+          echo "Installing GoReleaser..."
+          go install github.com/goreleaser/goreleaser/v2@latest
+        fi
+      - goreleaser release --clean
+
+  release-snapshot:
+    desc: Create snapshot release (for testing)
+    cmds:
+      - echo "Creating snapshot release..."
+      - |
+        if ! command -v goreleaser >/dev/null 2>&1; then
+          echo "Installing GoReleaser..."
+          go install github.com/goreleaser/goreleaser/v2@latest
+        fi
+      - goreleaser release --snapshot --clean
+
+  release-check:
+    desc: Validate GoReleaser configuration
+    cmds:
+      - echo "Validating GoReleaser configuration..."
+      - |
+        if ! command -v goreleaser >/dev/null 2>&1; then
+          echo "Installing GoReleaser..."
+          go install github.com/goreleaser/goreleaser/v2@latest
+        fi
+      - goreleaser check
+
+  # Development
+  dev-setup:
+    desc: Set up development environment
+    deps:
+      - deps
+      - deps-tidy
+    cmds:
+      - echo "Setting up development environment..."
+      - |
+        tools=(
+          "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+          "golang.org/x/tools/cmd/goimports@latest"
+          "github.com/securego/gosec/v2/cmd/gosec@latest"
+        )
+        for tool in "${tools[@]}"; do
+          if ! command -v "$(basename ${tool%@*})" >/dev/null 2>&1; then
+            echo "Installing $tool..."
+            go install "$tool"
+          fi
+        done
+      - echo "Development environment ready."
+
+  # Pre-commit and CI tasks
+  pre-commit:
+    desc: Run all pre-commit checks
+    deps:
+      - check-fmt
+      - test
+      - lint
+      - security-scan
+    cmds:
+      - echo "All pre-commit checks passed!"
+
+  ci-quality:
+    desc: Run CI quality checks
+    deps:
+      - deps-tidy
+      - check-fmt
+      - lint
+      - security-scan
+    cmds:
+      - echo "All CI quality checks passed!"
+
+  ci-test:
+    desc: Run CI test suite
+    deps:
+      - deps
+      - test-race
+      - test-coverage
+    cmds:
+      - echo "All CI tests passed!"
+
+  ci-build:
+    desc: Run CI build
+    deps:
+      - deps
+      - build
+    cmds:
+      - echo "Testing installation..."
+      - |
+        if [ -w /usr/local/bin ]; then
+          sudo cp {{.BINARY_NAME}} /usr/local/bin/ 2>/dev/null || true
+          /usr/local/bin/{{.BINARY_NAME}} version 2>/dev/null || true
+        else
+          mkdir -p ~/.local/bin 2>/dev/null || true
+          cp {{.BINARY_NAME}} ~/.local/bin/ 2>/dev/null || true
+          ~/.local/bin/{{.BINARY_NAME}} version 2>/dev/null || true
+        fi
+
+  ci-release:
+    desc: Run CI release
+    deps:
+      - release
+    cmds:
+      - echo "CI release completed!"

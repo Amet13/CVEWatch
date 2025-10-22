@@ -22,6 +22,10 @@
  * SOFTWARE.
  */
 
+// Package errors provides structured error handling for CVEWatch.
+//
+// It defines custom error types with contextual information, suggestions,
+// and error categorization for better error handling and user communication.
 package errors
 
 import (
@@ -34,6 +38,7 @@ import (
 // ErrorType represents different categories of errors
 type ErrorType int
 
+// Error type constants
 const (
 	ErrorTypeNetwork ErrorType = iota
 	ErrorTypeValidation
