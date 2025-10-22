@@ -51,13 +51,13 @@ Download the latest release for your platform from [GitHub Releases](https://git
 ```bash
 git clone https://github.com/Amet13/CVEWatch.git
 cd cvewatch
-make build
+task build
 ```
 
 #### Option 3: Install directly
 
 ```bash
-make install
+task install
 ```
 
 ### Verify Installation
@@ -200,28 +200,28 @@ output:
 ### Prerequisites
 
 - Go 1.25+
-- Make
+- Task (https://taskfile.dev)
 - golangci-lint
 - pre-commit hooks (optional)
 
 ### Setup Development Environment
 
 ```bash
-make dev-setup
+task dev-setup
 ```
 
 ### Common Commands
 
 ```bash
-make build          # Build the application
-make test           # Run all tests
-make test-coverage  # Run tests with coverage
-make lint           # Run linters
-make format         # Format code
-make clean          # Clean build artifacts
-make release        # Build for multiple platforms
-make security-scan  # Run security scanning
-make pre-commit     # Run all pre-commit checks
+task build          # Build the application
+task test           # Run all tests
+task test-coverage  # Run tests with coverage
+task lint           # Run linters
+task format         # Format code
+task clean          # Clean build artifacts
+task release        # Build for multiple platforms
+task security-scan  # Run security scanning
+task pre-commit     # Run all pre-commit checks
 ```
 
 ## 🔧 API Integration
