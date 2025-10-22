@@ -11,6 +11,7 @@ on:
 env:
   GO_VERSION: "1.25"
   GORELEASER_VERSION: "v2.4.0"
+  TASK_VERSION: "latest"
 
 jobs:
   # Quality Gates
@@ -29,8 +30,11 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Install Task
+        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+
       - name: Run CI Quality Checks
-        run: make ci-quality
+        run: task ci-quality
 
   # Testing
   test:
@@ -49,8 +53,11 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: true
 
+      - name: Install Task
+        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+
       - name: Run CI Tests
-        run: make ci-test
+        run: task ci-test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -77,8 +84,11 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Install Task
+        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+
       - name: Run CI Build
-        run: make ci-build
+        run: task ci-build
 
   # Release
   release:
@@ -98,10 +108,13 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Install Task
+        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+
       - name: Run CI Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make ci-release
+        run: task ci-release
 
   # Dependency review
   dependency-review:
