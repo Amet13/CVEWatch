@@ -43,13 +43,13 @@ import (
 )
 
 const (
-	formatJSON   = "json"
-	formatYAML   = "yaml"
-	formatTable  = "table"
-	formatCSV    = "csv"
-	langEnglish  = "en"
+	formatJSON     = "json"
+	formatYAML     = "yaml"
+	formatTable    = "table"
+	formatCSV      = "csv"
+	langEnglish    = "en"
 	unknownProduct = "Unknown"
-	noDesc       = "No description available"
+	noDesc         = "No description available"
 )
 
 // OutputFormatter handles different output formats
