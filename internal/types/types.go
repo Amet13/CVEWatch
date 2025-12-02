@@ -282,6 +282,8 @@ type SearchRequest struct {
 // CommandLineFlags represents command line arguments
 type CommandLineFlags struct {
 	Date         string
+	StartDate    string
+	EndDate      string
 	MinCVSS      float64
 	MaxCVSS      float64
 	OutputFormat string

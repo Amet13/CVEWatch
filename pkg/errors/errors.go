@@ -46,6 +46,7 @@ const (
 	ErrorTypeAPI
 	ErrorTypeParsing
 	ErrorTypeRateLimit
+	ErrorTypeNotFound
 	ErrorTypeUnknown
 )
 
@@ -148,6 +149,16 @@ func NewRateLimitError(message string, cause error) *CVEWatchError {
 	}
 }
 
+// NewNotFoundError creates a new not found error
+func NewNotFoundError(message string, cause error) *CVEWatchError {
+	return &CVEWatchError{
+		Type:       ErrorTypeNotFound,
+		Message:    message,
+		Cause:      cause,
+		Suggestion: "Verify the resource identifier and try again",
+	}
+}
+
 // NewHTTPError creates an error from HTTP response
 func NewHTTPError(resp *http.Response, cause error) *CVEWatchError {
 	message := fmt.Sprintf("HTTP %d %s", resp.StatusCode, resp.Status)
@@ -211,6 +222,15 @@ func IsConfigurationError(err error) bool {
 	var cveErr *CVEWatchError
 	if errors.As(err, &cveErr) {
 		return cveErr.Type == ErrorTypeConfiguration
+	}
+	return false
+}
+
+// IsNotFoundError checks if an error is a not found error
+func IsNotFoundError(err error) bool {
+	var cveErr *CVEWatchError
+	if errors.As(err, &cveErr) {
+		return cveErr.Type == ErrorTypeNotFound
 	}
 	return false
 }

@@ -84,6 +84,7 @@ func NewNVDClient(config *types.AppConfig, configMgr *config.ConfigManager, apiK
 // retry with exponential backoff for transient failures.
 //
 // Parameters:
+//   - ctx: Context for cancellation and timeout control
 //   - request: SearchRequest with search criteria (date, CVSS range, products, etc.)
 //
 // Returns:
@@ -98,6 +99,7 @@ func NewNVDClient(config *types.AppConfig, configMgr *config.ConfigManager, apiK
 //
 // Example:
 //
+//	ctx := context.Background()
 //	request := &types.SearchRequest{
 //	    Date:       "2024-01-01",
 //	    MinCVSS:    7.0,
@@ -105,13 +107,18 @@ func NewNVDClient(config *types.AppConfig, configMgr *config.ConfigManager, apiK
 //	    MaxResults: 100,
 //	    Products:   []string{"Linux Kernel"},
 //	}
-//	result, err := client.SearchCVEs(request)
+//	result, err := client.SearchCVEs(ctx, request)
 //	if err != nil {
 //	    // Handle error appropriately based on type
 //	    return err
 //	}
 //	fmt.Printf("Found %d CVEs\n", result.TotalFound)
-func (n *NVDClient) SearchCVEs(request *types.SearchRequest) (*types.SearchResult, error) {
+func (n *NVDClient) SearchCVEs(ctx context.Context, request *types.SearchRequest) (*types.SearchResult, error) {
+	// Check context before starting
+	if err := ctx.Err(); err != nil {
+		return nil, errors.NewNetworkError("request cancelled", err)
+	}
+
 	// Validate request parameters
 	if err := n.validateSearchRequest(request); err != nil {
 		return nil, errors.NewValidationError("invalid search request parameters", err).
@@ -122,7 +129,7 @@ func (n *NVDClient) SearchCVEs(request *types.SearchRequest) (*types.SearchResul
 
 	searchURL := n.buildSearchURL(request)
 
-	resp, err := n.executeSearchRequest(searchURL)
+	resp, err := n.executeSearchRequest(ctx, searchURL)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +150,15 @@ func (n *NVDClient) SearchCVEs(request *types.SearchRequest) (*types.SearchResul
 func (n *NVDClient) buildSearchURL(request *types.SearchRequest) string {
 	params := url.Values{}
 
-	if request.Date != "" {
+	// Support date range or single date
+	if request.StartDate != "" && request.EndDate != "" {
+		// Date range search
+		startDate := request.StartDate + "T00:00:00.000Z"
+		endDate := request.EndDate + "T23:59:59.999Z"
+		params.Set("pubStartDate", startDate)
+		params.Set("pubEndDate", endDate)
+	} else if request.Date != "" {
+		// Single date search
 		startDate := request.Date + "T00:00:00.000Z"
 		endDate := request.Date + "T23:59:59.999Z"
 		params.Set("pubStartDate", startDate)
@@ -160,10 +175,8 @@ func (n *NVDClient) buildSearchURL(request *types.SearchRequest) string {
 }
 
 // executeSearchRequest executes the HTTP request with retry logic
-func (n *NVDClient) executeSearchRequest(searchURL string) (*http.Response, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(n.config.NVD.Timeout)*time.Second)
-	defer cancel()
-
+func (n *NVDClient) executeSearchRequest(ctx context.Context, searchURL string) (*http.Response, error) {
+	// Create request with the provided context (timeout is handled at http.Client level)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
 	if err != nil {
 		return nil, errors.NewNetworkError("failed to create HTTP request", err).
@@ -172,7 +185,7 @@ func (n *NVDClient) executeSearchRequest(searchURL string) (*http.Response, erro
 
 	n.setRequestHeaders(req)
 
-	return n.executeWithRetry(req)
+	return n.executeWithRetry(ctx, req)
 }
 
 // setRequestHeaders sets the required headers for the request
@@ -185,8 +198,8 @@ func (n *NVDClient) setRequestHeaders(req *http.Request) {
 	}
 }
 
-// executeWithRetry executes the request with retry logic
-func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) {
+// executeWithRetry executes the request with retry logic and exponential backoff with jitter
+func (n *NVDClient) executeWithRetry(ctx context.Context, req *http.Request) (*http.Response, error) {
 	// Apply rate limiting
 	if err := n.checkRateLimit(); err != nil {
 		return nil, err
@@ -196,6 +209,11 @@ func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) 
 	var err error
 
 	for attempt := 1; attempt <= n.config.NVD.RetryAttempts; attempt++ {
+		// Check context before each attempt
+		if ctx.Err() != nil {
+			return nil, errors.NewNetworkError("request cancelled", ctx.Err())
+		}
+
 		resp, err = n.httpClient.Do(req)
 		if err == nil {
 			// Check if response status indicates an error
@@ -205,7 +223,7 @@ func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) 
 					if resp.Body != nil {
 						_ = resp.Body.Close()
 					}
-					time.Sleep(time.Duration(n.config.NVD.RetryDelay) * time.Second)
+					n.sleepWithJitter(ctx, attempt)
 					continue
 				}
 				return nil, errors.NewHTTPError(resp, fmt.Errorf("API request failed with status %d", resp.StatusCode))
@@ -214,7 +232,7 @@ func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) 
 		}
 
 		if attempt < n.config.NVD.RetryAttempts {
-			time.Sleep(time.Duration(n.config.NVD.RetryDelay) * time.Second)
+			n.sleepWithJitter(ctx, attempt)
 			continue
 		}
 	}
@@ -229,6 +247,40 @@ func (n *NVDClient) executeWithRetry(req *http.Request) (*http.Response, error) 
 	}
 
 	return resp, nil
+}
+
+// sleepWithJitter performs exponential backoff with jitter
+func (n *NVDClient) sleepWithJitter(ctx context.Context, attempt int) {
+	// Exponential backoff: baseDelay * 2^(attempt-1)
+	baseDelay := time.Duration(n.config.NVD.RetryDelay) * time.Second
+
+	// Ensure attempt is at least 1 to prevent overflow when converting to uint
+	exp := attempt - 1
+	if exp < 0 {
+		exp = 0
+	}
+	// Cap the exponent to prevent overflow (max reasonable backoff)
+	if exp > 10 {
+		exp = 10
+	}
+	delay := baseDelay * time.Duration(1<<uint(exp)) // #nosec G115 -- exp is bounded between 0-10
+
+	// Add jitter: random value between 0 and delay/2
+	// Use time-based pseudo-random to avoid import
+	jitter := time.Duration(time.Now().UnixNano() % int64(delay/2+1))
+	totalDelay := delay + jitter
+
+	// Cap at 60 seconds max
+	if totalDelay > 60*time.Second {
+		totalDelay = 60 * time.Second
+	}
+
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(totalDelay):
+		return
+	}
 }
 
 // closeResponseBody safely closes the response body
@@ -253,6 +305,11 @@ func (n *NVDClient) parseResponse(resp *http.Response) (*types.NVDResponse, erro
 	}
 
 	reader := n.getResponseReader(resp)
+	defer func() {
+		if err := reader.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close response reader: %v\n", err)
+		}
+	}()
 
 	var nvdResp types.NVDResponse
 	if err := json.NewDecoder(reader).Decode(&nvdResp); err != nil {
@@ -269,8 +326,35 @@ func (n *NVDClient) parseResponse(resp *http.Response) (*types.NVDResponse, erro
 	return &nvdResp, nil
 }
 
+// gzipResponseReader wraps a gzip reader to ensure proper cleanup
+type gzipResponseReader struct {
+	gzReader *gzip.Reader
+	body     io.ReadCloser
+}
+
+// Read implements io.Reader
+func (g *gzipResponseReader) Read(p []byte) (n int, err error) {
+	return g.gzReader.Read(p)
+}
+
+// Close closes both the gzip reader and the underlying body
+func (g *gzipResponseReader) Close() error {
+	var errs []error
+	if err := g.gzReader.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("failed to close gzip reader: %w", err))
+	}
+	if err := g.body.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("failed to close response body: %w", err))
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
+	return nil
+}
+
 // getResponseReader returns an appropriate reader for the response
-func (n *NVDClient) getResponseReader(resp *http.Response) io.Reader {
+// The caller is responsible for closing the returned reader
+func (n *NVDClient) getResponseReader(resp *http.Response) io.ReadCloser {
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		gzReader, err := gzip.NewReader(resp.Body)
 		if err != nil {
@@ -278,7 +362,10 @@ func (n *NVDClient) getResponseReader(resp *http.Response) io.Reader {
 			return resp.Body
 		}
 
-		return gzReader
+		return &gzipResponseReader{
+			gzReader: gzReader,
+			body:     resp.Body,
+		}
 	}
 
 	return resp.Body
@@ -471,20 +558,26 @@ func (n *NVDClient) cpeMatchesPattern(cpe, pattern string) bool {
 // Errors:
 //   - NetworkError: Failed to connect to NVD API
 //   - APIError: NVD API returned an error
-//   - fmt.Errorf: CVE not found in the database
+//   - NotFoundError: CVE not found in the database
 //
 // Example:
 //
-//	cve, err := client.GetCVEDetails("CVE-2024-1234")
+//	ctx := context.Background()
+//	cve, err := client.GetCVEDetails(ctx, "CVE-2024-1234")
 //	if err != nil {
 //	    fmt.Fprintf(os.Stderr, "Failed to fetch CVE: %v\n", err)
 //	    return err
 //	}
 //	fmt.Printf("CVE %s: %s\n", cve.ID, cve.Descriptions[0].Value)
-func (n *NVDClient) GetCVEDetails(cveID string) (*types.CVE, error) {
+func (n *NVDClient) GetCVEDetails(ctx context.Context, cveID string) (*types.CVE, error) {
+	// Check context before starting
+	if err := ctx.Err(); err != nil {
+		return nil, errors.NewNetworkError("request cancelled", err)
+	}
+
 	searchURL := n.buildCVEDetailsURL(cveID)
 
-	resp, err := n.fetchCVEDetails(searchURL)
+	resp, err := n.fetchCVEDetails(ctx, searchURL)
 	if err != nil {
 		return nil, err
 	}
@@ -513,11 +606,11 @@ func (n *NVDClient) buildCVEDetailsURL(cveID string) string {
 }
 
 // fetchCVEDetails executes the HTTP request to fetch CVE details
-func (n *NVDClient) fetchCVEDetails(searchURL string) (*http.Response, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(n.config.NVD.Timeout)*time.Second)
+func (n *NVDClient) fetchCVEDetails(ctx context.Context, searchURL string) (*http.Response, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(n.config.NVD.Timeout)*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, searchURL, nil)
+	req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, searchURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -544,6 +637,11 @@ func (n *NVDClient) checkResponseStatus(resp *http.Response) error {
 // parseCVEDetailsResponse parses the CVE details response
 func (n *NVDClient) parseCVEDetailsResponse(resp *http.Response) (*types.NVDResponse, error) {
 	reader := n.getResponseReader(resp)
+	defer func() {
+		if err := reader.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close response reader: %v\n", err)
+		}
+	}()
 
 	var nvdResp types.NVDResponse
 	if err := json.NewDecoder(reader).Decode(&nvdResp); err != nil {
@@ -556,7 +654,8 @@ func (n *NVDClient) parseCVEDetailsResponse(resp *http.Response) (*types.NVDResp
 // extractCVEDetails extracts the CVE from the response
 func (n *NVDClient) extractCVEDetails(nvdResp *types.NVDResponse, cveID string) (*types.CVE, error) {
 	if len(nvdResp.Vulnerabilities) == 0 {
-		return nil, fmt.Errorf("CVE not found: %s", cveID)
+		return nil, errors.NewNotFoundError("CVE not found", fmt.Errorf("cveID: %s", cveID)).
+			WithSuggestion("Verify the CVE ID is correct and try again")
 	}
 
 	return &nvdResp.Vulnerabilities[0].CVE, nil
@@ -651,4 +750,44 @@ func (n *NVDClient) updateRateLimit() {
 	if n.lastRequest.IsZero() {
 		n.lastRequest = time.Now()
 	}
+}
+
+// CheckHealth verifies the client can connect to the NVD API.
+// It performs a minimal API request to verify connectivity.
+func (n *NVDClient) CheckHealth(ctx context.Context) error {
+	// Check context before starting
+	if err := ctx.Err(); err != nil {
+		return errors.NewNetworkError("health check cancelled", err)
+	}
+
+	// Build a minimal request to check API connectivity
+	healthURL := n.config.NVD.BaseURL + "?resultsPerPage=1"
+	if n.apiKey != "" {
+		healthURL += "&apiKey=" + n.apiKey
+	}
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, healthURL, nil)
+	if err != nil {
+		return errors.NewNetworkError("failed to create health check request", err)
+	}
+
+	n.setRequestHeaders(req)
+
+	resp, err := n.httpClient.Do(req)
+	if err != nil {
+		return errors.NewNetworkError("NVD API health check failed", err).
+			WithSuggestion("Check your internet connection and try again")
+	}
+	defer n.closeResponseBody(resp)
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.NewAPIError("NVD API returned unhealthy status",
+			fmt.Errorf("status code: %d", resp.StatusCode)).
+			WithContext("status_code", resp.StatusCode)
+	}
+
+	return nil
 }
