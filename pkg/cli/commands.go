@@ -24,13 +24,18 @@
 
 // Package cli provides command-line interface commands for CVEWatch.
 //
-// It implements the main user-facing commands: search, info, config, version, and init.
+// It implements the main user-facing commands: search, info, config, version, health, watch, and init.
 // Commands are built using the Cobra framework for a professional CLI experience.
 package cli
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -51,6 +56,8 @@ type Commands struct {
 	InfoCmd    *cobra.Command
 	ConfigCmd  *cobra.Command
 	VersionCmd *cobra.Command
+	HealthCmd  *cobra.Command
+	WatchCmd   *cobra.Command
 }
 
 // NewCommands creates and configures all CLI commands
@@ -86,6 +93,8 @@ Features:
 	cmds.RootCmd.AddCommand(cmds.InfoCmd)
 	cmds.RootCmd.AddCommand(cmds.ConfigCmd)
 	cmds.RootCmd.AddCommand(cmds.VersionCmd)
+	cmds.RootCmd.AddCommand(cmds.HealthCmd)
+	cmds.RootCmd.AddCommand(cmds.WatchCmd)
 
 	return cmds
 }
@@ -95,6 +104,8 @@ func (cmds *Commands) setupFlags() {
 	// Command line flags
 	cmds.RootCmd.PersistentFlags().StringP("config", "c", "", "Configuration file path")
 	cmds.RootCmd.PersistentFlags().StringP("date", "d", "", "Date in format YYYY-MM-DD (default: today)")
+	cmds.RootCmd.PersistentFlags().StringP("start-date", "s", "", "Start date for range search (YYYY-MM-DD)")
+	cmds.RootCmd.PersistentFlags().StringP("end-date", "e", "", "End date for range search (YYYY-MM-DD)")
 	cmds.RootCmd.PersistentFlags().Float64P("min-cvss", "m", 0.0, "Minimum CVSS score (0-10)")
 	cmds.RootCmd.PersistentFlags().Float64P("max-cvss", "M", 0.0, "Maximum CVSS score (0-10)")
 	cmds.RootCmd.PersistentFlags().StringP("output", "o", "simple", "Output format: simple, json, yaml, table, csv")
@@ -104,10 +115,13 @@ func (cmds *Commands) setupFlags() {
 	cmds.RootCmd.PersistentFlags().BoolP("quiet", "q", false, "Suppress non-error output")
 	cmds.RootCmd.PersistentFlags().BoolP("include-cpe", "", false, "Include CPE information in output")
 	cmds.RootCmd.PersistentFlags().BoolP("include-refs", "", false, "Include reference information in output")
+	cmds.RootCmd.PersistentFlags().DurationP("interval", "i", 1*time.Hour, "Watch mode polling interval")
 
 	// Bind flags to viper
 	_ = viper.BindPFlag("config", cmds.RootCmd.PersistentFlags().Lookup("config"))
 	_ = viper.BindPFlag("date", cmds.RootCmd.PersistentFlags().Lookup("date"))
+	_ = viper.BindPFlag("start-date", cmds.RootCmd.PersistentFlags().Lookup("start-date"))
+	_ = viper.BindPFlag("end-date", cmds.RootCmd.PersistentFlags().Lookup("end-date"))
 	_ = viper.BindPFlag("min-cvss", cmds.RootCmd.PersistentFlags().Lookup("min-cvss"))
 	_ = viper.BindPFlag("max-cvss", cmds.RootCmd.PersistentFlags().Lookup("max-cvss"))
 	_ = viper.BindPFlag("output", cmds.RootCmd.PersistentFlags().Lookup("output"))
@@ -117,6 +131,7 @@ func (cmds *Commands) setupFlags() {
 	_ = viper.BindPFlag("quiet", cmds.RootCmd.PersistentFlags().Lookup("quiet"))
 	_ = viper.BindPFlag("include-cpe", cmds.RootCmd.PersistentFlags().Lookup("include-cpe"))
 	_ = viper.BindPFlag("include-refs", cmds.RootCmd.PersistentFlags().Lookup("include-refs"))
+	_ = viper.BindPFlag("interval", cmds.RootCmd.PersistentFlags().Lookup("interval"))
 }
 
 // createCommands creates all subcommands
@@ -169,10 +184,32 @@ func (cmds *Commands) createCommands(configManager *config.ConfigManager) {
 			return cmds.runVersion(configManager)
 		},
 	}
+
+	// Health command
+	cmds.HealthCmd = &cobra.Command{
+		Use:   "health",
+		Short: "Check NVD API connectivity",
+		Long:  `Verify that CVEWatch can connect to the NVD API and check rate limit status.`,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return cmds.runHealth(configManager)
+		},
+	}
+
+	// Watch command
+	cmds.WatchCmd = &cobra.Command{
+		Use:   "watch",
+		Short: "Continuously monitor for new CVEs",
+		Long:  `Watch for new CVE vulnerabilities at a specified interval. Press Ctrl+C to stop.`,
+		RunE:  cmds.runWatch,
+	}
 }
 
 // runSearch executes the search command
 func (cmds *Commands) runSearch(_ *cobra.Command, _ []string) error {
+	// Create context with cancellation support
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
 	configManager, config, err := cmds.loadConfiguration()
 	if err != nil {
 		return err
@@ -193,7 +230,7 @@ func (cmds *Commands) runSearch(_ *cobra.Command, _ []string) error {
 		cmds.displaySearchParameters(searchRequest)
 	}
 
-	result, err := cmds.executeSearch(config, configManager, searchRequest)
+	result, err := cmds.executeSearch(ctx, config, configManager, searchRequest)
 	if err != nil {
 		return err
 	}
@@ -276,6 +313,8 @@ func (cmds *Commands) createSearchRequest(flags *types.CommandLineFlags, config 
 
 	return &types.SearchRequest{
 		Date:         flags.Date,
+		StartDate:    flags.StartDate,
+		EndDate:      flags.EndDate,
 		MinCVSS:      flags.MinCVSS,
 		MaxCVSS:      flags.MaxCVSS,
 		MaxResults:   flags.MaxResults,
@@ -287,7 +326,11 @@ func (cmds *Commands) createSearchRequest(flags *types.CommandLineFlags, config 
 
 // displaySearchParameters displays the search parameters
 func (cmds *Commands) displaySearchParameters(searchRequest *types.SearchRequest) {
-	fmt.Printf("🔍 Searching for vulnerabilities on %s\n", searchRequest.Date)
+	if searchRequest.StartDate != "" && searchRequest.EndDate != "" {
+		fmt.Printf("🔍 Searching for vulnerabilities from %s to %s\n", searchRequest.StartDate, searchRequest.EndDate)
+	} else {
+		fmt.Printf("🔍 Searching for vulnerabilities on %s\n", searchRequest.Date)
+	}
 	fmt.Printf("📦 Monitoring %d products\n", len(searchRequest.Products))
 	fmt.Printf("🎯 Minimum CVSS score: %.1f\n", searchRequest.MinCVSS)
 	fmt.Printf("🎯 Maximum CVSS score: %.1f\n", searchRequest.MaxCVSS)
@@ -296,9 +339,9 @@ func (cmds *Commands) displaySearchParameters(searchRequest *types.SearchRequest
 }
 
 // executeSearch executes the CVE search
-func (cmds *Commands) executeSearch(config *types.AppConfig, configManager *config.ConfigManager, searchRequest *types.SearchRequest) (*types.SearchResult, error) {
+func (cmds *Commands) executeSearch(ctx context.Context, config *types.AppConfig, configManager *config.ConfigManager, searchRequest *types.SearchRequest) (*types.SearchResult, error) {
 	nvdClient := nvd.NewNVDClient(config, configManager, searchRequest.APIKey)
-	result, err := nvdClient.SearchCVEs(searchRequest)
+	result, err := nvdClient.SearchCVEs(ctx, searchRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search CVEs: %w", err)
 	}
@@ -322,6 +365,10 @@ func (cmds *Commands) outputResults(flags *types.CommandLineFlags, config *types
 
 // runInfo executes the info command
 func (cmds *Commands) runInfo(cveID string, configManager *config.ConfigManager) error {
+	// Create context with cancellation support
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
 	if err := cmds.validateCVEID(cveID); err != nil {
 		return err
 	}
@@ -331,7 +378,7 @@ func (cmds *Commands) runInfo(cveID string, configManager *config.ConfigManager)
 		return err
 	}
 
-	cve, err := cmds.fetchCVEDetails(config, configManager, cveID)
+	cve, err := cmds.fetchCVEDetails(ctx, config, configManager, cveID)
 	if err != nil {
 		return err
 	}
@@ -360,10 +407,10 @@ func (cmds *Commands) loadInfoConfiguration(configManager *config.ConfigManager)
 }
 
 // fetchCVEDetails fetches CVE details from NVD
-func (cmds *Commands) fetchCVEDetails(config *types.AppConfig, configManager *config.ConfigManager, cveID string) (*types.CVE, error) {
+func (cmds *Commands) fetchCVEDetails(ctx context.Context, config *types.AppConfig, configManager *config.ConfigManager, cveID string) (*types.CVE, error) {
 	apiKey := viper.GetString("api-key")
 	nvdClient := nvd.NewNVDClient(config, configManager, apiKey)
-	cve, err := nvdClient.GetCVEDetails(cveID)
+	cve, err := nvdClient.GetCVEDetails(ctx, cveID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch CVE details: %w", err)
 	}
@@ -502,6 +549,8 @@ func (cmds *Commands) runVersion(_ *config.ConfigManager) error {
 func (cmds *Commands) loadCommandLineFlags() (*types.CommandLineFlags, error) {
 	flags := &types.CommandLineFlags{
 		Date:         viper.GetString("date"),
+		StartDate:    viper.GetString("start-date"),
+		EndDate:      viper.GetString("end-date"),
 		MinCVSS:      viper.GetFloat64("min-cvss"),
 		MaxCVSS:      viper.GetFloat64("max-cvss"),
 		MaxResults:   viper.GetInt("max-results"),
@@ -512,6 +561,21 @@ func (cmds *Commands) loadCommandLineFlags() (*types.CommandLineFlags, error) {
 	// Validate date format if provided
 	if flags.Date != "" && !utils.IsValidDate(flags.Date) {
 		return nil, fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", flags.Date)
+	}
+
+	// Validate start/end date formats
+	if flags.StartDate != "" && !utils.IsValidDate(flags.StartDate) {
+		return nil, fmt.Errorf("invalid start date format: %s (expected YYYY-MM-DD)", flags.StartDate)
+	}
+	if flags.EndDate != "" && !utils.IsValidDate(flags.EndDate) {
+		return nil, fmt.Errorf("invalid end date format: %s (expected YYYY-MM-DD)", flags.EndDate)
+	}
+
+	// Validate date range
+	if flags.StartDate != "" && flags.EndDate != "" {
+		if !utils.IsValidDateRange(flags.StartDate, flags.EndDate) {
+			return nil, fmt.Errorf("invalid date range: start date must be before or equal to end date")
+		}
 	}
 
 	// Validate CVSS scores
@@ -533,4 +597,127 @@ func (cmds *Commands) loadCommandLineFlags() (*types.CommandLineFlags, error) {
 	}
 
 	return flags, nil
+}
+
+// runHealth executes the health check command
+func (cmds *Commands) runHealth(configManager *config.ConfigManager) error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	fmt.Println("🏥 Checking NVD API health...")
+
+	if err := configManager.LoadConfig(""); err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	config := configManager.GetConfig()
+	apiKey := viper.GetString("api-key")
+	nvdClient := nvd.NewNVDClient(config, configManager, apiKey)
+
+	if err := nvdClient.CheckHealth(ctx); err != nil {
+		fmt.Println("❌ NVD API health check failed")
+		return err
+	}
+
+	fmt.Println("✅ NVD API is healthy and accessible")
+
+	// Display rate limit info
+	info := nvdClient.GetRateLimitInfo()
+	fmt.Println("\n📊 Rate Limit Status:")
+	fmt.Printf("  Rate Limit: %v requests/hour\n", info["rate_limit"])
+	fmt.Printf("  Current Count: %v\n", info["current_count"])
+	if apiKey != "" {
+		fmt.Println("  API Key: Configured ✓")
+	} else {
+		fmt.Println("  API Key: Not configured (lower rate limits apply)")
+	}
+
+	return nil
+}
+
+// runWatch executes the watch command for continuous monitoring
+func (cmds *Commands) runWatch(_ *cobra.Command, _ []string) error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	configManager, config, err := cmds.loadConfiguration()
+	if err != nil {
+		return err
+	}
+
+	flags, err := cmds.loadAndOverrideFlags(config)
+	if err != nil {
+		return err
+	}
+
+	interval := viper.GetDuration("interval")
+	if interval < 1*time.Minute {
+		interval = 1 * time.Minute
+		fmt.Println("⚠️  Minimum interval is 1 minute, adjusting...")
+	}
+
+	fmt.Printf("👁️  Starting watch mode (interval: %s)\n", interval)
+	fmt.Println("Press Ctrl+C to stop watching")
+
+	// Track seen CVEs to avoid duplicates
+	seenCVEs := make(map[string]bool)
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	// Run immediately on start
+	cmds.runWatchIteration(ctx, config, configManager, flags, seenCVEs)
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("\n👋 Stopping watch mode...")
+			return nil
+		case <-ticker.C:
+			cmds.runWatchIteration(ctx, config, configManager, flags, seenCVEs)
+		}
+	}
+}
+
+// runWatchIteration executes a single watch iteration
+func (cmds *Commands) runWatchIteration(ctx context.Context, config *types.AppConfig, configManager *config.ConfigManager, flags *types.CommandLineFlags, seenCVEs map[string]bool) {
+	// Use today's date for each iteration
+	searchRequest := cmds.createSearchRequest(flags, config)
+	searchRequest.Date = time.Now().Format("2006-01-02")
+
+	result, err := cmds.executeSearch(ctx, config, configManager, searchRequest)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  Search failed: %v\n", err)
+		return
+	}
+
+	// Filter to only new CVEs
+	newCVEs := make([]types.CVE, 0)
+	for _, cve := range result.CVEs {
+		if !seenCVEs[cve.ID] {
+			seenCVEs[cve.ID] = true
+			newCVEs = append(newCVEs, cve)
+		}
+	}
+
+	if len(newCVEs) > 0 {
+		fmt.Printf("\n🚨 Found %d new CVEs at %s:\n", len(newCVEs), time.Now().Format("15:04:05"))
+		for _, cve := range newCVEs {
+			score := cmds.getCVSSScore(cve)
+			fmt.Printf("  • %s (CVSS: %.1f)\n", cve.ID, score)
+		}
+	} else {
+		fmt.Printf("⏰ [%s] No new CVEs found\n", time.Now().Format("15:04:05"))
+	}
+}
+
+// getCVSSScore returns the CVSS score for a CVE
+func (cmds *Commands) getCVSSScore(cve types.CVE) float64 {
+	if len(cve.Metrics.CVSSMetricV31) > 0 {
+		return cve.Metrics.CVSSMetricV31[0].CVSSData.BaseScore
+	}
+	if len(cve.Metrics.CVSSMetricV2) > 0 {
+		return cve.Metrics.CVSSMetricV2[0].CVSSData.BaseScore
+	}
+	return 0.0
 }

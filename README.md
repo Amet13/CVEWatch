@@ -23,14 +23,17 @@ CVEWatch provides real-time vulnerability monitoring using the official National
 ## ✨ Features
 
 - **🔍 Real-time CVE Monitoring**: Search and monitor vulnerabilities using the official NVD API
+- **👁️ Watch Mode**: Continuous monitoring with configurable intervals for new CVEs
+- **💾 Caching Layer**: File-based caching to reduce API calls and improve performance
 - **📊 Multiple Output Formats**: Support for JSON, YAML, CSV, table, and simple text formats
 - **🎯 Advanced Filtering**: Filter by CVSS score, date range, and product keywords
 - **🏗️ Product-based Monitoring**: Monitor specific software products with keyword and CPE pattern matching
 - **⚡ High Performance**: Built in Go for speed and efficiency
-- **🔄 Retry Logic**: Robust API interaction with automatic retry and rate limiting
+- **🔄 Retry Logic**: Robust API interaction with automatic retry, exponential backoff, and jitter
 - **📝 YAML Configuration**: Modern YAML-based configuration with environment variable support
 - **🔒 Security Focused**: Built-in security checks and SSL verification
 - **📱 Cross-platform**: Runs on Linux, macOS, and Windows
+- **🏥 Health Check**: Built-in API connectivity verification
 
 ## 🚀 Quick Start
 
@@ -87,6 +90,16 @@ cvewatch version
    cvewatch info CVE-2023-1234
    ```
 
+4. **Check API health**:
+   ```bash
+   cvewatch health
+   ```
+
+5. **Watch for new CVEs**:
+   ```bash
+   cvewatch watch --interval 5m
+   ```
+
 ## 📖 Usage
 
 ### Commands
@@ -102,6 +115,8 @@ Search for CVEs based on specified criteria.
 **Flags:**
 
 - `--date, -d`: Date in YYYY-MM-DD format (default: today)
+- `--start-date`: Start date for range search (YYYY-MM-DD)
+- `--end-date`: End date for range search (YYYY-MM-DD)
 - `--min-cvss, -m`: Minimum CVSS score (0-10)
 - `--max-cvss, -M`: Maximum CVSS score (0-10)
 - `--max-results, -r`: Maximum number of results (1-2000)
@@ -120,17 +135,41 @@ Display current configuration and product information.
 
 Show version and build information.
 
+#### `cvewatch health`
+
+Check NVD API connectivity and display status information.
+
+#### `cvewatch watch [flags]`
+
+Continuously monitor for new CVEs at specified intervals.
+
+**Flags:**
+
+- `--interval, -i`: Check interval (e.g., 5m, 1h) (default: 5m)
+- `--min-cvss, -m`: Minimum CVSS score (0-10)
+- `--max-cvss, -M`: Maximum CVSS score (0-10)
+- `--output, -o`: Output format (simple, json, yaml, table, csv)
+
 ### Examples
 
 ```bash
 # Search for high-severity vulnerabilities from yesterday
 cvewatch search --date 2024-01-01 --min-cvss 7.0 --max-results 10
 
+# Search with date range
+cvewatch search --start-date 2024-01-01 --end-date 2024-06-30 --min-cvss 7.0
+
 # Search for vulnerabilities affecting Linux kernel
 cvewatch search --min-cvss 5.0 --output json
 
 # Get detailed information about a specific CVE
 cvewatch info CVE-2023-1234
+
+# Check NVD API health
+cvewatch health
+
+# Watch for new critical CVEs every 5 minutes
+cvewatch watch --interval 5m --min-cvss 9.0
 
 # Search with custom date range and output format
 cvewatch search --date 2024-01-01 --min-cvss 8.0 --output table
