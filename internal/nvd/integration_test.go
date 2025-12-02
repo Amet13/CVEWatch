@@ -39,11 +39,8 @@ func NewMockNVDServer(t *testing.T) *MockNVDServer {
 	}
 
 	mock.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check for API key header
-		apiKey := r.Header.Get("apiKey")
-		if apiKey != "" {
-			// API key present - could add rate limiting logic here
-		}
+		// Check for API key header (stored for potential future rate limiting logic)
+		_ = r.Header.Get("apiKey")
 
 		// For NVD API, the base URL includes the path, so we match on empty path
 		// or just look for any request to the root
@@ -57,7 +54,7 @@ func NewMockNVDServer(t *testing.T) *MockNVDServer {
 		if !ok {
 			// Default response for unknown paths
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
 			return
 		}
 
@@ -74,7 +71,7 @@ func NewMockNVDServer(t *testing.T) *MockNVDServer {
 
 		// Write body
 		if response.Body != nil {
-			json.NewEncoder(w).Encode(response.Body)
+			_ = json.NewEncoder(w).Encode(response.Body)
 		}
 	}))
 
@@ -99,7 +96,7 @@ func (m *MockNVDServer) SetResponseWithDelay(path string, statusCode int, body i
 }
 
 // createTestClient creates a test NVD client with a mock server URL
-func createTestClient(baseURL string, rateLimit int, retryAttempts int) *NVDClient {
+func createTestClient(baseURL string) *NVDClient {
 	testConfig := &types.AppConfig{
 		App: types.AppSettings{
 			Name:     "CVEWatch-Test",
@@ -109,9 +106,9 @@ func createTestClient(baseURL string, rateLimit int, retryAttempts int) *NVDClie
 		},
 		NVD: types.NVDSettings{
 			BaseURL:       baseURL,
-			RateLimit:     rateLimit,
+			RateLimit:     100,
 			Timeout:       10,
-			RetryAttempts: retryAttempts,
+			RetryAttempts: 1,
 			RetryDelay:    1,
 		},
 		Search: types.SearchSettings{
@@ -183,7 +180,7 @@ func TestNVDClientIntegration_SearchCVEs(t *testing.T) {
 	mock.SetResponse("/", http.StatusOK, mockCVEResponse)
 
 	// Create client with mock server URL
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	// Create search request
 	request := &types.SearchRequest{
@@ -235,7 +232,7 @@ func TestNVDClientIntegration_GetCVEDetails(t *testing.T) {
 
 	mock.SetResponse("/", http.StatusOK, mockCVEResponse)
 
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	ctx := context.Background()
 	cve, err := client.GetCVEDetails(ctx, "CVE-2024-0001")
@@ -266,7 +263,7 @@ func TestNVDClientIntegration_CVENotFound(t *testing.T) {
 
 	mock.SetResponse("/", http.StatusOK, mockCVEResponse)
 
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	ctx := context.Background()
 	cve, err := client.GetCVEDetails(ctx, "CVE-9999-99999")
@@ -296,7 +293,7 @@ func TestNVDClientIntegration_RateLimiting(t *testing.T) {
 	mock.SetResponse("/", http.StatusOK, mockCVEResponse)
 
 	// Create client with high rate limit for testing (100 per hour should be enough)
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	ctx := context.Background()
 	request := &types.SearchRequest{
@@ -331,7 +328,7 @@ func TestNVDClientIntegration_ServerError(t *testing.T) {
 	})
 
 	// Create client with only 1 retry to speed up test
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	ctx := context.Background()
 	request := &types.SearchRequest{
@@ -354,7 +351,7 @@ func TestNVDClientIntegration_ContextCancellation(t *testing.T) {
 	// Set a delayed response
 	mock.SetResponseWithDelay("/", http.StatusOK, types.NVDResponse{}, 5*time.Second)
 
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	// Create a context that will be cancelled
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -381,7 +378,7 @@ func TestNVDClientIntegration_CheckHealth(t *testing.T) {
 		TotalResults: 0,
 	})
 
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	ctx := context.Background()
 	err := client.CheckHealth(ctx)
@@ -399,7 +396,7 @@ func TestNVDClientIntegration_CheckHealthFailure(t *testing.T) {
 		"error": "service unavailable",
 	})
 
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	ctx := context.Background()
 	err := client.CheckHealth(ctx)
@@ -413,7 +410,7 @@ func TestNVDClientIntegration_GetRateLimitInfo(t *testing.T) {
 	mock := NewMockNVDServer(t)
 	defer mock.Close()
 
-	client := createTestClient(mock.URL, 100, 1)
+	client := createTestClient(mock.URL)
 
 	info := client.GetRateLimitInfo()
 	if info == nil {
