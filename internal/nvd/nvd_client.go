@@ -257,7 +257,7 @@ func (n *NVDClient) sleepWithJitter(ctx context.Context, attempt int) {
 
 	// Add jitter: random value between 0 and delay/2
 	// Use time-based pseudo-random to avoid import
-	jitter := time.Duration(time.Now().UnixNano()%int64(delay/2+1))
+	jitter := time.Duration(time.Now().UnixNano() % int64(delay/2+1))
 	totalDelay := delay + jitter
 
 	// Cap at 60 seconds max
@@ -774,7 +774,7 @@ func (n *NVDClient) CheckHealth(ctx context.Context) error {
 	defer n.closeResponseBody(resp)
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.NewAPIError("NVD API returned unhealthy status", 
+		return errors.NewAPIError("NVD API returned unhealthy status",
 			fmt.Errorf("status code: %d", resp.StatusCode)).
 			WithContext("status_code", resp.StatusCode)
 	}

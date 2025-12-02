@@ -147,11 +147,11 @@ func TestNVDClientIntegration_SearchCVEs(t *testing.T) {
 
 	// Set up mock response
 	mockCVEResponse := types.NVDResponse{
-		ResultsPerPage:  1,
-		StartIndex:      0,
-		TotalResults:    1,
-		Format:          "NVD_CVE",
-		Version:         "2.0",
+		ResultsPerPage: 1,
+		StartIndex:     0,
+		TotalResults:   1,
+		Format:         "NVD_CVE",
+		Version:        "2.0",
 		Vulnerabilities: []types.Vulnerability{
 			{
 				CVE: types.CVE{
@@ -214,11 +214,11 @@ func TestNVDClientIntegration_GetCVEDetails(t *testing.T) {
 	defer mock.Close()
 
 	mockCVEResponse := types.NVDResponse{
-		ResultsPerPage:  1,
-		StartIndex:      0,
-		TotalResults:    1,
-		Format:          "NVD_CVE",
-		Version:         "2.0",
+		ResultsPerPage: 1,
+		StartIndex:     0,
+		TotalResults:   1,
+		Format:         "NVD_CVE",
+		Version:        "2.0",
 		Vulnerabilities: []types.Vulnerability{
 			{
 				CVE: types.CVE{
