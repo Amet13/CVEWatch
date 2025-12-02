@@ -205,6 +205,8 @@ tasks:
           echo "Installing GoReleaser..."
           go install github.com/goreleaser/goreleaser/v2@latest
         fi
+      - git checkout -- .
+      - git clean -fd
       - goreleaser release --clean
 
   release-snapshot:
