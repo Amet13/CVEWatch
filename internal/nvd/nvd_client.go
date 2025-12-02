@@ -253,7 +253,17 @@ func (n *NVDClient) executeWithRetry(ctx context.Context, req *http.Request) (*h
 func (n *NVDClient) sleepWithJitter(ctx context.Context, attempt int) {
 	// Exponential backoff: baseDelay * 2^(attempt-1)
 	baseDelay := time.Duration(n.config.NVD.RetryDelay) * time.Second
-	delay := baseDelay * time.Duration(1<<uint(attempt-1))
+
+	// Ensure attempt is at least 1 to prevent overflow when converting to uint
+	exp := attempt - 1
+	if exp < 0 {
+		exp = 0
+	}
+	// Cap the exponent to prevent overflow (max reasonable backoff)
+	if exp > 10 {
+		exp = 10
+	}
+	delay := baseDelay * time.Duration(1<<uint(exp)) // #nosec G115 -- exp is bounded between 0-10
 
 	// Add jitter: random value between 0 and delay/2
 	// Use time-based pseudo-random to avoid import
