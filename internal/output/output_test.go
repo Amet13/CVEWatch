@@ -34,6 +34,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func newTestFormatter() *OutputFormatter {
+	return NewOutputFormatter("simple", &types.AppConfig{})
+}
+
+func newTestFormatterWithTruncateLength(length int) *OutputFormatter {
+	return NewOutputFormatter("simple", &types.AppConfig{
+		Output: types.OutputSettings{TruncateLength: length},
+	})
+}
+
 func TestNewOutputFormatter(t *testing.T) {
 	config := &types.AppConfig{}
 	formatter := NewOutputFormatter("simple", config)
@@ -41,8 +51,7 @@ func TestNewOutputFormatter(t *testing.T) {
 }
 
 func TestGetCVSSScore(t *testing.T) {
-	config := &types.AppConfig{}
-	formatter := NewOutputFormatter("simple", config)
+	formatter := newTestFormatter()
 
 	// Test CVE with CVSS v3.1 score
 	cve := types.CVE{
@@ -84,8 +93,7 @@ func TestGetCVSSScore(t *testing.T) {
 }
 
 func TestGetSeverity(t *testing.T) {
-	config := &types.AppConfig{}
-	formatter := NewOutputFormatter("simple", config)
+	formatter := newTestFormatter()
 
 	assert.Equal(t, "CRITICAL", formatter.getSeverity(9.5))
 	assert.Equal(t, "HIGH", formatter.getSeverity(8.0))
@@ -95,8 +103,7 @@ func TestGetSeverity(t *testing.T) {
 }
 
 func TestGetEnglishDescription(t *testing.T) {
-	config := &types.AppConfig{}
-	formatter := NewOutputFormatter("simple", config)
+	formatter := newTestFormatter()
 
 	// Test CVE with English description
 	cve := types.CVE{
@@ -128,8 +135,7 @@ func TestGetEnglishDescription(t *testing.T) {
 }
 
 func TestExtractProductName(t *testing.T) {
-	config := &types.AppConfig{}
-	formatter := NewOutputFormatter("simple", config)
+	formatter := newTestFormatter()
 
 	// Test valid CPE string
 	cpe := "cpe:2.3:a:microsoft:windows:10:*:*:*:*:*:*:*"
@@ -148,8 +154,7 @@ func TestExtractProductName(t *testing.T) {
 }
 
 func TestTruncateString(t *testing.T) {
-	config := &types.AppConfig{}
-	formatter := NewOutputFormatter("simple", config)
+	formatter := newTestFormatter()
 
 	// Test string shorter than max length
 	result := formatter.truncateString("short", 10)
@@ -173,12 +178,7 @@ func TestTruncateString(t *testing.T) {
 }
 
 func TestGetAffectedProducts(t *testing.T) {
-	config := &types.AppConfig{
-		Output: types.OutputSettings{
-			TruncateLength: 100,
-		},
-	}
-	formatter := NewOutputFormatter("simple", config)
+	formatter := newTestFormatterWithTruncateLength(100)
 
 	// Test CVE with CPE matches
 	cve := types.CVE{
@@ -225,12 +225,7 @@ func TestGetAffectedProducts(t *testing.T) {
 }
 
 func TestGetAffectedProducts_DuplicateRemoval(t *testing.T) {
-	config := &types.AppConfig{
-		Output: types.OutputSettings{
-			TruncateLength: 100,
-		},
-	}
-	formatter := NewOutputFormatter("simple", config)
+	formatter := newTestFormatterWithTruncateLength(100)
 
 	// Test CVE with duplicate CPE matches
 	cve := types.CVE{

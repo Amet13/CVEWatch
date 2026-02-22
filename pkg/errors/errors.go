@@ -94,49 +94,51 @@ func (e *CVEWatchError) WithContext(key string, value interface{}) *CVEWatchErro
 	return e
 }
 
-// NewNetworkError creates a new network-related error
-func NewNetworkError(message string, cause error) *CVEWatchError {
+func newError(errorType ErrorType, message string, cause error) *CVEWatchError {
 	return &CVEWatchError{
-		Type:    ErrorTypeNetwork,
+		Type:    errorType,
 		Message: message,
 		Cause:   cause,
 	}
+}
+
+func asCVEWatchError(err error) (*CVEWatchError, bool) {
+	var cveErr *CVEWatchError
+	if errors.As(err, &cveErr) {
+		return cveErr, true
+	}
+
+	return nil, false
+}
+
+func isErrorType(err error, expectedType ErrorType) bool {
+	cveErr, ok := asCVEWatchError(err)
+	return ok && cveErr.Type == expectedType
+}
+
+// NewNetworkError creates a new network-related error
+func NewNetworkError(message string, cause error) *CVEWatchError {
+	return newError(ErrorTypeNetwork, message, cause)
 }
 
 // NewValidationError creates a new validation-related error
 func NewValidationError(message string, cause error) *CVEWatchError {
-	return &CVEWatchError{
-		Type:    ErrorTypeValidation,
-		Message: message,
-		Cause:   cause,
-	}
+	return newError(ErrorTypeValidation, message, cause)
 }
 
 // NewConfigurationError creates a new configuration-related error
 func NewConfigurationError(message string, cause error) *CVEWatchError {
-	return &CVEWatchError{
-		Type:    ErrorTypeConfiguration,
-		Message: message,
-		Cause:   cause,
-	}
+	return newError(ErrorTypeConfiguration, message, cause)
 }
 
 // NewAPIError creates a new API-related error
 func NewAPIError(message string, cause error) *CVEWatchError {
-	return &CVEWatchError{
-		Type:    ErrorTypeAPI,
-		Message: message,
-		Cause:   cause,
-	}
+	return newError(ErrorTypeAPI, message, cause)
 }
 
 // NewParsingError creates a new parsing-related error
 func NewParsingError(message string, cause error) *CVEWatchError {
-	return &CVEWatchError{
-		Type:    ErrorTypeParsing,
-		Message: message,
-		Cause:   cause,
-	}
+	return newError(ErrorTypeParsing, message, cause)
 }
 
 // NewRateLimitError creates a new rate limiting error
@@ -192,74 +194,53 @@ func NewHTTPError(resp *http.Response, cause error) *CVEWatchError {
 
 // IsNetworkError checks if an error is a network-related error
 func IsNetworkError(err error) bool {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
-		return cveErr.Type == ErrorTypeNetwork
-	}
-	return false
+	return isErrorType(err, ErrorTypeNetwork)
 }
 
 // IsRateLimitError checks if an error is a rate limiting error
 func IsRateLimitError(err error) bool {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
-		return cveErr.Type == ErrorTypeRateLimit
-	}
-	return false
+	return isErrorType(err, ErrorTypeRateLimit)
 }
 
 // IsValidationError checks if an error is a validation error
 func IsValidationError(err error) bool {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
-		return cveErr.Type == ErrorTypeValidation
-	}
-	return false
+	return isErrorType(err, ErrorTypeValidation)
 }
 
 // IsConfigurationError checks if an error is a configuration error
 func IsConfigurationError(err error) bool {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
-		return cveErr.Type == ErrorTypeConfiguration
-	}
-	return false
+	return isErrorType(err, ErrorTypeConfiguration)
 }
 
 // IsNotFoundError checks if an error is a not found error
 func IsNotFoundError(err error) bool {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
-		return cveErr.Type == ErrorTypeNotFound
-	}
-	return false
+	return isErrorType(err, ErrorTypeNotFound)
 }
 
 // FormatError formats an error with user-friendly output
 func FormatError(err error) string {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
+	if cveErr, ok := asCVEWatchError(err); ok {
 		var builder strings.Builder
 
 		// Main error message
-		builder.WriteString(fmt.Sprintf("❌ Error: %s\n", cveErr.Message))
+		fmt.Fprintf(&builder, "❌ Error: %s\n", cveErr.Message)
 
 		// Add suggestion if available
 		if cveErr.Suggestion != "" {
-			builder.WriteString(fmt.Sprintf("💡 Suggestion: %s\n", cveErr.Suggestion))
+			fmt.Fprintf(&builder, "💡 Suggestion: %s\n", cveErr.Suggestion)
 		}
 
 		// Add context information
 		if len(cveErr.Context) > 0 {
 			builder.WriteString("📋 Context:\n")
 			for key, value := range cveErr.Context {
-				builder.WriteString(fmt.Sprintf("   %s: %v\n", key, value))
+				fmt.Fprintf(&builder, "   %s: %v\n", key, value)
 			}
 		}
 
 		// Add underlying error
 		if cveErr.Cause != nil {
-			builder.WriteString(fmt.Sprintf("🔍 Details: %v\n", cveErr.Cause))
+			fmt.Fprintf(&builder, "🔍 Details: %v\n", cveErr.Cause)
 		}
 
 		return builder.String()
@@ -280,8 +261,7 @@ func WrapError(err error, message string) *CVEWatchError {
 
 // GetErrorType returns the type of error
 func GetErrorType(err error) ErrorType {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
+	if cveErr, ok := asCVEWatchError(err); ok {
 		return cveErr.Type
 	}
 	return ErrorTypeUnknown
@@ -289,8 +269,7 @@ func GetErrorType(err error) ErrorType {
 
 // GetErrorCode returns the error code if available
 func GetErrorCode(err error) string {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
+	if cveErr, ok := asCVEWatchError(err); ok {
 		return cveErr.Code
 	}
 	return ""
@@ -298,8 +277,7 @@ func GetErrorCode(err error) string {
 
 // GetErrorSuggestion returns the suggestion if available
 func GetErrorSuggestion(err error) string {
-	var cveErr *CVEWatchError
-	if errors.As(err, &cveErr) {
+	if cveErr, ok := asCVEWatchError(err); ok {
 		return cveErr.Suggestion
 	}
 	return ""

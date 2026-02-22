@@ -16,9 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.25.7"
-  GORELEASER_VERSION: "v2.4.0"
-  TASK_VERSION: "latest"
+  GO_VERSION: "1.26.0"
+  GORELEASER_VERSION: "v2.14.0"
+  TASK_VERSION: "v3.48.0"
 
 jobs:
   # Quality Gates
@@ -38,7 +38,9 @@ jobs:
           cache: true
 
       - name: Install Task
-        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+        uses: ./.github/actions/install-task
+        with:
+          task-version: ${{ env.TASK_VERSION }}
 
       - name: Run CI Quality Checks
         run: task ci-quality
@@ -49,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ["1.25.7"]
+        go-version: ["1.26.0"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -61,7 +63,9 @@ jobs:
           cache: true
 
       - name: Install Task
-        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+        uses: ./.github/actions/install-task
+        with:
+          task-version: ${{ env.TASK_VERSION }}
 
       - name: Run CI Tests
         run: task ci-test
@@ -92,7 +96,9 @@ jobs:
           cache: true
 
       - name: Install Task
-        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+        uses: ./.github/actions/install-task
+        with:
+          task-version: ${{ env.TASK_VERSION }}
 
       - name: Run CI Build
         run: task ci-build
@@ -118,7 +124,9 @@ jobs:
           cache: true
 
       - name: Install Task
-        run: curl -fsSLO https://github.com/go-task/task/releases/download/v3.42.0/task_linux_amd64.tar.gz && tar xzf task_linux_amd64.tar.gz && sudo mv task /usr/local/bin/
+        uses: ./.github/actions/install-task
+        with:
+          task-version: ${{ env.TASK_VERSION }}
 
       - name: Run CI Release
         env:

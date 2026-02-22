@@ -440,11 +440,20 @@ func (cmds *Commands) validateCVEID(cveID string) error {
 
 // loadInfoConfiguration loads configuration for info command
 func (cmds *Commands) loadInfoConfiguration(configManager *config.ConfigManager) (*types.AppConfig, error) {
+	return cmds.loadExistingConfig(configManager)
+}
+
+func (cmds *Commands) loadExistingConfig(configManager *config.ConfigManager) (*types.AppConfig, error) {
 	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	return configManager.GetConfig(), nil
+	appConfig := configManager.GetConfig()
+	if appConfig == nil {
+		return nil, fmt.Errorf("configuration is empty or invalid")
+	}
+
+	return appConfig, nil
 }
 
 // fetchCVEDetails fetches CVE details from NVD
@@ -524,11 +533,10 @@ func (cmds *Commands) displayReferences(cve *types.CVE) {
 
 // runConfig executes the config command
 func (cmds *Commands) runConfig(configManager *config.ConfigManager) error {
-	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+	config, err := cmds.loadExistingConfig(configManager)
+	if err != nil {
+		return err
 	}
-
-	config := configManager.GetConfig()
 
 	fmt.Printf("CVEWatch Configuration\n")
 	fmt.Printf("=====================\n\n")
@@ -623,16 +631,16 @@ func (cmds *Commands) setDefaultDate(flags *types.CommandLineFlags) {
 }
 
 func (cmds *Commands) validateDateFlags(flags *types.CommandLineFlags) error {
-	if flags.Date != "" && !utils.IsValidDate(flags.Date) {
-		return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", flags.Date)
+	if err := cmds.validateOptionalDate("date", flags.Date); err != nil {
+		return err
 	}
 
-	// Validate start/end date formats
-	if flags.StartDate != "" && !utils.IsValidDate(flags.StartDate) {
-		return fmt.Errorf("invalid start date format: %s (expected YYYY-MM-DD)", flags.StartDate)
+	if err := cmds.validateOptionalDate("start date", flags.StartDate); err != nil {
+		return err
 	}
-	if flags.EndDate != "" && !utils.IsValidDate(flags.EndDate) {
-		return fmt.Errorf("invalid end date format: %s (expected YYYY-MM-DD)", flags.EndDate)
+
+	if err := cmds.validateOptionalDate("end date", flags.EndDate); err != nil {
+		return err
 	}
 
 	// Validate date range
@@ -640,6 +648,14 @@ func (cmds *Commands) validateDateFlags(flags *types.CommandLineFlags) error {
 		if !utils.IsValidDateRange(flags.StartDate, flags.EndDate) {
 			return fmt.Errorf("invalid date range: start date must be before or equal to end date")
 		}
+	}
+
+	return nil
+}
+
+func (cmds *Commands) validateOptionalDate(label, date string) error {
+	if date != "" && !utils.IsValidDate(date) {
+		return fmt.Errorf("invalid %s format: %s (expected YYYY-MM-DD)", label, date)
 	}
 
 	return nil
@@ -673,11 +689,10 @@ func (cmds *Commands) runHealth(configManager *config.ConfigManager) error {
 
 	fmt.Println("🏥 Checking NVD API health...")
 
-	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+	config, err := cmds.loadExistingConfig(configManager)
+	if err != nil {
+		return err
 	}
-
-	config := configManager.GetConfig()
 	apiKey := viper.GetString("api-key")
 	nvdClient := nvd.NewNVDClient(config, configManager, apiKey)
 
@@ -780,13 +795,9 @@ func (cmds *Commands) runWatchIteration(ctx context.Context, config *types.AppCo
 
 // runCache executes cache management operations
 func (cmds *Commands) runCache(configManager *config.ConfigManager, clean bool) error {
-	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	appConfig := configManager.GetConfig()
-	if appConfig == nil {
-		return fmt.Errorf("configuration is empty or invalid")
+	appConfig, err := cmds.loadExistingConfig(configManager)
+	if err != nil {
+		return err
 	}
 
 	if !appConfig.Cache.Enabled {

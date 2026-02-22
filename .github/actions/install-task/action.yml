@@ -1,0 +1,22 @@
+name: Install Task
+
+description: Install a pinned go-task binary on Linux runners
+
+inputs:
+  task-version:
+    description: Task version with leading v (for example v3.48.0)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install task binary
+      shell: bash
+      run: |
+        set -euo pipefail
+        TASK_VERSION="${{ inputs.task-version }}"
+        TASK_ARCHIVE="task_linux_amd64.tar.gz"
+
+        curl -fsSLO "https://github.com/go-task/task/releases/download/${TASK_VERSION}/${TASK_ARCHIVE}"
+        tar xzf "${TASK_ARCHIVE}"
+        sudo mv task /usr/local/bin/

@@ -12,8 +12,18 @@ vars:
   GIT_COMMIT:
     sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
   BINARY_NAME: cvewatch
+  GORELEASER_VERSION: v2.14.0
 
 tasks:
+  _run-go-tool:
+    internal: true
+    cmds:
+      - |
+        GOBIN_DIR="$(go env GOPATH)/bin"
+        echo "Installing {{.TOOL_NAME}}..."
+        GOTOOLCHAIN=go1.26.0 go install {{.TOOL_PACKAGE}}
+        "${GOBIN_DIR}/{{.TOOL_BIN}}" {{.TOOL_ARGS}}
+
   default:
     desc: Show available tasks
     cmds:
@@ -106,12 +116,12 @@ tasks:
     cmds:
       - echo "Formatting code..."
       - go fmt ./...
-      - |
-        if ! command -v goimports >/dev/null 2>&1; then
-          echo "Installing goimports..."
-          go install golang.org/x/tools/cmd/goimports@v0.21.0
-        fi
-        goimports -w .
+      - task: _run-go-tool
+        vars:
+          TOOL_NAME: goimports
+          TOOL_PACKAGE: golang.org/x/tools/cmd/goimports@v0.42.0
+          TOOL_BIN: goimports
+          TOOL_ARGS: -w .
 
   check-fmt:
     desc: Check if code is properly formatted
@@ -129,43 +139,35 @@ tasks:
     desc: Run linters (golangci-lint v2)
     cmds:
       - echo "Running linters..."
-      - |
-        GOBIN_DIR="$(go env GOPATH)/bin"
-        if ! command -v golangci-lint >/dev/null 2>&1; then
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0
-          "${GOBIN_DIR}/golangci-lint" run
-        else
-          golangci-lint run
-        fi
+      - task: _run-go-tool
+        vars:
+          TOOL_NAME: golangci-lint
+          TOOL_PACKAGE: github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.10.1
+          TOOL_BIN: golangci-lint
+          TOOL_ARGS: run
 
   security-scan:
     desc: Run security scanner (gosec)
     cmds:
       - echo "Running security scan..."
-      - |
-        GOBIN_DIR="$(go env GOPATH)/bin"
-        if command -v gosec >/dev/null 2>&1; then
-          gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
-        else
-          echo "Installing gosec..."
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          "${GOBIN_DIR}/gosec" -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
-        fi
+      - task: _run-go-tool
+        vars:
+          TOOL_NAME: gosec
+          TOOL_PACKAGE: github.com/securego/gosec/v2/cmd/gosec@v2.23.0
+          TOOL_BIN: gosec
+          TOOL_ARGS: -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
       - echo "Security scan completed. Report saved to security-report.json"
 
   vuln-check:
     desc: Run Go vulnerability database check (govulncheck)
     cmds:
       - echo "Running govulncheck..."
-      - |
-        GOBIN_DIR="$(go env GOPATH)/bin"
-        if ! command -v govulncheck >/dev/null 2>&1; then
-          echo "Installing govulncheck..."
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          "${GOBIN_DIR}/govulncheck" ./...
-        else
-          govulncheck ./...
-        fi
+      - task: _run-go-tool
+        vars:
+          TOOL_NAME: govulncheck
+          TOOL_PACKAGE: golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          TOOL_BIN: govulncheck
+          TOOL_ARGS: ./...
       - echo "Vulnerability check completed."
 
   # Installation
@@ -219,36 +221,36 @@ tasks:
     desc: Create release with GoReleaser
     cmds:
       - echo "Creating release with GoReleaser..."
-      - |
-        if ! command -v goreleaser >/dev/null 2>&1; then
-          echo "Installing GoReleaser..."
-          go install github.com/goreleaser/goreleaser/v2@latest
-        fi
       - git checkout -- .
       - git clean -fd
-      - goreleaser release --clean
+      - task: _run-go-tool
+        vars:
+          TOOL_NAME: GoReleaser
+          TOOL_PACKAGE: github.com/goreleaser/goreleaser/v2@{{.GORELEASER_VERSION}}
+          TOOL_BIN: goreleaser
+          TOOL_ARGS: release --clean
 
   release-snapshot:
     desc: Create snapshot release (for testing)
     cmds:
       - echo "Creating snapshot release..."
-      - |
-        if ! command -v goreleaser >/dev/null 2>&1; then
-          echo "Installing GoReleaser..."
-          go install github.com/goreleaser/goreleaser/v2@latest
-        fi
-      - goreleaser release --snapshot --clean
+      - task: _run-go-tool
+        vars:
+          TOOL_NAME: GoReleaser
+          TOOL_PACKAGE: github.com/goreleaser/goreleaser/v2@{{.GORELEASER_VERSION}}
+          TOOL_BIN: goreleaser
+          TOOL_ARGS: release --snapshot --clean
 
   release-check:
     desc: Validate GoReleaser configuration
     cmds:
       - echo "Validating GoReleaser configuration..."
-      - |
-        if ! command -v goreleaser >/dev/null 2>&1; then
-          echo "Installing GoReleaser..."
-          go install github.com/goreleaser/goreleaser/v2@latest
-        fi
-      - goreleaser check
+      - task: _run-go-tool
+        vars:
+          TOOL_NAME: GoReleaser
+          TOOL_PACKAGE: github.com/goreleaser/goreleaser/v2@{{.GORELEASER_VERSION}}
+          TOOL_BIN: goreleaser
+          TOOL_ARGS: check
 
   # Development
   dev-setup:
@@ -259,17 +261,10 @@ tasks:
     cmds:
       - echo "Setting up development environment..."
       - |
-        tools=(
-          "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"
-          "golang.org/x/tools/cmd/goimports@latest"
-          "github.com/securego/gosec/v2/cmd/gosec@latest"
-        )
-        for tool in "${tools[@]}"; do
-          if ! command -v "$(basename ${tool%@*})" >/dev/null 2>&1; then
-            echo "Installing $tool..."
-            go install "$tool"
-          fi
-        done
+        GOTOOLCHAIN=go1.26.0 go install \
+          github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.10.1 \
+          golang.org/x/tools/cmd/goimports@v0.42.0 \
+          github.com/securego/gosec/v2/cmd/gosec@v2.23.0
       - echo "Development environment ready."
 
   # Pre-commit and CI tasks

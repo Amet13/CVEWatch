@@ -154,15 +154,7 @@ func (o *OutputFormatter) writeSimpleCVE(index int, cve types.CVE) error {
 
 // outputJSON outputs results in JSON format
 func (o *OutputFormatter) outputJSON(result *types.SearchResult) error {
-	output := map[string]interface{}{
-		"search_date":     result.Date,
-		"min_cvss":        result.MinCVSS,
-		"max_cvss":        result.MaxCVSS,
-		"products":        result.Products,
-		"total_found":     result.TotalFound,
-		"query_time":      result.QueryTime,
-		"vulnerabilities": result.CVEs,
-	}
+	output := o.buildStructuredOutput(result)
 
 	if err := json.NewEncoder(os.Stdout).Encode(output); err != nil {
 		return fmt.Errorf("failed to encode JSON output: %w", err)
@@ -173,15 +165,7 @@ func (o *OutputFormatter) outputJSON(result *types.SearchResult) error {
 
 // outputYAML outputs results in YAML format
 func (o *OutputFormatter) outputYAML(result *types.SearchResult) error {
-	output := map[string]interface{}{
-		"search_date":     result.Date,
-		"min_cvss":        result.MinCVSS,
-		"max_cvss":        result.MaxCVSS,
-		"products":        result.Products,
-		"total_found":     result.TotalFound,
-		"query_time":      result.QueryTime,
-		"vulnerabilities": result.CVEs,
-	}
+	output := o.buildStructuredOutput(result)
 
 	if err := yaml.NewEncoder(os.Stdout).Encode(output); err != nil {
 		return fmt.Errorf("failed to encode YAML output: %w", err)
@@ -223,10 +207,7 @@ func (o *OutputFormatter) outputTable(result *types.SearchResult) error {
 		description := o.getEnglishDescription(cve)
 		description = o.truncateString(description, 50)
 
-		reference := ""
-		if len(cve.References) > 0 {
-			reference = cve.References[0].URL
-		}
+		reference := o.firstReferenceURL(cve)
 
 		if _, err := fmt.Fprintf(writer, "%s\t%.1f\t%s\t%s\t%s\t%s\n",
 			cve.ID,
@@ -266,10 +247,7 @@ func (o *OutputFormatter) outputCSV(result *types.SearchResult) error {
 		description := o.getEnglishDescription(cve)
 		affectedProducts := o.getAffectedProducts(cve)
 
-		reference := ""
-		if len(cve.References) > 0 {
-			reference = cve.References[0].URL
-		}
+		reference := o.firstReferenceURL(cve)
 
 		row := []string{
 			cve.ID,
@@ -301,6 +279,26 @@ func (o *OutputFormatter) getCVSSScore(cve types.CVE) float64 {
 	}
 
 	return 0.0
+}
+
+func (o *OutputFormatter) buildStructuredOutput(result *types.SearchResult) map[string]interface{} {
+	return map[string]interface{}{
+		"search_date":     result.Date,
+		"min_cvss":        result.MinCVSS,
+		"max_cvss":        result.MaxCVSS,
+		"products":        result.Products,
+		"total_found":     result.TotalFound,
+		"query_time":      result.QueryTime,
+		"vulnerabilities": result.CVEs,
+	}
+}
+
+func (o *OutputFormatter) firstReferenceURL(cve types.CVE) string {
+	if len(cve.References) == 0 {
+		return ""
+	}
+
+	return cve.References[0].URL
 }
 
 // getSeverity returns the severity level for a CVSS score
