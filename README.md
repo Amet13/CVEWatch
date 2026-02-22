@@ -39,7 +39,7 @@ CVEWatch provides real-time vulnerability monitoring using the official National
 
 ### Prerequisites
 
-- Go 1.25 or later
+- Go 1.26 or later
 - Internet connection for NVD API access
 - NVD API key (optional, but recommended for higher rate limits)
 

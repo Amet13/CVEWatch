@@ -242,24 +242,24 @@ func FormatError(err error) string {
 		var builder strings.Builder
 
 		// Main error message
-		builder.WriteString(fmt.Sprintf("❌ Error: %s\n", cveErr.Message))
+		fmt.Fprintf(&builder, "❌ Error: %s\n", cveErr.Message)
 
 		// Add suggestion if available
 		if cveErr.Suggestion != "" {
-			builder.WriteString(fmt.Sprintf("💡 Suggestion: %s\n", cveErr.Suggestion))
+			fmt.Fprintf(&builder, "💡 Suggestion: %s\n", cveErr.Suggestion)
 		}
 
 		// Add context information
 		if len(cveErr.Context) > 0 {
 			builder.WriteString("📋 Context:\n")
 			for key, value := range cveErr.Context {
-				builder.WriteString(fmt.Sprintf("   %s: %v\n", key, value))
+				fmt.Fprintf(&builder, "   %s: %v\n", key, value)
 			}
 		}
 
 		// Add underlying error
 		if cveErr.Cause != nil {
-			builder.WriteString(fmt.Sprintf("🔍 Details: %v\n", cveErr.Cause))
+			fmt.Fprintf(&builder, "🔍 Details: %v\n", cveErr.Cause)
 		}
 
 		return builder.String()
