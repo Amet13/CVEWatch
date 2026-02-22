@@ -174,32 +174,30 @@ func (cm *ConfigManager) loadFromFile(configFile string) error {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var config types.AppConfig
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	var parsedConfig types.AppConfig
+	if err := yaml.Unmarshal(data, &parsedConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	if err := cm.validateConfig(&config); err != nil {
-		return fmt.Errorf("config validation failed: %w", err)
-	}
-
-	cm.config = &config
-
-	return nil
+	return cm.assignValidatedConfig(&parsedConfig)
 }
 
 // loadFromViper loads configuration from viper fallback
 func (cm *ConfigManager) loadFromViper() error {
-	var fallbackConfig types.AppConfig
-	if err := cm.viper.Unmarshal(&fallbackConfig); err != nil {
+	var parsedConfig types.AppConfig
+	if err := cm.viper.Unmarshal(&parsedConfig); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	if err := cm.validateConfig(&fallbackConfig); err != nil {
+	return cm.assignValidatedConfig(&parsedConfig)
+}
+
+func (cm *ConfigManager) assignValidatedConfig(config *types.AppConfig) error {
+	if err := cm.validateConfig(config); err != nil {
 		return fmt.Errorf("config validation failed: %w", err)
 	}
 
-	cm.config = &fallbackConfig
+	cm.config = config
 
 	return nil
 }
