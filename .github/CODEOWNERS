@@ -1,0 +1,7 @@
+# Default owner for all files
+* @Amet13
+
+# Security and release critical paths
+/.github/workflows/ @Amet13
+/.goreleaser.yml @Amet13
+/SECURITY.md @Amet13

@@ -38,7 +38,9 @@ func BenchmarkValidateSearchRequest(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = client.validateSearchRequest(request)
+		if err := client.validateSearchRequest(request); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -92,7 +94,9 @@ func BenchmarkRateLimiting(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = client.checkRateLimit()
+		if err := client.checkRateLimit(); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 

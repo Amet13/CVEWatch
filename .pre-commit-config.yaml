@@ -40,14 +40,3 @@ repos:
       - id: markdownlint-cli2
         files: \.(md|mdown|markdown)$
 
-  # License header checks
-  - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.5
-    hooks:
-      - id: insert-license
-        files: \.go$
-        args:
-          - --license-filepath
-          - LICENSE
-          - --comment-style
-          - /*| *| */

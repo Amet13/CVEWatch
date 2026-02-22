@@ -223,6 +223,11 @@ func TestFunctionName(t *testing.T) {
 - [ ] Commit messages follow conventions
 - [ ] PR description is clear and complete
 
+## Code Ownership
+
+This repository uses CODEOWNERS for critical paths. Changes under workflow/release/security files require maintainer review.
+
+See [.github/CODEOWNERS](.github/CODEOWNERS) for details.
 ## Code Review Process
 
 - All submissions require review by maintainers

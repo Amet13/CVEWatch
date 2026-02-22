@@ -54,7 +54,9 @@ func NewMockNVDServer(t *testing.T) *MockNVDServer {
 		if !ok {
 			// Default response for unknown paths
 			w.WriteHeader(http.StatusNotFound)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+			if err := json.NewEncoder(w).Encode(map[string]string{"error": "not found"}); err != nil {
+				http.Error(w, "failed to encode mock response", http.StatusInternalServerError)
+			}
 			return
 		}
 
@@ -71,7 +73,9 @@ func NewMockNVDServer(t *testing.T) *MockNVDServer {
 
 		// Write body
 		if response.Body != nil {
-			_ = json.NewEncoder(w).Encode(response.Body)
+			if err := json.NewEncoder(w).Encode(response.Body); err != nil {
+				http.Error(w, "failed to encode mock response", http.StatusInternalServerError)
+			}
 		}
 	}))
 

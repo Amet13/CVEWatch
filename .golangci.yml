@@ -6,21 +6,19 @@ run:
   go: "1.25"
   tests: true
   allow-parallel-runners: true
-  skip-dirs:
-    - vendor
-    - .git
-    - .github
 
   modules-download-mode: readonly
 
 # Output configuration
 output:
-  format: colored-line-number
-  sort-results: true
+  formats:
+    text:
+      path: stdout
+      colors: true
 
 # Linters configuration
 linters:
-  disable-all: true
+  default: none
   enable:
     # Essential linters
     - errcheck # Check for unchecked errors
@@ -50,37 +48,39 @@ linters:
     - unparam # Reports unused function parameters
     - whitespace # Tool for detection of leading and trailing whitespace
 
-# Linters settings
-linters-settings:
-  errcheck:
-    check-blank: true
-    check-type-assertions: false
+  exclusions:
+    paths:
+      - vendor
+      - .git
+      - .github
+    rules:
+      - path: "_test\\.go"
+        linters:
+          - unparam
+      - path: "cmd/.*\\.go"
+        linters:
+          - gochecknoinits
 
-  govet:
-    check-shadowing: true
-    check-unreachable: true
-    check-rangeloops: true
+  settings:
+    errcheck:
+      check-blank: true
+      check-type-assertions: false
 
-  gocyclo:
-    min-complexity: 10
+    govet:
+      enable:
+        - shadow
 
-  staticcheck:
-    checks: ["all"]
+    gocyclo:
+      min-complexity: 10
 
-  gosec:
-    severity: medium
-    confidence: medium
+    staticcheck:
+      checks: ["all"]
+
+    gosec:
+      severity: medium
+      confidence: medium
 
 # Issues configuration
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    # Allow err assignment in test code
-    - path: "_test\\.go"
-      linters:
-        - unparam
-    # Allow init functions in main
-    - path: "cmd/.*\\.go"
-      linters:
-        - gochecknoinits

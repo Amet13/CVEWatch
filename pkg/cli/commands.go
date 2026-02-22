@@ -40,6 +40,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	cachepkg "cvewatch/internal/cache"
 	"cvewatch/internal/config"
 	"cvewatch/internal/nvd"
 	"cvewatch/internal/output"
@@ -58,6 +59,7 @@ type Commands struct {
 	VersionCmd *cobra.Command
 	HealthCmd  *cobra.Command
 	WatchCmd   *cobra.Command
+	CacheCmd   *cobra.Command
 }
 
 // NewCommands creates and configures all CLI commands
@@ -95,6 +97,7 @@ Features:
 	cmds.RootCmd.AddCommand(cmds.VersionCmd)
 	cmds.RootCmd.AddCommand(cmds.HealthCmd)
 	cmds.RootCmd.AddCommand(cmds.WatchCmd)
+	cmds.RootCmd.AddCommand(cmds.CacheCmd)
 
 	return cmds
 }
@@ -117,21 +120,36 @@ func (cmds *Commands) setupFlags() {
 	cmds.RootCmd.PersistentFlags().BoolP("include-refs", "", false, "Include reference information in output")
 	cmds.RootCmd.PersistentFlags().DurationP("interval", "i", 1*time.Hour, "Watch mode polling interval")
 
-	// Bind flags to viper
-	_ = viper.BindPFlag("config", cmds.RootCmd.PersistentFlags().Lookup("config"))
-	_ = viper.BindPFlag("date", cmds.RootCmd.PersistentFlags().Lookup("date"))
-	_ = viper.BindPFlag("start-date", cmds.RootCmd.PersistentFlags().Lookup("start-date"))
-	_ = viper.BindPFlag("end-date", cmds.RootCmd.PersistentFlags().Lookup("end-date"))
-	_ = viper.BindPFlag("min-cvss", cmds.RootCmd.PersistentFlags().Lookup("min-cvss"))
-	_ = viper.BindPFlag("max-cvss", cmds.RootCmd.PersistentFlags().Lookup("max-cvss"))
-	_ = viper.BindPFlag("output", cmds.RootCmd.PersistentFlags().Lookup("output"))
-	_ = viper.BindPFlag("max-results", cmds.RootCmd.PersistentFlags().Lookup("max-results"))
-	_ = viper.BindPFlag("api-key", cmds.RootCmd.PersistentFlags().Lookup("api-key"))
-	_ = viper.BindPFlag("verbose", cmds.RootCmd.PersistentFlags().Lookup("verbose"))
-	_ = viper.BindPFlag("quiet", cmds.RootCmd.PersistentFlags().Lookup("quiet"))
-	_ = viper.BindPFlag("include-cpe", cmds.RootCmd.PersistentFlags().Lookup("include-cpe"))
-	_ = viper.BindPFlag("include-refs", cmds.RootCmd.PersistentFlags().Lookup("include-refs"))
-	_ = viper.BindPFlag("interval", cmds.RootCmd.PersistentFlags().Lookup("interval"))
+	if err := cmds.bindPersistentFlags(); err != nil {
+		panic(fmt.Sprintf("failed to bind persistent flags: %v", err))
+	}
+}
+
+func (cmds *Commands) bindPersistentFlags() error {
+	flagNames := []string{
+		"config",
+		"date",
+		"start-date",
+		"end-date",
+		"min-cvss",
+		"max-cvss",
+		"output",
+		"max-results",
+		"api-key",
+		"verbose",
+		"quiet",
+		"include-cpe",
+		"include-refs",
+		"interval",
+	}
+
+	for _, flagName := range flagNames {
+		if err := viper.BindPFlag(flagName, cmds.RootCmd.PersistentFlags().Lookup(flagName)); err != nil {
+			return fmt.Errorf("bind flag %q: %w", flagName, err)
+		}
+	}
+
+	return nil
 }
 
 // createCommands creates all subcommands
@@ -202,6 +220,21 @@ func (cmds *Commands) createCommands(configManager *config.ConfigManager) {
 		Long:  `Watch for new CVE vulnerabilities at a specified interval. Press Ctrl+C to stop.`,
 		RunE:  cmds.runWatch,
 	}
+
+	// Cache command
+	cmds.CacheCmd = &cobra.Command{
+		Use:   "cache",
+		Short: "Inspect and maintain local cache",
+		Long:  `Show cache statistics and optionally clean expired cache entries.`,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clean, err := cmd.Flags().GetBool("clean")
+			if err != nil {
+				return fmt.Errorf("failed to read clean flag: %w", err)
+			}
+			return cmds.runCache(configManager, clean)
+		},
+	}
+	cmds.CacheCmd.Flags().Bool("clean", false, "Clean expired cache entries before showing stats")
 }
 
 // runSearch executes the search command
@@ -220,7 +253,8 @@ func (cmds *Commands) runSearch(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if err := cmds.validateOutputFormat(flags, config); err != nil {
+	err = cmds.validateOutputFormat(flags, config)
+	if err != nil {
 		return err
 	}
 
@@ -240,7 +274,7 @@ func (cmds *Commands) runSearch(_ *cobra.Command, _ []string) error {
 
 // loadConfiguration loads and validates the configuration
 func (cmds *Commands) loadConfiguration() (*config.ConfigManager, *types.AppConfig, error) {
-	configFile := viper.GetString("config")
+	configFile := cmds.getConfigFilePath()
 	configManager := config.NewConfigManager()
 	if err := configManager.LoadConfig(configFile); err != nil {
 		if strings.Contains(err.Error(), "config file not found") {
@@ -255,6 +289,11 @@ func (cmds *Commands) loadConfiguration() (*config.ConfigManager, *types.AppConf
 	}
 
 	return configManager, config, nil
+}
+
+// getConfigFilePath returns the config path from flags if explicitly provided
+func (cmds *Commands) getConfigFilePath() string {
+	return viper.GetString("config")
 }
 
 // loadAndOverrideFlags loads command line flags and overrides defaults
@@ -320,6 +359,8 @@ func (cmds *Commands) createSearchRequest(flags *types.CommandLineFlags, config 
 		MaxResults:   flags.MaxResults,
 		OutputFormat: flags.OutputFormat,
 		APIKey:       flags.APIKey,
+		IncludeCPE:   flags.IncludeCPE,
+		IncludeRefs:  flags.IncludeRefs,
 		Products:     productNames,
 	}
 }
@@ -399,7 +440,7 @@ func (cmds *Commands) validateCVEID(cveID string) error {
 
 // loadInfoConfiguration loads configuration for info command
 func (cmds *Commands) loadInfoConfiguration(configManager *config.ConfigManager) (*types.AppConfig, error) {
-	if err := configManager.LoadConfig(""); err != nil {
+	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
@@ -483,7 +524,7 @@ func (cmds *Commands) displayReferences(cve *types.CVE) {
 
 // runConfig executes the config command
 func (cmds *Commands) runConfig(configManager *config.ConfigManager) error {
-	if err := configManager.LoadConfig(""); err != nil {
+	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
@@ -556,47 +597,73 @@ func (cmds *Commands) loadCommandLineFlags() (*types.CommandLineFlags, error) {
 		MaxResults:   viper.GetInt("max-results"),
 		OutputFormat: viper.GetString("output"),
 		APIKey:       viper.GetString("api-key"),
+		Quiet:        viper.GetBool("quiet"),
+		Verbose:      viper.GetBool("verbose"),
+		IncludeCPE:   viper.GetBool("include-cpe"),
+		IncludeRefs:  viper.GetBool("include-refs"),
 	}
 
-	// Validate date format if provided
+	cmds.setDefaultDate(flags)
+
+	if err := cmds.validateDateFlags(flags); err != nil {
+		return nil, err
+	}
+
+	if err := cmds.validateSearchFlags(flags); err != nil {
+		return nil, err
+	}
+
+	return flags, nil
+}
+
+func (cmds *Commands) setDefaultDate(flags *types.CommandLineFlags) {
+	if flags.Date == "" && flags.StartDate == "" && flags.EndDate == "" && !viper.IsSet("date") {
+		flags.Date = time.Now().Format("2006-01-02")
+	}
+}
+
+func (cmds *Commands) validateDateFlags(flags *types.CommandLineFlags) error {
 	if flags.Date != "" && !utils.IsValidDate(flags.Date) {
-		return nil, fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", flags.Date)
+		return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", flags.Date)
 	}
 
 	// Validate start/end date formats
 	if flags.StartDate != "" && !utils.IsValidDate(flags.StartDate) {
-		return nil, fmt.Errorf("invalid start date format: %s (expected YYYY-MM-DD)", flags.StartDate)
+		return fmt.Errorf("invalid start date format: %s (expected YYYY-MM-DD)", flags.StartDate)
 	}
 	if flags.EndDate != "" && !utils.IsValidDate(flags.EndDate) {
-		return nil, fmt.Errorf("invalid end date format: %s (expected YYYY-MM-DD)", flags.EndDate)
+		return fmt.Errorf("invalid end date format: %s (expected YYYY-MM-DD)", flags.EndDate)
 	}
 
 	// Validate date range
 	if flags.StartDate != "" && flags.EndDate != "" {
 		if !utils.IsValidDateRange(flags.StartDate, flags.EndDate) {
-			return nil, fmt.Errorf("invalid date range: start date must be before or equal to end date")
+			return fmt.Errorf("invalid date range: start date must be before or equal to end date")
 		}
 	}
 
-	// Validate CVSS scores
+	return nil
+}
+
+func (cmds *Commands) validateSearchFlags(flags *types.CommandLineFlags) error {
 	if !utils.IsValidCVSSScore(flags.MinCVSS) {
-		return nil, fmt.Errorf("invalid min CVSS score: %.1f (must be between 0.0 and 10.0)", flags.MinCVSS)
+		return fmt.Errorf("invalid min CVSS score: %.1f (must be between 0.0 and 10.0)", flags.MinCVSS)
 	}
 	if !utils.IsValidCVSSScore(flags.MaxCVSS) {
-		return nil, fmt.Errorf("invalid max CVSS score: %.1f (must be between 0.0 and 10.0)", flags.MaxCVSS)
+		return fmt.Errorf("invalid max CVSS score: %.1f (must be between 0.0 and 10.0)", flags.MaxCVSS)
 	}
 
 	// Validate max results
 	if !utils.IsValidMaxResults(flags.MaxResults) {
-		return nil, fmt.Errorf("invalid max results: %d (must be between 1 and 2000)", flags.MaxResults)
+		return fmt.Errorf("invalid max results: %d (must be between 1 and 2000)", flags.MaxResults)
 	}
 
 	// Validate output format
 	if !utils.IsValidOutputFormat(flags.OutputFormat) {
-		return nil, fmt.Errorf("invalid output format: %s", flags.OutputFormat)
+		return fmt.Errorf("invalid output format: %s", flags.OutputFormat)
 	}
 
-	return flags, nil
+	return nil
 }
 
 // runHealth executes the health check command
@@ -606,7 +673,7 @@ func (cmds *Commands) runHealth(configManager *config.ConfigManager) error {
 
 	fmt.Println("🏥 Checking NVD API health...")
 
-	if err := configManager.LoadConfig(""); err != nil {
+	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
@@ -709,6 +776,49 @@ func (cmds *Commands) runWatchIteration(ctx context.Context, config *types.AppCo
 	} else {
 		fmt.Printf("⏰ [%s] No new CVEs found\n", time.Now().Format("15:04:05"))
 	}
+}
+
+// runCache executes cache management operations
+func (cmds *Commands) runCache(configManager *config.ConfigManager, clean bool) error {
+	if err := configManager.LoadConfig(cmds.getConfigFilePath()); err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	appConfig := configManager.GetConfig()
+	if appConfig == nil {
+		return fmt.Errorf("configuration is empty or invalid")
+	}
+
+	if !appConfig.Cache.Enabled {
+		fmt.Println("Cache is disabled in configuration")
+		return nil
+	}
+
+	cacheTTL := time.Duration(appConfig.Cache.TTL) * time.Minute
+	cacheStore, err := cachepkg.NewFileCache(appConfig.Cache.Dir, cacheTTL)
+	if err != nil {
+		return fmt.Errorf("failed to initialize cache: %w", err)
+	}
+
+	if clean {
+		if err := cacheStore.CleanExpired(); err != nil {
+			return fmt.Errorf("failed to clean expired cache entries: %w", err)
+		}
+		fmt.Println("Expired cache entries cleaned")
+	}
+
+	stats := cacheStore.Stats()
+	fmt.Println("Cache Stats")
+	fmt.Println("===========")
+	fmt.Printf("Directory: %v\n", stats["cache_dir"])
+	fmt.Printf("Enabled: %v\n", stats["enabled"])
+	fmt.Printf("TTL: %v\n", stats["ttl"])
+	fmt.Printf("Total Entries: %v\n", stats["total_entries"])
+	fmt.Printf("Valid Entries: %v\n", stats["valid_entries"])
+	fmt.Printf("Expired Entries: %v\n", stats["expired_entries"])
+	fmt.Printf("Total Size (bytes): %v\n", stats["total_size_bytes"])
+
+	return nil
 }
 
 // getCVSSScore returns the CVSS score for a CVE

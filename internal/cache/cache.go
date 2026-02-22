@@ -113,7 +113,9 @@ func (c *FileCache) Get(key string) (json.RawMessage, bool) {
 	if time.Now().After(entry.ExpiresAt) {
 		// Clean up expired entry asynchronously
 		go func() {
-			_ = c.Delete(key)
+			if err := c.Delete(key); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to delete expired cache entry: %v\n", err)
+			}
 		}()
 		return nil, false
 	}
@@ -204,25 +206,32 @@ func (c *FileCache) CleanExpired() error {
 		if entry.IsDir() {
 			continue
 		}
-		filePath := filepath.Join(c.cacheDir, entry.Name())
-		data, err := os.ReadFile(filepath.Clean(filePath))
-		if err != nil {
-			continue
-		}
-
-		var cacheEntry CacheEntry
-		if err := json.Unmarshal(data, &cacheEntry); err != nil {
-			// Remove corrupted entries
-			_ = os.Remove(filePath)
-			continue
-		}
-
-		if time.Now().After(cacheEntry.ExpiresAt) {
-			_ = os.Remove(filePath)
-		}
+		c.cleanExpiredEntry(entry)
 	}
 
 	return nil
+}
+
+func (c *FileCache) cleanExpiredEntry(entry os.DirEntry) {
+	filePath := filepath.Join(c.cacheDir, entry.Name())
+	data, err := os.ReadFile(filepath.Clean(filePath))
+	if err != nil {
+		return
+	}
+
+	var cacheEntry CacheEntry
+	if err := json.Unmarshal(data, &cacheEntry); err != nil {
+		if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "Warning: failed to remove corrupted cache file %s: %v\n", entry.Name(), err)
+		}
+		return
+	}
+
+	if time.Now().After(cacheEntry.ExpiresAt) {
+		if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "Warning: failed to remove expired cache file %s: %v\n", entry.Name(), err)
+		}
+	}
 }
 
 // Stats returns cache statistics

@@ -38,11 +38,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"cvewatch/internal/cache"
 	"cvewatch/internal/config"
 	"cvewatch/internal/types"
 	"cvewatch/pkg/errors"
@@ -50,28 +52,56 @@ import (
 
 // NVDClient handles communication with the NVD API
 type NVDClient struct {
-	httpClient *http.Client
-	config     *types.AppConfig
-	configMgr  *config.ConfigManager
-	apiKey     string
+	httpClient interface {
+		Do(req *http.Request) (*http.Response, error)
+	}
+	config    *types.AppConfig
+	configMgr *config.ConfigManager
+	apiKey    string
+	cache     *cache.FileCache
 
-	// Rate limiting - ✅ FIXED: Now thread-safe with sync.Mutex
+	// Rate limiting
 	mu           sync.Mutex
 	lastRequest  time.Time
 	requestCount int
 }
 
+type resolvedProduct struct {
+	product       *types.Product
+	lowerKeywords []string
+}
+
 // NewNVDClient creates a new NVD client
 func NewNVDClient(config *types.AppConfig, configMgr *config.ConfigManager, apiKey string) *NVDClient {
-	timeout := time.Duration(config.NVD.Timeout) * time.Second
+	timeoutClient := &http.Client{
+		Timeout: time.Duration(config.NVD.Timeout) * time.Second,
+	}
+
+	return NewNVDClientWithHTTPClient(config, configMgr, apiKey, timeoutClient)
+}
+
+// NewNVDClientWithHTTPClient creates a new NVD client with an injectable HTTP client for testing.
+func NewNVDClientWithHTTPClient(config *types.AppConfig, configMgr *config.ConfigManager, apiKey string, httpClient *http.Client) *NVDClient {
+	var cacheInstance *cache.FileCache
+	if config.Cache.Enabled {
+		cacheTTL := time.Duration(config.Cache.TTL) * time.Minute
+		if cacheTTL <= 0 {
+			cacheTTL = 15 * time.Minute
+		}
+
+		instance, err := cache.NewFileCache(config.Cache.Dir, cacheTTL)
+		if err == nil {
+			instance.SetEnabled(true)
+			cacheInstance = instance
+		}
+	}
 
 	return &NVDClient{
-		httpClient: &http.Client{
-			Timeout: timeout,
-		},
-		config:    config,
-		configMgr: configMgr,
-		apiKey:    apiKey,
+		httpClient: httpClient,
+		config:     config,
+		configMgr:  configMgr,
+		apiKey:     apiKey,
+		cache:      cacheInstance,
 	}
 }
 
@@ -127,6 +157,11 @@ func (n *NVDClient) SearchCVEs(ctx context.Context, request *types.SearchRequest
 
 	startTime := time.Now()
 
+	if cachedResult, ok := n.getCachedSearchResult(request); ok {
+		cachedResult.QueryTime = time.Since(startTime).String()
+		return cachedResult, nil
+	}
+
 	searchURL := n.buildSearchURL(request)
 
 	resp, err := n.executeSearchRequest(ctx, searchURL)
@@ -142,8 +177,77 @@ func (n *NVDClient) SearchCVEs(ctx context.Context, request *types.SearchRequest
 
 	filteredCVEs := n.filterCVEsByProducts(nvdResp.Vulnerabilities, request)
 	queryTime := time.Since(startTime).String()
+	result := n.buildSearchResult(filteredCVEs, request, queryTime)
+	n.setCachedSearchResult(request, result)
 
-	return n.buildSearchResult(filteredCVEs, request, queryTime), nil
+	return result, nil
+}
+
+// getCachedSearchResult retrieves a cached search result if available.
+func (n *NVDClient) getCachedSearchResult(request *types.SearchRequest) (*types.SearchResult, bool) {
+	if n.cache == nil || !n.cache.IsEnabled() {
+		return nil, false
+	}
+
+	cacheKey := cache.GenerateCacheKey(
+		"search",
+		request.Date,
+		request.StartDate,
+		request.EndDate,
+		request.MinCVSS,
+		request.MaxCVSS,
+		request.MaxResults,
+		strings.Join(n.normalizedProducts(request.Products), ","),
+	)
+
+	data, ok := n.cache.Get(cacheKey)
+	if !ok {
+		return nil, false
+	}
+
+	var cachedResult types.SearchResult
+	if err := json.Unmarshal(data, &cachedResult); err != nil {
+		return nil, false
+	}
+
+	return &cachedResult, true
+}
+
+// setCachedSearchResult stores a search result in cache best-effort.
+func (n *NVDClient) setCachedSearchResult(request *types.SearchRequest, result *types.SearchResult) {
+	if n.cache == nil || !n.cache.IsEnabled() {
+		return
+	}
+
+	cacheKey := cache.GenerateCacheKey(
+		"search",
+		request.Date,
+		request.StartDate,
+		request.EndDate,
+		request.MinCVSS,
+		request.MaxCVSS,
+		request.MaxResults,
+		strings.Join(n.normalizedProducts(request.Products), ","),
+	)
+
+	if err := n.cache.Set(cacheKey, result); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to set cached search result: %v\n", err)
+	}
+}
+
+// normalizedProducts returns a sorted product slice copy for deterministic cache keys.
+func (n *NVDClient) normalizedProducts(products []string) []string {
+	if len(products) == 0 {
+		return nil
+	}
+
+	normalized := make([]string, 0, len(products))
+	for _, product := range products {
+		normalized = append(normalized, strings.TrimSpace(product))
+	}
+	sort.Strings(normalized)
+
+	return normalized
 }
 
 // buildSearchURL constructs the search URL with query parameters
@@ -215,26 +319,22 @@ func (n *NVDClient) executeWithRetry(ctx context.Context, req *http.Request) (*h
 		}
 
 		resp, err = n.httpClient.Do(req)
-		if err == nil {
-			// Check if response status indicates an error
-			if resp.StatusCode >= 400 {
-				if attempt < n.config.NVD.RetryAttempts {
-					// Close response body before retry
-					if resp.Body != nil {
-						_ = resp.Body.Close()
-					}
-					n.sleepWithJitter(ctx, attempt)
-					continue
-				}
-				return nil, errors.NewHTTPError(resp, fmt.Errorf("API request failed with status %d", resp.StatusCode))
+		if err != nil {
+			if n.shouldRetryAttempt(ctx, attempt) {
+				continue
 			}
 			break
 		}
 
-		if attempt < n.config.NVD.RetryAttempts {
-			n.sleepWithJitter(ctx, attempt)
+		if n.shouldRetryResponse(ctx, resp, attempt) {
 			continue
 		}
+
+		if resp.StatusCode >= 400 {
+			return nil, errors.NewHTTPError(resp, fmt.Errorf("API request failed with status %d", resp.StatusCode))
+		}
+
+		break
 	}
 
 	// Update rate limiting counters
@@ -247,6 +347,44 @@ func (n *NVDClient) executeWithRetry(ctx context.Context, req *http.Request) (*h
 	}
 
 	return resp, nil
+}
+
+func (n *NVDClient) shouldRetryAttempt(ctx context.Context, attempt int) bool {
+	if attempt < n.config.NVD.RetryAttempts {
+		n.sleepWithJitter(ctx, attempt)
+		return true
+	}
+
+	return false
+}
+
+func (n *NVDClient) shouldRetryResponse(ctx context.Context, resp *http.Response, attempt int) bool {
+	if resp.StatusCode < 400 {
+		return false
+	}
+
+	if attempt >= n.config.NVD.RetryAttempts || !n.shouldRetryStatus(resp.StatusCode) {
+		return false
+	}
+
+	if resp.Body != nil {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close retry response body: %v\n", closeErr)
+		}
+	}
+
+	n.sleepWithJitter(ctx, attempt)
+
+	return true
+}
+
+// shouldRetryStatus determines whether an HTTP response code should be retried.
+func (n *NVDClient) shouldRetryStatus(statusCode int) bool {
+	if statusCode == http.StatusTooManyRequests {
+		return true
+	}
+
+	return statusCode >= http.StatusInternalServerError
 }
 
 // sleepWithJitter performs exponential backoff with jitter
@@ -386,6 +524,11 @@ func (n *NVDClient) buildSearchResult(filteredCVEs []types.CVE, request *types.S
 
 // filterCVEsByProducts filters CVEs based on product keywords and CVSS scores
 func (n *NVDClient) filterCVEsByProducts(vulnerabilities []types.Vulnerability, request *types.SearchRequest) []types.CVE {
+	resolvedProducts := n.resolveProducts(request.Products)
+	if len(resolvedProducts) == 0 {
+		return []types.CVE{}
+	}
+
 	filteredCVEs := make([]types.CVE, 0, len(vulnerabilities))
 
 	for _, vuln := range vulnerabilities {
@@ -397,7 +540,7 @@ func (n *NVDClient) filterCVEsByProducts(vulnerabilities []types.Vulnerability, 
 		}
 
 		// Check if CVE matches any product
-		if !n.matchesProduct(cve, request.Products) {
+		if !n.matchesProduct(cve, resolvedProducts) {
 			continue
 		}
 
@@ -405,6 +548,38 @@ func (n *NVDClient) filterCVEsByProducts(vulnerabilities []types.Vulnerability, 
 	}
 
 	return filteredCVEs
+}
+
+func (n *NVDClient) resolveProducts(productNames []string) []resolvedProduct {
+	if len(productNames) == 0 || n.configMgr == nil {
+		return nil
+	}
+
+	products := make([]resolvedProduct, 0, len(productNames))
+	for _, productName := range productNames {
+		product := n.configMgr.GetProductByName(productName)
+		if product != nil {
+			products = append(products, resolvedProduct{
+				product:       product,
+				lowerKeywords: n.lowercaseKeywords(product.Keywords),
+			})
+		}
+	}
+
+	return products
+}
+
+func (n *NVDClient) lowercaseKeywords(keywords []string) []string {
+	if len(keywords) == 0 {
+		return nil
+	}
+
+	lower := make([]string, 0, len(keywords))
+	for _, keyword := range keywords {
+		lower = append(lower, strings.ToLower(keyword))
+	}
+
+	return lower
 }
 
 // matchesCVSSRange checks if a CVE's CVSS score falls within the specified range
@@ -435,13 +610,13 @@ func (n *NVDClient) matchesCVSSRange(cve types.CVE, request *types.SearchRequest
 }
 
 // matchesProduct checks if a CVE matches any of the specified products
-func (n *NVDClient) matchesProduct(cve types.CVE, productNames []string) bool {
+func (n *NVDClient) matchesProduct(cve types.CVE, products []resolvedProduct) bool {
 	description := n.getEnglishDescription(cve)
 	if description == "" {
 		return false
 	}
 
-	return n.matchesAnyProduct(cve, productNames, description)
+	return n.matchesAnyProduct(cve, products, description)
 }
 
 // getEnglishDescription extracts the English description from a CVE
@@ -456,9 +631,9 @@ func (n *NVDClient) getEnglishDescription(cve types.CVE) string {
 }
 
 // matchesAnyProduct checks if the CVE matches any of the specified products
-func (n *NVDClient) matchesAnyProduct(cve types.CVE, productNames []string, description string) bool {
-	for _, productName := range productNames {
-		if n.matchesSingleProduct(cve, productName, description) {
+func (n *NVDClient) matchesAnyProduct(cve types.CVE, products []resolvedProduct, description string) bool {
+	for _, product := range products {
+		if n.matchesSingleProduct(cve, product, description) {
 			return true
 		}
 	}
@@ -467,20 +642,15 @@ func (n *NVDClient) matchesAnyProduct(cve types.CVE, productNames []string, desc
 }
 
 // matchesSingleProduct checks if the CVE matches a specific product
-func (n *NVDClient) matchesSingleProduct(cve types.CVE, productName, description string) bool {
-	product := n.configMgr.GetProductByName(productName)
-	if product == nil {
-		return false
-	}
-
-	return n.matchesProductKeywords(product, description) ||
-		n.matchesProductCPEPatterns(cve, product)
+func (n *NVDClient) matchesSingleProduct(cve types.CVE, product resolvedProduct, description string) bool {
+	return n.matchesProductKeywords(description, product.lowerKeywords) ||
+		n.matchesProductCPEPatterns(cve, product.product)
 }
 
 // matchesProductKeywords checks if the description matches any product keywords
-func (n *NVDClient) matchesProductKeywords(product *types.Product, description string) bool {
-	for _, keyword := range product.Keywords {
-		if strings.Contains(description, strings.ToLower(keyword)) {
+func (n *NVDClient) matchesProductKeywords(description string, lowerKeywords []string) bool {
+	for _, keyword := range lowerKeywords {
+		if strings.Contains(description, keyword) {
 			return true
 		}
 	}
@@ -575,6 +745,10 @@ func (n *NVDClient) GetCVEDetails(ctx context.Context, cveID string) (*types.CVE
 		return nil, errors.NewNetworkError("request cancelled", err)
 	}
 
+	if cachedDetails, ok := n.getCachedCVEDetails(cveID); ok {
+		return cachedDetails, nil
+	}
+
 	searchURL := n.buildCVEDetailsURL(cveID)
 
 	resp, err := n.fetchCVEDetails(ctx, searchURL)
@@ -583,8 +757,9 @@ func (n *NVDClient) GetCVEDetails(ctx context.Context, cveID string) (*types.CVE
 	}
 	defer n.closeResponseBody(resp)
 
-	if err := n.checkResponseStatus(resp); err != nil {
-		return nil, err
+	statusErr := n.checkResponseStatus(resp)
+	if statusErr != nil {
+		return nil, statusErr
 	}
 
 	nvdResp, err := n.parseCVEDetailsResponse(resp)
@@ -592,7 +767,46 @@ func (n *NVDClient) GetCVEDetails(ctx context.Context, cveID string) (*types.CVE
 		return nil, err
 	}
 
-	return n.extractCVEDetails(nvdResp, cveID)
+	cve, err := n.extractCVEDetails(nvdResp, cveID)
+	if err != nil {
+		return nil, err
+	}
+
+	n.setCachedCVEDetails(cveID, cve)
+
+	return cve, nil
+}
+
+// getCachedCVEDetails retrieves cached CVE details if available.
+func (n *NVDClient) getCachedCVEDetails(cveID string) (*types.CVE, bool) {
+	if n.cache == nil || !n.cache.IsEnabled() {
+		return nil, false
+	}
+
+	cacheKey := cache.GenerateCacheKey("details", cveID)
+	data, ok := n.cache.Get(cacheKey)
+	if !ok {
+		return nil, false
+	}
+
+	var cve types.CVE
+	if err := json.Unmarshal(data, &cve); err != nil {
+		return nil, false
+	}
+
+	return &cve, true
+}
+
+// setCachedCVEDetails stores CVE details in cache best-effort.
+func (n *NVDClient) setCachedCVEDetails(cveID string, cve *types.CVE) {
+	if n.cache == nil || !n.cache.IsEnabled() {
+		return
+	}
+
+	cacheKey := cache.GenerateCacheKey("details", cveID)
+	if err := n.cache.Set(cacheKey, cve); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to set cached CVE details: %v\n", err)
+	}
 }
 
 // buildCVEDetailsURL constructs the URL for fetching CVE details
@@ -617,7 +831,7 @@ func (n *NVDClient) fetchCVEDetails(ctx context.Context, searchURL string) (*htt
 
 	n.setRequestHeaders(req)
 
-	resp, err := n.httpClient.Do(req)
+	resp, err := n.executeWithRetry(timeoutCtx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch CVE details: %w", err)
 	}
@@ -668,25 +882,16 @@ func (n *NVDClient) validateSearchRequest(request *types.SearchRequest) error {
 			WithSuggestion("Provide a valid search request with proper parameters")
 	}
 
-	if request.MaxResults < 1 || request.MaxResults > 2000 {
-		return errors.NewValidationError("invalid max results value", fmt.Errorf("max results must be between 1 and 2000, got %d", request.MaxResults)).
-			WithSuggestion("Use a value between 1 and 2000 for max results")
+	if err := n.validateMaxResults(request.MaxResults); err != nil {
+		return err
 	}
 
-	if request.MinCVSS < 0 || request.MinCVSS > 10 {
-		return errors.NewValidationError("invalid minimum CVSS score", fmt.Errorf("min CVSS score must be between 0 and 10, got %.1f", request.MinCVSS)).
-			WithSuggestion("Use a CVSS score between 0.0 and 10.0")
+	if err := n.validateCVSSBounds(request.MinCVSS, request.MaxCVSS); err != nil {
+		return err
 	}
 
-	if request.MaxCVSS > 0 && (request.MaxCVSS < 0 || request.MaxCVSS > 10) {
-		return errors.NewValidationError("invalid maximum CVSS score", fmt.Errorf("max CVSS score must be between 0 and 10, got %.1f", request.MaxCVSS)).
-			WithSuggestion("Use a CVSS score between 0.0 and 10.0")
-	}
-
-	if request.MaxCVSS > 0 && request.MinCVSS > request.MaxCVSS {
-		return errors.NewValidationError("invalid CVSS score range", fmt.Errorf("min CVSS score (%.1f) cannot be greater than max CVSS score (%.1f)",
-			request.MinCVSS, request.MaxCVSS)).
-			WithSuggestion("Ensure minimum CVSS score is less than or equal to maximum CVSS score")
+	if err := n.validateCVSSRange(request.MinCVSS, request.MaxCVSS); err != nil {
+		return err
 	}
 
 	if len(request.Products) == 0 {
@@ -697,16 +902,57 @@ func (n *NVDClient) validateSearchRequest(request *types.SearchRequest) error {
 	return nil
 }
 
-// GetRateLimitInfo returns information about current rate limiting - ✅ NEW: Thread-safe
+func (n *NVDClient) validateMaxResults(maxResults int) error {
+	if maxResults < 1 || maxResults > 2000 {
+		return errors.NewValidationError("invalid max results value", fmt.Errorf("max results must be between 1 and 2000, got %d", maxResults)).
+			WithSuggestion("Use a value between 1 and 2000 for max results")
+	}
+
+	return nil
+}
+
+func (n *NVDClient) validateCVSSBounds(minCVSS, maxCVSS float64) error {
+	if minCVSS < 0 || minCVSS > 10 {
+		return errors.NewValidationError("invalid minimum CVSS score", fmt.Errorf("min CVSS score must be between 0 and 10, got %.1f", minCVSS)).
+			WithSuggestion("Use a CVSS score between 0.0 and 10.0")
+	}
+
+	if maxCVSS > 0 && (maxCVSS < 0 || maxCVSS > 10) {
+		return errors.NewValidationError("invalid maximum CVSS score", fmt.Errorf("max CVSS score must be between 0 and 10, got %.1f", maxCVSS)).
+			WithSuggestion("Use a CVSS score between 0.0 and 10.0")
+	}
+
+	return nil
+}
+
+func (n *NVDClient) validateCVSSRange(minCVSS, maxCVSS float64) error {
+	if maxCVSS > 0 && minCVSS > maxCVSS {
+		return errors.NewValidationError("invalid CVSS score range", fmt.Errorf("min CVSS score (%.1f) cannot be greater than max CVSS score (%.1f)",
+			minCVSS, maxCVSS)).
+			WithSuggestion("Ensure minimum CVSS score is less than or equal to maximum CVSS score")
+	}
+
+	return nil
+}
+
+// GetRateLimitInfo returns information about current rate limiting.
 func (n *NVDClient) GetRateLimitInfo() map[string]interface{} {
 	n.mu.Lock()
 	defer n.mu.Unlock()
+
+	timeUntilReset := time.Duration(0)
+	if !n.lastRequest.IsZero() {
+		timeUntilReset = time.Hour - time.Since(n.lastRequest)
+		if timeUntilReset < 0 {
+			timeUntilReset = 0
+		}
+	}
 
 	info := map[string]interface{}{
 		"rate_limit":       n.config.NVD.RateLimit,
 		"current_count":    n.requestCount,
 		"last_request":     n.lastRequest,
-		"time_until_reset": time.Hour - time.Since(n.lastRequest),
+		"time_until_reset": timeUntilReset,
 	}
 
 	if n.apiKey != "" {
@@ -717,7 +963,7 @@ func (n *NVDClient) GetRateLimitInfo() map[string]interface{} {
 	return info
 }
 
-// checkRateLimit checks if we're within rate limits - ✅ NOW THREAD-SAFE
+// checkRateLimit checks if we're within rate limits.
 func (n *NVDClient) checkRateLimit() error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -741,7 +987,7 @@ func (n *NVDClient) checkRateLimit() error {
 	return nil
 }
 
-// updateRateLimit updates the rate limiting counters - ✅ NOW THREAD-SAFE
+// updateRateLimit updates the rate limiting counters.
 func (n *NVDClient) updateRateLimit() {
 	n.mu.Lock()
 	defer n.mu.Unlock()
