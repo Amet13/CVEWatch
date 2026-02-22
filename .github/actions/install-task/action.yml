@@ -15,8 +15,7 @@ runs:
       run: |
         set -euo pipefail
         TASK_VERSION="${{ inputs.task-version }}"
-        TASK_VERSION_NO_V="${TASK_VERSION#v}"
-        TASK_ARCHIVE="task_${TASK_VERSION_NO_V}_linux_amd64.tar.gz"
+        TASK_ARCHIVE="task_linux_amd64.tar.gz"
 
         curl -fsSLO "https://github.com/go-task/task/releases/download/${TASK_VERSION}/${TASK_ARCHIVE}"
         tar xzf "${TASK_ARCHIVE}"
