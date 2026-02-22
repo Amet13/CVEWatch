@@ -38,6 +38,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func newBaseTestAppConfig() *types.AppConfig {
+	return &types.AppConfig{
+		App: types.AppSettings{
+			Name:    "CVEWatch",
+			Version: "2.0.0",
+		},
+		NVD: types.NVDSettings{
+			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
+			RateLimit:     1000,
+			Timeout:       30,
+			RetryAttempts: 3,
+			RetryDelay:    5,
+		},
+		Search: types.SearchSettings{
+			DefaultMinCVSS:    0.0,
+			DefaultMaxCVSS:    10.0,
+			DefaultMaxResults: 100,
+		},
+		Output: types.OutputSettings{
+			DefaultFormat: "simple",
+			Formats:       []string{"simple", "json", "yaml", "table", "csv"},
+		},
+		Products: []types.Product{{Name: "Linux Kernel"}},
+	}
+}
+
+func newDefaultsOverrideConfig() *types.AppConfig {
+	return &types.AppConfig{
+		Search: types.SearchSettings{
+			DefaultMinCVSS:    5.0,
+			DefaultMaxCVSS:    9.0,
+			DefaultMaxResults: 50,
+		},
+		Output: types.OutputSettings{
+			DefaultFormat: "table",
+		},
+	}
+}
+
 func TestNewCommands(t *testing.T) {
 	configManager := config.NewConfigManager()
 	cmds := NewCommands(configManager)
@@ -123,16 +162,7 @@ func TestLoadAndOverrideFlagsWithDefaults(t *testing.T) {
 	configManager := config.NewConfigManager()
 
 	// Create a test config
-	testConfig := &types.AppConfig{
-		Search: types.SearchSettings{
-			DefaultMinCVSS:    5.0,
-			DefaultMaxCVSS:    9.0,
-			DefaultMaxResults: 50,
-		},
-		Output: types.OutputSettings{
-			DefaultFormat: "table",
-		},
-	}
+	testConfig := newDefaultsOverrideConfig()
 
 	configManager.SetConfig(testConfig)
 	cmds := NewCommands(configManager)
@@ -191,12 +221,8 @@ func TestValidateOutputFormat(t *testing.T) {
 
 func TestCreateSearchRequest(t *testing.T) {
 	configManager := config.NewConfigManager()
-	testConfig := &types.AppConfig{
-		Products: []types.Product{
-			{Name: "Linux Kernel"},
-			{Name: "OpenSSL"},
-		},
-	}
+	testConfig := newBaseTestAppConfig()
+	testConfig.Products = []types.Product{{Name: "Linux Kernel"}, {Name: "OpenSSL"}}
 	cmds := NewCommands(configManager)
 
 	flags := &types.CommandLineFlags{
@@ -256,31 +282,7 @@ func TestDisplaySearchParameters(t *testing.T) {
 
 func TestRunSearch(t *testing.T) {
 	configManager := config.NewConfigManager()
-	testConfig := &types.AppConfig{
-		App: types.AppSettings{
-			Name:    "CVEWatch",
-			Version: "2.0.0",
-		},
-		NVD: types.NVDSettings{
-			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
-			RateLimit:     1000,
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-		Search: types.SearchSettings{
-			DefaultMinCVSS:    0.0,
-			DefaultMaxCVSS:    10.0,
-			DefaultMaxResults: 100,
-		},
-		Output: types.OutputSettings{
-			DefaultFormat: "simple",
-			Formats:       []string{"simple", "json", "yaml", "table", "csv"},
-		},
-		Products: []types.Product{
-			{Name: "Linux Kernel"},
-		},
-	}
+	testConfig := newBaseTestAppConfig()
 	configManager.SetConfig(testConfig)
 
 	cmds := NewCommands(configManager)
@@ -299,19 +301,7 @@ func TestRunSearch(t *testing.T) {
 
 func TestRunInfo(t *testing.T) {
 	configManager := config.NewConfigManager()
-	testConfig := &types.AppConfig{
-		App: types.AppSettings{
-			Name:    "CVEWatch",
-			Version: "2.0.0",
-		},
-		NVD: types.NVDSettings{
-			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
-			RateLimit:     1000,
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-	}
+	testConfig := newBaseTestAppConfig()
 	configManager.SetConfig(testConfig)
 
 	cmds := NewCommands(configManager)
@@ -327,35 +317,14 @@ func TestRunInfo(t *testing.T) {
 
 func TestRunConfig(t *testing.T) {
 	configManager := config.NewConfigManager()
-	testConfig := &types.AppConfig{
-		App: types.AppSettings{
-			Name:    "CVEWatch",
-			Version: "2.0.0",
-		},
-		NVD: types.NVDSettings{
-			BaseURL:       "https://services.nvd.nist.gov/rest/json/cves/2.0",
-			RateLimit:     1000,
-			Timeout:       30,
-			RetryAttempts: 3,
-			RetryDelay:    5,
-		},
-		Search: types.SearchSettings{
-			DefaultMinCVSS:    0.0,
-			DefaultMaxCVSS:    10.0,
-			DefaultMaxResults: 100,
-		},
-		Output: types.OutputSettings{
-			DefaultFormat: "simple",
-			Formats:       []string{"simple", "json", "yaml", "table", "csv"},
-		},
-		Products: []types.Product{
-			{
-				Name:        "Linux Kernel",
-				Keywords:    []string{"linux", "kernel"},
-				CPEPatterns: []string{"cpe:2.3:o:*:linux:*:*:*:*:*:*:*"},
-				Description: "Linux operating system kernel",
-				Priority:    "high",
-			},
+	testConfig := newBaseTestAppConfig()
+	testConfig.Products = []types.Product{
+		{
+			Name:        "Linux Kernel",
+			Keywords:    []string{"linux", "kernel"},
+			CPEPatterns: []string{"cpe:2.3:o:*:linux:*:*:*:*:*:*:*"},
+			Description: "Linux operating system kernel",
+			Priority:    "high",
 		},
 	}
 	configManager.SetConfig(testConfig)
@@ -382,11 +351,7 @@ func TestRunVersion(t *testing.T) {
 
 func TestLoadConfiguration(t *testing.T) {
 	configManager := config.NewConfigManager()
-	testConfig := &types.AppConfig{
-		App: types.AppSettings{
-			Name: "CVEWatch",
-		},
-	}
+	testConfig := newBaseTestAppConfig()
 	configManager.SetConfig(testConfig)
 
 	cmds := NewCommands(configManager)
@@ -400,16 +365,7 @@ func TestLoadConfiguration(t *testing.T) {
 
 func TestLoadAndOverrideFlags(t *testing.T) {
 	configManager := config.NewConfigManager()
-	testConfig := &types.AppConfig{
-		Search: types.SearchSettings{
-			DefaultMinCVSS:    5.0,
-			DefaultMaxCVSS:    9.0,
-			DefaultMaxResults: 50,
-		},
-		Output: types.OutputSettings{
-			DefaultFormat: "table",
-		},
-	}
+	testConfig := newDefaultsOverrideConfig()
 	configManager.SetConfig(testConfig)
 
 	cmds := NewCommands(configManager)
