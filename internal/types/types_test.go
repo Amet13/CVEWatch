@@ -191,6 +191,11 @@ func TestAppConfig_JSONMarshaling(t *testing.T) {
 			RetryAttempts: 3,
 			RetryDelay:    5,
 		},
+		Cache: CacheSettings{
+			Enabled: true,
+			Dir:     "",
+			TTL:     15,
+		},
 		Search: SearchSettings{
 			DefaultDate:       "today",
 			DefaultMinCVSS:    0.0,

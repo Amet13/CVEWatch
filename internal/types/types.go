@@ -32,10 +32,18 @@ package types
 type AppConfig struct {
 	App      AppSettings      `yaml:"app"`
 	NVD      NVDSettings      `yaml:"nvd"`
+	Cache    CacheSettings    `yaml:"cache"`
 	Search   SearchSettings   `yaml:"search"`
 	Products []Product        `yaml:"products"`
 	Output   OutputSettings   `yaml:"output"`
 	Security SecuritySettings `yaml:"security"`
+}
+
+// CacheSettings represents cache behavior configuration
+type CacheSettings struct {
+	Enabled bool   `yaml:"enabled"`
+	Dir     string `yaml:"dir"`
+	TTL     int    `yaml:"ttl"`
 }
 
 // AppSettings represents application-level settings
@@ -267,7 +275,7 @@ type SearchRequest struct {
 	MaxResults int
 
 	// Optional NVD API key for higher rate limits.
-	APIKey string
+	APIKey string // #nosec G117 -- field name intentionally represents user-provided NVD API key
 
 	// Output format (simple, json, yaml, table, csv).
 	OutputFormat string
@@ -288,7 +296,7 @@ type CommandLineFlags struct {
 	MaxCVSS      float64
 	OutputFormat string
 	MaxResults   int
-	APIKey       string
+	APIKey       string // #nosec G117 -- field name intentionally represents user-provided NVD API key
 	Quiet        bool
 	Verbose      bool
 	IncludeCPE   bool

@@ -148,7 +148,8 @@ func TestNewRateLimitError(t *testing.T) {
 
 func TestNewHTTPError(t *testing.T) {
 	// Create a mock HTTP response
-	testURL, _ := url.Parse("https://example.com/api")
+	testURL, parseErr := url.Parse("https://example.com/api")
+	assert.NoError(t, parseErr)
 	req := &http.Request{URL: testURL}
 	resp := &http.Response{
 		StatusCode: 429,
@@ -185,7 +186,8 @@ func TestHTTPErrorSuggestions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Status%d", tc.statusCode), func(t *testing.T) {
-			testURL, _ := url.Parse("https://example.com/api")
+			testURL, parseErr := url.Parse("https://example.com/api")
+			assert.NoError(t, parseErr)
 			req := &http.Request{URL: testURL}
 			resp := &http.Response{
 				StatusCode: tc.statusCode,

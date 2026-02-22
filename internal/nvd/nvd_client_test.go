@@ -25,6 +25,9 @@
 package nvd
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -140,6 +143,121 @@ func TestValidateSearchRequest_ValidRequests(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestGetCachedSearchResult(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	th := NewTestHelper(t)
+	th.config.Cache = types.CacheSettings{
+		Enabled: true,
+		Dir:     tmpDir,
+		TTL:     15,
+	}
+
+	client := NewNVDClient(th.config, nil, "")
+	request := th.CreateValidSearchRequest()
+
+	result := &types.SearchResult{
+		CVEs: []types.CVE{th.CreateSampleCVE()},
+	}
+
+	client.setCachedSearchResult(request, result)
+	cached, ok := client.getCachedSearchResult(request)
+	require.True(t, ok)
+	require.NotNil(t, cached)
+	assert.Equal(t, 1, len(cached.CVEs))
+	assert.Equal(t, "CVE-2024-1234", cached.CVEs[0].ID)
+}
+
+func TestGetCachedSearchResult_ProductOrderDeterministic(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	th := NewTestHelper(t)
+	th.config.Cache = types.CacheSettings{
+		Enabled: true,
+		Dir:     tmpDir,
+		TTL:     15,
+	}
+
+	client := NewNVDClient(th.config, nil, "")
+
+	setReq := &types.SearchRequest{
+		Date:       "2024-01-01",
+		MinCVSS:    0.0,
+		MaxCVSS:    10.0,
+		MaxResults: 100,
+		Products:   []string{"OpenSSL", "Linux Kernel"},
+	}
+	getReq := &types.SearchRequest{
+		Date:       "2024-01-01",
+		MinCVSS:    0.0,
+		MaxCVSS:    10.0,
+		MaxResults: 100,
+		Products:   []string{"Linux Kernel", "OpenSSL"},
+	}
+
+	result := &types.SearchResult{
+		CVEs: []types.CVE{th.CreateSampleCVE()},
+	}
+
+	client.setCachedSearchResult(setReq, result)
+	cached, ok := client.getCachedSearchResult(getReq)
+	require.True(t, ok)
+	require.NotNil(t, cached)
+	assert.Equal(t, 1, len(cached.CVEs))
+	assert.Equal(t, "CVE-2024-1234", cached.CVEs[0].ID)
+}
+
+func TestShouldRetryStatus(t *testing.T) {
+	th := NewTestHelper(t)
+	client := NewNVDClient(th.config, nil, "")
+
+	assert.True(t, client.shouldRetryStatus(429))
+	assert.True(t, client.shouldRetryStatus(500))
+	assert.True(t, client.shouldRetryStatus(503))
+	assert.False(t, client.shouldRetryStatus(400))
+	assert.False(t, client.shouldRetryStatus(404))
+}
+
+func TestGetCVEDetails_UsesCache(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	th := NewTestHelper(t)
+	th.config.Cache = types.CacheSettings{
+		Enabled: true,
+		Dir:     tmpDir,
+		TTL:     15,
+	}
+
+	client := NewNVDClient(th.config, nil, "")
+	sample := th.CreateSampleCVE()
+	client.setCachedCVEDetails(sample.ID, &sample)
+
+	got, err := client.GetCVEDetails(context.Background(), sample.ID)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, sample.ID, got.ID)
+	assert.Equal(t, sample.Status, got.Status)
+}
+
+func TestCacheDirectoryFallbackOnCreationError(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "not-a-dir")
+	require.NoError(t, os.WriteFile(filePath, []byte("x"), 0o600))
+
+	th := NewTestHelper(t)
+	th.config.Cache = types.CacheSettings{
+		Enabled: true,
+		Dir:     filePath,
+		TTL:     15,
+	}
+
+	client := NewNVDClient(th.config, nil, "")
+	request := th.CreateValidSearchRequest()
+
+	_, ok := client.getCachedSearchResult(request)
+	assert.False(t, ok)
 }
 
 // TestValidateSearchRequest_InvalidParameters tests validation of invalid search requests
@@ -443,7 +561,10 @@ func TestRateLimiting_ThreadSafety(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < operationsPerGoroutine; j++ {
-				_ = client.checkRateLimit()
+				if err := client.checkRateLimit(); err != nil {
+					t.Errorf("checkRateLimit returned error: %v", err)
+					return
+				}
 				client.updateRateLimit()
 			}
 		}()

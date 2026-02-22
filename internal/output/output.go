@@ -85,34 +85,68 @@ func (o *OutputFormatter) FormatOutput(result *types.SearchResult) error {
 // outputSimple outputs results in simple text format
 func (o *OutputFormatter) outputSimple(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
-		fmt.Fprintf(os.Stderr, "No vulnerabilities found for %s\n", result.Date)
-
-		return nil
+		return o.writeSimpleNoResults(result)
 	}
 
-	fmt.Fprintf(os.Stderr, "Found %d vulnerabilities for %s:\n\n", len(result.CVEs), result.Date)
+	if err := o.writeSimpleHeader(result); err != nil {
+		return err
+	}
 
 	for i, cve := range result.CVEs {
-		score := o.getCVSSScore(cve)
-		severity := o.getSeverity(score)
-
-		fmt.Fprintf(os.Stderr, "%d. %s - CVSS: %.1f (%s)\n", i+1, cve.ID, score, severity)
-
-		// Get English description
-		description := o.getEnglishDescription(cve)
-		fmt.Fprintf(os.Stderr, "   Description: %s\n", o.truncateString(description, o.config.Output.TruncateLength))
-		fmt.Fprintf(os.Stderr, "   Published: %s\n", cve.Published)
-
-		if len(cve.References) > 0 {
-			fmt.Fprintf(os.Stderr, "   Reference: %s\n", cve.References[0].URL)
+		if err := o.writeSimpleCVE(i, cve); err != nil {
+			return err
 		}
+	}
 
-		// Show CPE information if available
-		if len(cve.Configurations) > 0 {
-			fmt.Fprintf(os.Stderr, "   Affected Products: %s\n", o.getAffectedProducts(cve))
+	return nil
+}
+
+func (o *OutputFormatter) writeSimpleNoResults(result *types.SearchResult) error {
+	if _, err := fmt.Fprintf(os.Stdout, "No vulnerabilities found for %s\n", result.Date); err != nil {
+		return fmt.Errorf("failed to write simple output: %w", err)
+	}
+
+	return nil
+}
+
+func (o *OutputFormatter) writeSimpleHeader(result *types.SearchResult) error {
+	if _, err := fmt.Fprintf(os.Stdout, "Found %d vulnerabilities for %s:\n\n", len(result.CVEs), result.Date); err != nil {
+		return fmt.Errorf("failed to write simple output header: %w", err)
+	}
+
+	return nil
+}
+
+func (o *OutputFormatter) writeSimpleCVE(index int, cve types.CVE) error {
+	score := o.getCVSSScore(cve)
+	severity := o.getSeverity(score)
+
+	if _, err := fmt.Fprintf(os.Stdout, "%d. %s - CVSS: %.1f (%s)\n", index+1, cve.ID, score, severity); err != nil {
+		return fmt.Errorf("failed to write simple output row: %w", err)
+	}
+
+	description := o.getEnglishDescription(cve)
+	if _, err := fmt.Fprintf(os.Stdout, "   Description: %s\n", o.truncateString(description, o.config.Output.TruncateLength)); err != nil {
+		return fmt.Errorf("failed to write simple output description: %w", err)
+	}
+	if _, err := fmt.Fprintf(os.Stdout, "   Published: %s\n", cve.Published); err != nil {
+		return fmt.Errorf("failed to write simple output publish date: %w", err)
+	}
+
+	if len(cve.References) > 0 {
+		if _, err := fmt.Fprintf(os.Stdout, "   Reference: %s\n", cve.References[0].URL); err != nil {
+			return fmt.Errorf("failed to write simple output reference: %w", err)
 		}
+	}
 
-		fmt.Fprintln(os.Stderr)
+	if len(cve.Configurations) > 0 {
+		if _, err := fmt.Fprintf(os.Stdout, "   Affected Products: %s\n", o.getAffectedProducts(cve)); err != nil {
+			return fmt.Errorf("failed to write simple output affected products: %w", err)
+		}
+	}
+
+	if _, err := fmt.Fprintln(os.Stdout); err != nil {
+		return fmt.Errorf("failed to write simple output separator: %w", err)
 	}
 
 	return nil
@@ -159,7 +193,9 @@ func (o *OutputFormatter) outputYAML(result *types.SearchResult) error {
 // outputTable outputs results in a formatted table
 func (o *OutputFormatter) outputTable(result *types.SearchResult) error {
 	if len(result.CVEs) == 0 {
-		fmt.Fprintf(os.Stderr, "No vulnerabilities found for %s\n", result.Date)
+		if _, err := fmt.Fprintf(os.Stdout, "No vulnerabilities found for %s\n", result.Date); err != nil {
+			return fmt.Errorf("failed to write table output: %w", err)
+		}
 
 		return nil
 	}
@@ -296,7 +332,8 @@ func (o *OutputFormatter) getEnglishDescription(cve types.CVE) string {
 
 // getAffectedProducts returns a string representation of affected products
 func (o *OutputFormatter) getAffectedProducts(cve types.CVE) string {
-	var products []string
+	seenProducts := make(map[string]struct{}, len(cve.Configurations))
+	products := make([]string, 0, len(cve.Configurations))
 
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
@@ -304,7 +341,10 @@ func (o *OutputFormatter) getAffectedProducts(cve types.CVE) string {
 				if cpeMatch.Vulnerable {
 					// Extract product name from CPE
 					if productName := o.extractProductName(cpeMatch.Criteria); productName != "" {
-						products = append(products, productName)
+						if _, exists := seenProducts[productName]; !exists {
+							seenProducts[productName] = struct{}{}
+							products = append(products, productName)
+						}
 					}
 				}
 			}
@@ -315,31 +355,44 @@ func (o *OutputFormatter) getAffectedProducts(cve types.CVE) string {
 		return unknownProduct
 	}
 
-	// Remove duplicates and join
-	uniqueProducts := make(map[string]bool)
-	var uniqueList []string
-	for _, product := range products {
-		if !uniqueProducts[product] {
-			uniqueProducts[product] = true
-			uniqueList = append(uniqueList, product)
-		}
-	}
-
-	return strings.Join(uniqueList, ", ")
+	return strings.Join(products, ", ")
 }
 
 // extractProductName extracts a readable product name from a CPE string
 func (o *OutputFormatter) extractProductName(cpe string) string {
-	parts := strings.Split(cpe, ":")
-	if len(parts) >= 5 {
-		vendor := parts[3]
-		product := parts[4]
-		if vendor != "*" && product != "*" {
-			return fmt.Sprintf("%s %s", vendor, product)
-		}
+	vendor, product := cpeVendorProduct(cpe)
+	if vendor != "" && product != "" && vendor != "*" && product != "*" {
+		return vendor + " " + product
 	}
 
 	return ""
+}
+
+func cpeVendorProduct(cpe string) (string, string) {
+	component := 0
+	start := 0
+	vendor := ""
+	product := ""
+
+	for i := 0; i <= len(cpe); i++ {
+		if i < len(cpe) && cpe[i] != ':' {
+			continue
+		}
+
+		part := cpe[start:i]
+		switch component {
+		case 3:
+			vendor = part
+		case 4:
+			product = part
+			return vendor, product
+		}
+
+		component++
+		start = i + 1
+	}
+
+	return "", ""
 }
 
 // truncateString truncates a string to the specified length

@@ -25,6 +25,12 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
 checksum:
   name_template: "checksums.txt"
+
+sboms:
+  - id: cvewatch-sbom
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.sbom.json"
 release:
   draft: false
   prerelease: auto

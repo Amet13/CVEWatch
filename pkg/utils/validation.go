@@ -34,48 +34,26 @@ import (
 	"strings"
 )
 
+var cveIDPattern = regexp.MustCompile(`^CVE-(\d{4})-(\d{4,})$`)
+
 // IsValidCVEID checks if a string is a valid CVE ID format
 func IsValidCVEID(cveID string) bool {
-	if cveID == "" {
+	cleaned := strings.TrimSpace(cveID)
+	if cleaned == "" {
 		return false
 	}
 
-	// Sanitize input - remove any whitespace
-	cveID = strings.TrimSpace(cveID)
-
-	// Basic CVE ID format validation: CVE-YYYY-NNNNN+
-	if len(cveID) < 13 { // Minimum: CVE-1999-0001
+	matches := cveIDPattern.FindStringSubmatch(cleaned)
+	if len(matches) != 3 {
 		return false
 	}
 
-	// Check if it starts with "CVE-"
-	if !strings.HasPrefix(cveID, "CVE-") {
-		return false
-	}
-
-	// Check for valid format: CVE-YYYY-NNNNN (4+ digits)
-	parts := strings.Split(cveID, "-")
-	if len(parts) != 3 {
-		return false
-	}
-
-	// Check year format (should be 4 digits)
-	if len(parts[1]) != 4 {
-		return false
-	}
-
-	// Check if year is numeric and within reasonable range
-	year, err := strconv.Atoi(parts[1])
+	year, err := strconv.Atoi(matches[1])
 	if err != nil || year < 1999 || year > 2100 {
 		return false
 	}
 
-	// Check if number part is numeric and positive (minimum 4 digits, no maximum)
-	// Modern CVE IDs can have 4-7+ digits (e.g., CVE-2023-1234567)
-	if len(parts[2]) < 4 {
-		return false
-	}
-	seq, err := strconv.Atoi(parts[2])
+	seq, err := strconv.Atoi(matches[2])
 	if err != nil || seq < 0 {
 		return false
 	}

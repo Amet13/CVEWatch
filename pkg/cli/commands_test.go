@@ -27,11 +27,13 @@ package cli
 
 import (
 	"testing"
+	"time"
 
 	"cvewatch/internal/config"
 	"cvewatch/internal/types"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,6 +49,7 @@ func TestNewCommands(t *testing.T) {
 	assert.NotNil(t, cmds.InfoCmd)
 	assert.NotNil(t, cmds.ConfigCmd)
 	assert.NotNil(t, cmds.VersionCmd)
+	assert.NotNil(t, cmds.CacheCmd)
 }
 
 func TestLoadCommandLineFlags(t *testing.T) {
@@ -76,6 +79,7 @@ func TestCommandStructure(t *testing.T) {
 	assert.Equal(t, "info [CVE-ID]", cmds.InfoCmd.Use)
 	assert.Equal(t, "config", cmds.ConfigCmd.Use)
 	assert.Equal(t, "version", cmds.VersionCmd.Use)
+	assert.Equal(t, "cache", cmds.CacheCmd.Use)
 }
 
 func TestValidateCVEID(t *testing.T) {
@@ -202,6 +206,8 @@ func TestCreateSearchRequest(t *testing.T) {
 		MaxResults:   100,
 		OutputFormat: "json",
 		APIKey:       "test-key",
+		IncludeCPE:   true,
+		IncludeRefs:  true,
 	}
 
 	request := cmds.createSearchRequest(flags, testConfig)
@@ -212,7 +218,21 @@ func TestCreateSearchRequest(t *testing.T) {
 	assert.Equal(t, 100, request.MaxResults)
 	assert.Equal(t, "json", request.OutputFormat)
 	assert.Equal(t, "test-key", request.APIKey)
+	assert.True(t, request.IncludeCPE)
+	assert.True(t, request.IncludeRefs)
 	assert.Equal(t, []string{"Linux Kernel", "OpenSSL"}, request.Products)
+}
+
+func TestLoadCommandLineFlags_DefaultDate(t *testing.T) {
+	viper.Reset()
+
+	configManager := config.NewConfigManager()
+	cmds := NewCommands(configManager)
+
+	flags, err := cmds.loadCommandLineFlags()
+	require.NoError(t, err)
+
+	assert.Equal(t, time.Now().Format("2006-01-02"), flags.Date)
 }
 
 func TestDisplaySearchParameters(t *testing.T) {

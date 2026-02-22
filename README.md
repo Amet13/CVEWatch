@@ -150,6 +150,14 @@ Continuously monitor for new CVEs at specified intervals.
 - `--max-cvss, -M`: Maximum CVSS score (0-10)
 - `--output, -o`: Output format (simple, json, yaml, table, csv)
 
+#### `cvewatch cache [flags]`
+
+Inspect local cache statistics and optionally clean expired entries.
+
+**Flags:**
+
+- `--clean`: Remove expired cache entries before showing stats
+
 ### Examples
 
 ```bash
@@ -171,6 +179,9 @@ cvewatch health
 # Watch for new critical CVEs every 5 minutes
 cvewatch watch --interval 5m --min-cvss 9.0
 
+# Show cache stats and clean expired entries
+cvewatch cache --clean
+
 # Search with custom date range and output format
 cvewatch search --date 2024-01-01 --min-cvss 8.0 --output table
 ```
@@ -191,6 +202,12 @@ CVEWatch uses a YAML configuration file located at `~/.cvewatch/config.yaml`. Th
 - Timeout and retry configuration
 - API key configuration
 
+### Cache Settings
+
+- Enable/disable local response caching
+- Cache directory configuration
+- Cache TTL tuning for freshness vs API load
+
 ### Product Monitoring
 
 - Product names and descriptions
@@ -210,28 +227,33 @@ CVEWatch uses a YAML configuration file located at `~/.cvewatch/config.yaml`. Th
 app:
   name: CVEWatch
   version: 2.0.0
-  log_level: info
+  logLevel: info
   timeout: 60
 
 nvd:
-  base_url: https://services.nvd.nist.gov/rest/json/cves/2.0
-  rate_limit: 1000
+  baseUrl: https://services.nvd.nist.gov/rest/json/cves/2.0
+  rateLimit: 1000
   timeout: 30
-  retry_attempts: 3
-  retry_delay: 5
+  retryAttempts: 3
+  retryDelay: 5
+
+cache:
+  enabled: true
+  dir: ""
+  ttl: 15
 
 products:
   - name: Linux Kernel
     keywords: [linux, kernel, linux kernel]
-    cpe_patterns: [cpe:2.3:o:*:linux:*:*:*:*:*:*:*]
+    cpePatterns: [cpe:2.3:o:*:linux:*:*:*:*:*:*:*]
     description: Linux operating system kernel
     priority: high
 
 output:
-  default_format: simple
+  defaultFormat: simple
   formats: [simple, json, table, csv, yaml]
   colors: true
-  truncate_length: 100
+  truncateLength: 100
 ```
 
 ## 🧪 Development
@@ -260,6 +282,7 @@ task format         # Format code
 task clean          # Clean build artifacts
 task release        # Build for multiple platforms
 task security-scan  # Run security scanning
+task vuln-check     # Check dependencies for known vulnerabilities
 task pre-commit     # Run all pre-commit checks
 ```
 
@@ -313,6 +336,7 @@ Comma-separated values for spreadsheet analysis and reporting.
 - Rate limiting and retry logic
 - Input validation and sanitization
 - Secure configuration file handling
+- SBOM artifacts generated for releases
 
 ## 🤝 Contributing
 
@@ -323,6 +347,14 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - How to submit issues
 - How to create pull requests
 - Coding standards
+
+## 🛟 Support
+
+For usage help and troubleshooting, see [SUPPORT.md](SUPPORT.md).
+
+## 🔐 Security Policy
+
+To report vulnerabilities privately, follow [SECURITY.md](SECURITY.md).
 
 ## 📄 License
 

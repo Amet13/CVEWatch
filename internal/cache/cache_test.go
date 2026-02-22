@@ -43,9 +43,14 @@ func TestNewFileCache_DefaultDir(t *testing.T) {
 	}
 
 	// Clean up the default cache directory
-	homeDir, _ := os.UserHomeDir()
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("Failed to get user home directory: %v", err)
+	}
 	defaultCacheDir := filepath.Join(homeDir, ".cvewatch", "cache")
-	_ = os.RemoveAll(defaultCacheDir)
+	if err := os.RemoveAll(defaultCacheDir); err != nil && !os.IsNotExist(err) {
+		t.Fatalf("Failed to cleanup default cache directory: %v", err)
+	}
 }
 
 func TestFileCache_SetGet(t *testing.T) {

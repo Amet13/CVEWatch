@@ -74,6 +74,23 @@ func TestConfigManagerMethods(t *testing.T) {
 	assert.Nil(t, config)
 }
 
+func TestGetProductByName_ReturnsBackingProduct(t *testing.T) {
+	configMgr := NewConfigManager()
+	configMgr.SetConfig(&types.AppConfig{
+		Products: []types.Product{
+			{Name: "Linux Kernel", Priority: "high", Keywords: []string{"linux"}},
+		},
+	})
+
+	product := configMgr.GetProductByName("Linux Kernel")
+	require.NotNil(t, product)
+
+	product.Priority = "critical"
+	updated := configMgr.GetProductByName("Linux Kernel")
+	require.NotNil(t, updated)
+	assert.Equal(t, "critical", updated.Priority)
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	configMgr := NewConfigManager()
 
@@ -123,6 +140,16 @@ func TestValidateConfig(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "NVD settings: base URL cannot be empty")
 	})
+
+	t.Run("invalid config - cache enabled with zero ttl", func(t *testing.T) {
+		invalidConfig := createValidTestConfig()
+		invalidConfig.Cache.Enabled = true
+		invalidConfig.Cache.TTL = 0
+
+		err := configMgr.validateConfig(invalidConfig)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cache settings: ttl must be positive when cache is enabled")
+	})
 }
 
 // createValidTestConfig creates a valid test configuration
@@ -130,10 +157,20 @@ func createValidTestConfig() *types.AppConfig {
 	return &types.AppConfig{
 		App:      createValidAppSettings(),
 		NVD:      createValidNVDSettings(),
+		Cache:    createValidCacheSettings(),
 		Search:   createValidSearchSettings(),
 		Output:   createValidOutputSettings(),
 		Security: createValidSecuritySettings(),
 		Products: createValidProducts(),
+	}
+}
+
+// createValidCacheSettings creates valid cache settings for testing
+func createValidCacheSettings() types.CacheSettings {
+	return types.CacheSettings{
+		Enabled: true,
+		Dir:     "",
+		TTL:     15,
 	}
 }
 

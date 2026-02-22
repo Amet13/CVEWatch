@@ -217,6 +217,10 @@ func (cm *ConfigManager) setDefaults() {
 	cm.viper.SetDefault("nvd.retryAttempts", 3)
 	cm.viper.SetDefault("nvd.retryDelay", 5)
 
+	cm.viper.SetDefault("cache.enabled", true)
+	cm.viper.SetDefault("cache.dir", "")
+	cm.viper.SetDefault("cache.ttl", 15)
+
 	cm.viper.SetDefault("search.defaultDate", "today")
 	cm.viper.SetDefault("search.defaultMinCvss", 0.0)
 	cm.viper.SetDefault("search.defaultMaxCvss", 10.0)
@@ -257,10 +261,20 @@ func (cm *ConfigManager) buildDefaultConfig() *types.AppConfig {
 	return &types.AppConfig{
 		App:      cm.getDefaultAppSettings(),
 		NVD:      cm.getDefaultNVDSettings(),
+		Cache:    cm.getDefaultCacheSettings(),
 		Search:   cm.getDefaultSearchSettings(),
 		Output:   cm.getDefaultOutputSettings(),
 		Security: cm.getDefaultSecuritySettings(),
 		Products: getDefaultProducts(),
+	}
+}
+
+// getDefaultCacheSettings returns default cache settings
+func (cm *ConfigManager) getDefaultCacheSettings() types.CacheSettings {
+	return types.CacheSettings{
+		Enabled: true,
+		Dir:     "",
+		TTL:     15,
 	}
 }
 
@@ -378,8 +392,29 @@ func (cm *ConfigManager) validateConfig(config *types.AppConfig) error {
 		return fmt.Errorf("search settings: %w", err)
 	}
 
+	if err := cm.validateCacheSettings(config.Cache); err != nil {
+		return fmt.Errorf("cache settings: %w", err)
+	}
+
 	if err := cm.validateProducts(config.Products); err != nil {
 		return fmt.Errorf("products: %w", err)
+	}
+
+	return nil
+}
+
+// validateCacheSettings validates cache configuration
+func (cm *ConfigManager) validateCacheSettings(cacheConfig types.CacheSettings) error {
+	if cacheConfig.Enabled && cacheConfig.TTL <= 0 {
+		return fmt.Errorf("ttl must be positive when cache is enabled")
+	}
+
+	if cacheConfig.TTL < 0 {
+		return fmt.Errorf("ttl must be non-negative")
+	}
+
+	if cacheConfig.TTL > 24*60 {
+		return fmt.Errorf("ttl cannot exceed 1440 minutes")
 	}
 
 	return nil
@@ -408,26 +443,40 @@ func (cm *ConfigManager) validateNVDSettings(nvd types.NVDSettings) error {
 		return fmt.Errorf("base URL must use HTTPS: %s", nvd.BaseURL)
 	}
 
-	if nvd.RateLimit <= 0 {
-		return fmt.Errorf("rate limit must be positive")
-	}
-	if nvd.RateLimit > 10000 {
-		return fmt.Errorf("rate limit cannot exceed 10000 requests per hour")
+	if err := cm.validatePositiveMax("rate limit", nvd.RateLimit, 10000, "requests per hour"); err != nil {
+		return err
 	}
 
-	if nvd.Timeout <= 0 {
-		return fmt.Errorf("timeout must be positive")
-	}
-	if nvd.Timeout > 300 {
-		return fmt.Errorf("timeout cannot exceed 300 seconds")
+	if err := cm.validatePositiveMax("timeout", nvd.Timeout, 300, "seconds"); err != nil {
+		return err
 	}
 
-	if nvd.RetryAttempts < 0 || nvd.RetryAttempts > 10 {
-		return fmt.Errorf("retry attempts must be between 0 and 10")
+	if err := cm.validateIntRange("retry attempts", nvd.RetryAttempts, 0, 10, ""); err != nil {
+		return err
 	}
 
-	if nvd.RetryDelay < 0 || nvd.RetryDelay > 60 {
-		return fmt.Errorf("retry delay must be between 0 and 60 seconds")
+	if err := cm.validateIntRange("retry delay", nvd.RetryDelay, 0, 60, "seconds"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (cm *ConfigManager) validatePositiveMax(name string, value, upperBound int, unit string) error {
+	if value <= 0 {
+		return fmt.Errorf("%s must be positive", name)
+	}
+
+	return cm.validateIntRange(name, value, 1, upperBound, unit)
+}
+
+func (cm *ConfigManager) validateIntRange(name string, value, lowerBound, upperBound int, unit string) error {
+	if value < lowerBound || value > upperBound {
+		suffix := ""
+		if unit != "" {
+			suffix = " " + unit
+		}
+		return fmt.Errorf("%s must be between %d and %d%s", name, lowerBound, upperBound, suffix)
 	}
 
 	return nil
@@ -491,9 +540,9 @@ func (cm *ConfigManager) GetProductByName(name string) *types.Product {
 	if cm.config == nil {
 		return nil
 	}
-	for _, product := range cm.config.Products {
-		if product.Name == name {
-			return &product
+	for i := range cm.config.Products {
+		if cm.config.Products[i].Name == name {
+			return &cm.config.Products[i]
 		}
 	}
 

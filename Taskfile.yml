@@ -149,6 +149,18 @@ tasks:
         fi
       - echo "Security scan completed. Report saved to security-report.json"
 
+  vuln-check:
+    desc: Run Go vulnerability database check (govulncheck)
+    cmds:
+      - echo "Running govulncheck..."
+      - |
+        if ! command -v govulncheck >/dev/null 2>&1; then
+          echo "Installing govulncheck..."
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+        fi
+        govulncheck ./...
+      - echo "Vulnerability check completed."
+
   # Installation
   install:
     desc: Install the application
@@ -241,7 +253,7 @@ tasks:
       - echo "Setting up development environment..."
       - |
         tools=(
-          "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+          "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"
           "golang.org/x/tools/cmd/goimports@latest"
           "github.com/securego/gosec/v2/cmd/gosec@latest"
         )
@@ -271,6 +283,7 @@ tasks:
       - check-fmt
       - lint
       - security-scan
+      - vuln-check
     cmds:
       - echo "All CI quality checks passed!"
 
