@@ -130,22 +130,26 @@ tasks:
     cmds:
       - echo "Running linters..."
       - |
+        GOBIN_DIR="$(go env GOPATH)/bin"
         if ! command -v golangci-lint >/dev/null 2>&1; then
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0
+          "${GOBIN_DIR}/golangci-lint" run
+        else
+          golangci-lint run
         fi
-        golangci-lint run
 
   security-scan:
     desc: Run security scanner (gosec)
     cmds:
       - echo "Running security scan..."
       - |
+        GOBIN_DIR="$(go env GOPATH)/bin"
         if command -v gosec >/dev/null 2>&1; then
           gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
         else
           echo "Installing gosec..."
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
+          "${GOBIN_DIR}/gosec" -fmt=json -out=security-report.json -severity=medium -confidence=medium ./...
         fi
       - echo "Security scan completed. Report saved to security-report.json"
 
@@ -154,11 +158,14 @@ tasks:
     cmds:
       - echo "Running govulncheck..."
       - |
+        GOBIN_DIR="$(go env GOPATH)/bin"
         if ! command -v govulncheck >/dev/null 2>&1; then
           echo "Installing govulncheck..."
           go install golang.org/x/vuln/cmd/govulncheck@latest
+          "${GOBIN_DIR}/govulncheck" ./...
+        else
+          govulncheck ./...
         fi
-        govulncheck ./...
       - echo "Vulnerability check completed."
 
   # Installation
