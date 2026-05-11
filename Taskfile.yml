@@ -21,7 +21,7 @@ tasks:
       - |
         GOBIN_DIR="$(go env GOPATH)/bin"
         echo "Installing {{.TOOL_NAME}}..."
-        GOTOOLCHAIN=go1.26.0 go install {{.TOOL_PACKAGE}}
+        GOTOOLCHAIN=go1.26.3 go install {{.TOOL_PACKAGE}}
         "${GOBIN_DIR}/{{.TOOL_BIN}}" {{.TOOL_ARGS}}
 
   default:
@@ -261,7 +261,7 @@ tasks:
     cmds:
       - echo "Setting up development environment..."
       - |
-        GOTOOLCHAIN=go1.26.0 go install \
+        GOTOOLCHAIN=go1.26.3 go install \
           github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.10.1 \
           golang.org/x/tools/cmd/goimports@v0.42.0 \
           github.com/securego/gosec/v2/cmd/gosec@v2.23.0
