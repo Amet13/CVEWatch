@@ -1,0 +1,90 @@
+[
+  {
+    "cycle": "26.10",
+    "codename": "Stonking Stingray",
+    "releaseDate": "2026-10-15",
+    "eol": "2027-07-01",
+    "latest": "26.10",
+    "latestReleaseDate": "2026-10-15",
+    "lts": false,
+    "support": "2027-07-01",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "26.04",
+    "codename": "Resolute Raccoon",
+    "lts": true,
+    "releaseDate": "2026-04-23",
+    "eol": "2031-05-29",
+    "latest": "26.04.1",
+    "latestReleaseDate": "2026-08-31",
+    "support": "2031-05-29",
+    "extendedSupport": "2036-04-23"
+  },
+  {
+    "cycle": "25.10",
+    "codename": "Questing Quokka",
+    "releaseDate": "2025-10-09",
+    "eol": "2026-07-01",
+    "latest": "25.10",
+    "latestReleaseDate": "2025-10-09",
+    "lts": false,
+    "support": "2026-07-01",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "25.04",
+    "codename": "Plucky Puffin",
+    "releaseDate": "2025-04-17",
+    "eol": "2026-01-17",
+    "latest": "25.04",
+    "latestReleaseDate": "2025-04-17",
+    "lts": false,
+    "support": "2026-01-17",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "24.10",
+    "codename": "Oracular Oriole",
+    "releaseDate": "2024-10-10",
+    "eol": "2025-07-10",
+    "latest": "24.10",
+    "latestReleaseDate": "2024-10-10",
+    "lts": false,
+    "support": "2025-07-10",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "24.04",
+    "codename": "Noble Numbat",
+    "lts": true,
+    "releaseDate": "2024-04-25",
+    "eol": "2029-05-31",
+    "latest": "24.04.5",
+    "latestReleaseDate": "2026-09-30",
+    "support": "2029-05-31",
+    "extendedSupport": "2034-04-25"
+  },
+  {
+    "cycle": "23.10",
+    "codename": "Mantic Minotaur",
+    "releaseDate": "2023-10-12",
+    "eol": "2024-07-12",
+    "latest": "23.10",
+    "latestReleaseDate": "2023-10-12",
+    "lts": false,
+    "support": "2024-07-12",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "23.04",
+    "codename": "Lunar Lobster",
+    "releaseDate": "2023-04-20",
+    "eol": "2024-01-20",
+    "latest": "23.04",
+    "latestReleaseDate": "2023-04-20",
+    "lts": false,
+    "support": "2024-01-20",
+    "extendedSupport": false
+  }
+]

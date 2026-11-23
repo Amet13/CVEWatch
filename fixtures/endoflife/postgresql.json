@@ -1,0 +1,66 @@
+[
+  {
+    "cycle": "19",
+    "releaseDate": "2026-11-19",
+    "eol": "2031-11-19",
+    "latest": "19.0",
+    "latestReleaseDate": "2026-11-16",
+    "lts": false
+  },
+  {
+    "cycle": "18",
+    "releaseDate": "2025-09-25",
+    "eol": "2030-11-14",
+    "latest": "18.7",
+    "latestReleaseDate": "2026-11-09",
+    "lts": false
+  },
+  {
+    "cycle": "17",
+    "releaseDate": "2024-09-26",
+    "eol": "2029-11-08",
+    "latest": "17.12",
+    "latestReleaseDate": "2026-11-09",
+    "lts": false
+  },
+  {
+    "cycle": "16",
+    "releaseDate": "2023-09-14",
+    "eol": "2028-11-09",
+    "latest": "16.16",
+    "latestReleaseDate": "2026-11-09",
+    "lts": false
+  },
+  {
+    "cycle": "15",
+    "releaseDate": "2022-10-13",
+    "eol": "2027-11-11",
+    "latest": "15.20",
+    "latestReleaseDate": "2026-11-09",
+    "lts": false
+  },
+  {
+    "cycle": "14",
+    "releaseDate": "2021-09-30",
+    "eol": "2026-11-12",
+    "latest": "14.25",
+    "latestReleaseDate": "2026-11-09",
+    "lts": false
+  },
+  {
+    "cycle": "13",
+    "releaseDate": "2020-09-24",
+    "eol": "2025-11-13",
+    "latest": "13.23",
+    "latestReleaseDate": "2025-11-10",
+    "lts": false
+  },
+  {
+    "cycle": "12",
+    "releaseDate": "2019-10-03",
+    "eol": "2024-11-21",
+    "latest": "12.22",
+    "latestReleaseDate": "2024-11-18",
+    "lts": false
+  }
+]
