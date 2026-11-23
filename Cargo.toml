@@ -62,6 +62,8 @@ doc_markdown = "allow"
 too_many_lines = "allow"
 struct_excessive_bools = "allow"
 implicit_hasher = "allow"
+# New in Rust 1.100; its suggested rewrite (`assert_eq!(v, [] as [T; 0])`) reads worse in tests.
+assert_is_empty = "allow"
 
 [profile.release]
 lto = "thin"
