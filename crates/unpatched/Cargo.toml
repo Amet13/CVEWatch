@@ -1,0 +1,31 @@
+[package]
+name = "unpatched"
+description = "Tells you when software you run has a vulnerability you need to act on"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+unpatched-core.workspace = true
+unpatched-sources.workspace = true
+unpatched-catalog.workspace = true
+unpatched-db.workspace = true
+unpatched-notify.workspace = true
+unpatched-mcp.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+clap.workspace = true
+miette.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "unpatched"
+path = "src/main.rs"

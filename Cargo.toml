@@ -1,0 +1,70 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "xtask"]
+default-members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+repository = "https://github.com/Amet13/unpatched"
+homepage = "https://amet13.github.io/unpatched/"
+authors = ["Amet Umierov"]
+
+[workspace.dependencies]
+unpatched-core = { path = "crates/unpatched-core", version = "0.1.0" }
+unpatched-sources = { path = "crates/unpatched-sources", version = "0.1.0" }
+unpatched-db = { path = "crates/unpatched-db", version = "0.1.0" }
+unpatched-catalog = { path = "crates/unpatched-catalog", version = "0.1.0" }
+unpatched-notify = { path = "crates/unpatched-notify", version = "0.1.0" }
+unpatched-mcp = { path = "crates/unpatched-mcp", version = "0.1.0" }
+
+anyhow = "1"
+thiserror = "2"
+miette = { version = "7", features = ["fancy"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_norway = "0.9"
+schemars = { version = "1", features = ["chrono04"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock", "std"] }
+clap = { version = "4", features = ["derive", "env"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "io-util", "time"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "gzip", "blocking", "stream"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+zstd = "0.13"
+flate2 = "1"
+sha2 = "0.10"
+hex = "0.4"
+csv = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+walkdir = "2"
+regex = "1"
+url = "2"
+tempfile = "3"
+insta = { version = "1", features = ["yaml", "json"] }
+proptest = "1"
+wiremock = "0.6"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+doc_markdown = "allow"
+too_many_lines = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[profile.dist]
+inherits = "release"

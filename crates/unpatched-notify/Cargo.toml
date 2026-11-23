@@ -1,0 +1,20 @@
+[package]
+name = "unpatched-notify"
+description = "Render unpatched reports and deliver them (GitHub Issues, Telegram, Slack, Discord, ntfy, webhook)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+unpatched-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+reqwest.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true
