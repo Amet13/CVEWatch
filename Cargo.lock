@@ -2217,10 +2217,16 @@ dependencies = [
 name = "unpatched-mcp"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "chrono",
+ "insta",
  "serde",
  "serde_json",
- "thiserror",
+ "tempfile",
+ "unpatched-catalog",
  "unpatched-core",
+ "unpatched-db",
+ "unpatched-sources",
 ]
 
 [[package]]

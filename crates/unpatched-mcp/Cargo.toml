@@ -9,9 +9,17 @@ repository.workspace = true
 
 [dependencies]
 unpatched-core.workspace = true
+unpatched-catalog.workspace = true
+unpatched-db.workspace = true
+unpatched-sources.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true

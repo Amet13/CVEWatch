@@ -1,0 +1,137 @@
+---
+source: crates/unpatched-mcp/tests/stdio.rs
+expression: tools
+---
+[
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true,
+      "title": "Check the stack"
+    },
+    "description": "Check every item in unpatched.yml against the vulnerability database and return the report: findings sorted by urgency (now, week, eol, unknown, fyi) with verdict, rules, evidence and fixed_in. Package (purl) items are looked up in OSV unless the server runs offline.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "config_path": {
+          "description": "Path to unpatched.yml. Defaults to the server's configured file.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "check_stack",
+    "title": "Check the stack"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Is this version affected?"
+    },
+    "description": "Ask whether one product at one version is affected, without a config file. With `cve`, answer for that vulnerability only and always give a verdict (affected, not-affected or unknown) with evidence. Without `cve`, return all findings for the product. Use `search_catalog` to find the product id. Never guess the version: ask the user.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "cve": {
+          "description": "A CVE (or advisory) id to answer for, e.g. CVE-2024-21762.",
+          "type": "string"
+        },
+        "exposure": {
+          "description": "Whether the item is reachable from the internet. Default internal.",
+          "enum": [
+            "internet",
+            "internal"
+          ],
+          "type": "string"
+        },
+        "product": {
+          "description": "Catalog product id or alias, e.g. fortios.",
+          "type": "string"
+        },
+        "version": {
+          "description": "The exact version that runs, e.g. 7.2.5.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product",
+        "version"
+      ],
+      "type": "object"
+    },
+    "name": "is_affected",
+    "title": "Is this version affected?"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Explain a CVE or a rule"
+    },
+    "description": "Explain a vulnerability id (CVE or advisory id: summary, CVSS, affected ranges per source, exploitation signals) or a rule id such as UNP-KEV (what it means and why it puts a finding in a bucket).",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "A CVE or advisory id (CVE-2024-21762) or a rule id (UNP-KEV).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "name": "explain",
+    "title": "Explain a CVE or a rule"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Search the product catalog"
+    },
+    "description": "Find catalog product ids by name, vendor or alias. Use the id in unpatched.yml. Returns the version scheme and the endoflife.date slug.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "description": "Words to look for, e.g. fortigate or nextcloud.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "object"
+    },
+    "name": "search_catalog",
+    "title": "Search the product catalog"
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Database status"
+    },
+    "description": "When the vulnerability database was built, how old it is in hours, whether it is stale, and the state of each source. Run this before trusting a result.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "name": "db_status",
+    "title": "Database status"
+  }
+]
