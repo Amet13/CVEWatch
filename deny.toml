@@ -1,0 +1,38 @@
+# cargo-deny: licenses, advisories, bans and sources. Run by CI (`cargo deny check`)
+# and by `cargo xtask check` when cargo-deny is installed.
+
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+# Add an id here only with a reason and a date to look at it again.
+ignore = []
+
+[licenses]
+version = 2
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
+]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

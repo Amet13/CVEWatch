@@ -1,0 +1,66 @@
+name: Wrong verdict
+description: unpatched says affected, not affected or unknown, and you think that is wrong
+title: "[verdict] "
+labels: [wrong-verdict]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most useful report you can send. Each one becomes a failing case in
+        the corpus first, then a fix, so please give the facts below.
+  - type: input
+    id: product
+    attributes:
+      label: Product id
+      description: The `product:` in your `unpatched.yml` (see `unpatched catalog list`), or the purl for a package.
+      placeholder: fortios
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 7.2.5
+    validations:
+      required: true
+  - type: input
+    id: cve
+    attributes:
+      label: CVE
+      placeholder: CVE-2024-21762
+    validations:
+      required: true
+  - type: dropdown
+    id: expected
+    attributes:
+      label: Expected verdict
+      options: [affected, fixed, not-affected, unknown]
+    validations:
+      required: true
+  - type: dropdown
+    id: actual
+    attributes:
+      label: Actual verdict
+      options: [affected, fixed, not-affected, unknown, "no finding at all"]
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why you think so
+      description: A link to the vendor advisory or the CVE record, and what it says about this version.
+    validations:
+      required: true
+  - type: textarea
+    id: explain
+    attributes:
+      label: Output of `unpatched explain`
+      description: Run `unpatched explain <CVE>` for the stack item and paste everything.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: db
+    attributes:
+      label: Database date
+      description: From `unpatched db info`.

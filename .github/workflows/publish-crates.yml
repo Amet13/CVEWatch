@@ -1,0 +1,47 @@
+# Publishes the workspace crates to crates.io. Called by release.yml (a dist "publish
+# job") after the GitHub release exists. Needs the secret CARGO_REGISTRY_TOKEN; without
+# it the job says so and succeeds, so a release is never blocked by a missing token.
+name: publish-crates
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        description: The dist plan (JSON) of the release
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      PLAN: ${{ inputs.plan }}
+    steps:
+      - name: Is there a token?
+        id: token
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::notice title=crates.io::CARGO_REGISTRY_TOKEN is not set: nothing was published to crates.io."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.token.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ fromJson(inputs.plan).announcement_tag }}
+      - if: steps.token.outputs.present == 'true'
+        uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      # Publishes every workspace member that is not `publish = false`, dependencies
+      # first. A version that is already on crates.io is skipped.
+      - if: steps.token.outputs.present == 'true'
+        run: cargo publish --workspace --locked

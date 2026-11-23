@@ -1,50 +1,50 @@
-# Dependabot configuration for CVEWatch
-# Automated dependency updates
-# See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  # Go module dependencies
-  - package-ecosystem: "gomod"
+  - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    assignees:
-      - "Amet13"
-    labels:
-      - "dependencies"
-      - "go"
+    # Wait before proposing a new version: a hijacked release is usually found and
+    # pulled within days. Security updates are not delayed.
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    labels: ["dependencies"]
     commit-message:
       prefix: "chore(deps)"
-      include: "scope"
-    # Group minor and patch updates together
+    # Minor and patch updates in one pull request (merged automatically), majors in
+    # another that waits for a person, so one major never holds back the rest.
     groups:
-      go-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-
-  # GitHub Actions
+      cargo:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      cargo-major:
+        patterns: ["*"]
+        update-types: ["major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 3
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "ci"
+    cooldown:
+      default-days: 7
+    labels: ["dependencies", "ci"]
     commit-message:
       prefix: "chore(ci)"
-      include: "scope"
     groups:
       github-actions:
-        patterns:
-          - "*"
+        patterns: ["*"]
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 7
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "chore(docker)"
+    groups:
+      docker:
+        patterns: ["*"]

@@ -1,0 +1,14 @@
+changelog:
+  categories:
+    - title: "New"
+      labels: [enhancement, feature]
+    - title: "Fixes"
+      labels: [bug, fix, wrong-verdict]
+    - title: "Catalog"
+      labels: [catalog]
+    - title: "Documentation"
+      labels: [documentation, docs]
+    - title: "CI and dependencies"
+      labels: [ci, dependencies]
+  exclude:
+    labels: [skip-changelog]

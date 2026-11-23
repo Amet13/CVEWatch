@@ -5,32 +5,289 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Weekly on main, so a change outside the repository (runner images, a new Rust
+  # release, a yanked crate) is noticed even without commits; watchdog.yml reports it.
+  schedule:
+    - cron: "23 4 * * 0"
 
 permissions:
   contents: read
 
+# A pull request's newer push cancels the older run. Everywhere else every commit gets
+# its own verdict: autorelease.yml needs ci's success on that exact commit.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUST_BACKTRACE: "1"
 
+# The automation (autorelease, maintenance) dispatches ci on its own automation/* branch,
+# because a pull request opened with GITHUB_TOKEN starts no workflow without a maintainer's
+# approval. If that pull_request run is approved anyway, its jobs are skipped: the
+# dispatched run already tests the same commit.
 jobs:
   check:
-    name: check (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: check (ubuntu-latest)
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
     timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+      # fmt, clippy (warnings are errors), tests, and the generated-file checks.
+      - run: cargo xtask check
+
+  check-os:
+    name: check (${{ matrix.os }})
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+          components: clippy
+      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+
+  msrv:
+    name: MSRV (1.90)
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Overrides rust-toolchain.toml. Keep in step with `rust-version` in Cargo.toml.
+      RUSTUP_TOOLCHAIN: "1.90"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: "1.90"
+      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+      - run: cargo check --workspace
+
+  deny:
+    name: cargo deny
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: EmbarkStudios/cargo-deny-action@094a77a254a15132dbeb0fb0744a2307f086e063 # v2.1.3
+        with:
+          command: check
+          arguments: --all-features
+
+  docs:
+    name: docs
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DavidAnson/markdownlint-cli2-action@36744e48c825cb8d549f6353f8837505de1922c7 # v25.1.0
+        with:
+          globs: |
+            *.md
+            docs/**/*.md
+            .github/**/*.md
+      - name: Is there a book?
+        id: book
+        run: |
+          if [ -f book.toml ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No book.toml yet: skipping the mdBook build."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.book.outputs.present == 'true'
+        uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
+        with:
+          tool: mdbook
+      - if: steps.book.outputs.present == 'true'
+        run: mdbook build
+
+  workflows:
+    name: workflows and scripts
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: shellcheck
+        run: shellcheck .github/scripts/*.sh
+      - name: actionlint
+        run: pipx run actionlint-py==1.7.12.25 -color
+
+  action:
+    name: action smoke test
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # action.yml is added in a later step of the rewrite; until then this job does nothing.
+      - name: Is there an action?
+        if: hashFiles('action.yml') == ''
+        run: echo "No action.yml yet, so the action smoke test is skipped."
+      - if: hashFiles('action.yml') != ''
+        uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - if: hashFiles('action.yml') != ''
+        uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+      - if: hashFiles('action.yml') != ''
+        run: cargo build --release -p unpatched
+      # The stack a new user starts from, checked against the frozen fixture database
+      # with the binary just built (no release download, no network).
+      - if: hashFiles('action.yml') != ''
+        name: Use the template as the stack
+        run: cp templates/github/unpatched.yml unpatched.yml
+      - if: hashFiles('action.yml') != ''
+        name: Run the action from this repository
+        uses: ./
+        with:
+          binary: target/release/unpatched
+          config: unpatched.yml
+          db: fixtures/smoke/unpatched-db.sqlite
+          dry-run: "true"
+
+  docker:
+    name: docker build
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'automation/') || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/Dockerfile
+          load: true
+          tags: unpatched:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: The image starts
+        run: docker run --rm unpatched:ci --version
+
+  # The one check the main ruleset requires: it passes only when every job above passed
+  # or was skipped on purpose, so a pull request cannot be merged while a job is still
+  # queued or after one failed.
+  passed:
+    name: CI passed
+    if: always()
+    needs: [check, check-os, msrv, deny, docs, workflows, docker, action]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if jq -e 'any(.[]; . != "success" and . != "skipped")' <<< "$RESULTS" > /dev/null; then
+            echo "::error::A CI job failed or was cancelled."
+            exit 1
+          fi
+
+  # The automation dispatches this workflow on its automation/* branches with GITHUB_TOKEN
+  # (and automerge.sh on a Dependabot branch it brought up to date with main), and GitHub
+  # starts no workflow_run (automerge, watchdog) when such a run finishes. So the run
+  # finishes the job itself: it merges the pull request when everything passed, starts
+  # itself once more when a job never got a runner, or keeps one issue open while it
+  # fails. A cancelled run says nothing.
+  automation:
+    name: Merge or report the automation pull request
+    needs: passed
+    if: >-
+      always() && !cancelled() && github.event_name == 'workflow_dispatch' &&
+      (startsWith(github.ref, 'refs/heads/automation/') || startsWith(github.ref, 'refs/heads/dependabot/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      checks: read
+      issues: write
+    steps:
+      # The scripts (and the path filters automerge.sh reads) from main, not from the
+      # branch under test.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: main
+          sparse-checkout: |
+            .github/scripts
+            .github/workflows
+      - name: Merge, or report the failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PASSED: ${{ needs.passed.result }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Automation failed: ci on $BRANCH"
+          : > "$RUNNER_TEMP/body.md"
+          case "$PASSED" in
+            success)
+              bash .github/scripts/issue.sh "$title" "$RUNNER_TEMP/body.md"
+              suite="$(gh api "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID" --jq .check_suite_id)"
+              # CodeQL, started next to ci, may still be running.
+              AUTOMERGE_WAIT=600 bash .github/scripts/automerge.sh "$BRANCH" "$SHA" "$suite"
+              exit 0 ;;
+            cancelled | skipped) echo "The run was $PASSED: nothing to report."; exit 0 ;;
+          esac
+          missed="$(bash .github/scripts/watchdog.sh missed "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")"
+          if [ "$missed" -gt 0 ]; then
+            runs="$(gh api "repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&event=workflow_dispatch" --jq .total_count)"
+            if [ "$runs" -lt 2 ]; then
+              gh workflow run ci.yml --ref "$BRANCH"
+              echo "A job never got a runner (GitHub capacity): started ci on $BRANCH once more."
+              exit 0
+            fi
+          fi
+          {
+            echo "ci failed on \`$BRANCH\`, so its pull request was not merged."
+            echo
+            echo "Run: $URL"
+            if [ "$missed" -gt 0 ]; then
+              echo
+              echo "A job never got a runner (GitHub capacity), also when ci ran again: re-run the failed jobs."
+            fi
+            echo
+            echo "This issue closes itself when ci next passes on the branch."
+          } > "$RUNNER_TEMP/body.md"
+          bash .github/scripts/issue.sh "$title" "$RUNNER_TEMP/body.md"

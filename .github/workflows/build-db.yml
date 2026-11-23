@@ -1,0 +1,76 @@
+# Builds the vulnerability database every day and publishes it as assets of the rolling
+# release `db`: unpatched-db.sqlite.zst, SHA256SUMS and a build-provenance attestation.
+# If anything fails before the last step, the assets of the previous run stay as they
+# are; watchdog.yml opens an issue for the failed run.
+name: build-db
+
+on:
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-db
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+      - name: Build the binary
+        run: cargo build --release --locked -p unpatched
+      - name: Get the CVE records
+        run: git clone --depth 1 https://github.com/CVEProject/cvelistV5 /tmp/cvelist
+      - name: Build the database
+        run: cargo run --release --locked -p unpatched -- db build --cvelist /tmp/cvelist --out unpatched-db.sqlite.zst
+      - name: Smoke-check the database
+        run: ./target/release/unpatched db info --db unpatched-db.sqlite.zst
+      - name: Checksums
+        run: |
+          sha256sum unpatched-db.sqlite.zst > SHA256SUMS
+          cat SHA256SUMS
+          {
+            echo "### Database"
+            echo
+            echo "Size: $(du -h unpatched-db.sqlite.zst | cut -f1)"
+            echo
+            echo '```text'
+            ./target/release/unpatched db info --db unpatched-db.sqlite.zst
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: unpatched-db.sqlite.zst
+      # Only now is the published release touched. The release is a prerelease and not
+      # "latest", so it never shadows the binary releases.
+      - name: Publish to the rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          built="$(date -u +%Y-%m-%d)"
+          notes="Rolling release of the daily database. Built ${built} (UTC) from run ${GITHUB_RUN_ID}. This release is replaced every day; do not pin to it. Verify a download with SHA256SUMS or: gh attestation verify unpatched-db.sqlite.zst --repo ${GITHUB_REPOSITORY}"
+          if ! gh release view db > /dev/null 2>&1; then
+            gh release create db --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Database (rolling)" --notes "$notes"
+          fi
+          gh release upload db unpatched-db.sqlite.zst SHA256SUMS --clobber
+          gh release edit db --prerelease --latest=false --title "Database (rolling)" --notes "$notes"
+          echo "Published the database built on ${built}."

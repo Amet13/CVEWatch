@@ -1,0 +1,120 @@
+# Releases on its own, after a person has made the first release:
+#   - monthly, when shipped files changed since the last release (dependency updates and
+#     catalog changes merged by automerge.yml), it opens a "Release vX.Y.Z" pull request:
+#     the version in Cargo.toml, and CHANGELOG.md with `[Unreleased]` turned into a dated
+#     section plus the commit subjects. automerge.yml merges it when CI passes;
+#   - daily, when the version in Cargo.toml has no tag yet and ci passed on main's head,
+#     it creates the tag and starts release.yml on it (dist builds, GitHub release;
+#     crates.io and the Docker image then wait for the `release` environment).
+# A tag made with GITHUB_TOKEN starts no workflow, so release.yml is dispatched on it.
+# The very first release (no `v*` tag exists) is never made here: that one is yours.
+name: autorelease
+
+on:
+  schedule:
+    - cron: "53 6 1 * *"
+    - cron: "29 7 * * *"
+  workflow_dispatch:
+    inputs:
+      step:
+        description: propose (open a release pull request) or publish (release an untagged version)
+        type: choice
+        options: [propose, publish]
+        default: propose
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autorelease
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    if: github.event.schedule == '53 6 1 * *' || inputs.step == 'propose'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: need
+        name: Is a release due?
+        run: |
+          last="$(git tag --list 'v[0-9]*' --sort=-version:refname | head -n 1)"
+          if [ -z "$last" ]; then
+            echo "No release exists yet: the first one is made by a person."
+            echo "due=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          v="$(bash .github/scripts/release.sh version)"
+          if [ "$last" != "v$v" ]; then
+            echo "Cargo.toml says $v, the last tag is $last: the publish step handles it."
+            echo "due=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git diff --quiet "$last" HEAD -- crates catalog templates docker schema action.yml Cargo.toml Cargo.lock; then
+            echo "Nothing shipped changed since $last."
+            echo "due=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "last=$last" >> "$GITHUB_OUTPUT"
+          echo "due=true" >> "$GITHUB_OUTPUT"
+      - if: steps.need.outputs.due == 'true'
+        uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: stable
+      - if: steps.need.outputs.due == 'true'
+        name: Bump the version and write the changelog
+        id: bump
+        env:
+          LAST: ${{ steps.need.outputs.last }}
+        run: |
+          next="$(bash .github/scripts/release.sh next)"
+          bash .github/scripts/release.sh bump "$next" "$LAST"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+      - if: steps.need.outputs.due == 'true'
+        name: Open the release pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT: ${{ steps.bump.outputs.next }}
+        run: |
+          {
+            echo "Monthly maintenance release v$NEXT. After this merges, the daily publish step"
+            echo "tags v$NEXT and starts release.yml (binaries, installers, checksums)."
+          } > "$RUNNER_TEMP/body.md"
+          bash .github/scripts/automation-pr.sh release "Release v$NEXT" "$RUNNER_TEMP/body.md"
+
+  publish:
+    if: github.event.schedule == '29 7 * * *' || inputs.step == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Publish an untagged version once ci passed on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git tag --list 'v[0-9]*' | head -n 1)" ]; then
+            echo "No release exists yet: the first one is made by a person."; exit 0
+          fi
+          v="$(bash .github/scripts/release.sh version)"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$v" > /dev/null 2>&1; then
+            echo "v$v is already released."; exit 0
+          fi
+          ok="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA" \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')"
+          if [ "$ok" -eq 0 ]; then echo "ci has not passed on $GITHUB_SHA yet; trying again tomorrow."; exit 0; fi
+          running="$(gh run list --workflow release.yml --json status --jq '[.[] | select(.status != "completed")] | length')"
+          if [ "$running" -gt 0 ]; then echo "A release is already running."; exit 0; fi
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/v$v" -f sha="$GITHUB_SHA" > /dev/null
+          gh workflow run release.yml --ref "v$v"
+          echo "Tagged v$v and started release.yml on it."

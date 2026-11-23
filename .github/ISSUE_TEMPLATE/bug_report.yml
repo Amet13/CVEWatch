@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in unpatched did not work as expected
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a wrong verdict (affected, not affected, or the wrong bucket), use "Wrong verdict" instead.
+        For a security problem in unpatched itself, see SECURITY.md. Do not open an issue.
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The command or workflow, and the smallest `unpatched.yml` that shows it. Remove secrets.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Version and environment
+      description: The output of `unpatched --version` and `unpatched db info`, and how you run it (CLI, Docker, GitHub Action) and on which OS.
+      render: text
+    validations:
+      required: true

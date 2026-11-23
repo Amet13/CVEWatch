@@ -1,0 +1,8 @@
+target
+.git
+.claude
+book
+dist
+.unpatched
+*.sqlite
+*.sqlite.zst

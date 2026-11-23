@@ -1,0 +1,53 @@
+# Merges a pull request labelled `automerge` (Dependabot patch and minor updates, and the
+# pull requests the maintenance workflows open) once every check on its head commit has
+# passed. It runs after ci and codeql finish, never checks out the pull request's code,
+# and skips pull requests from forks.
+#
+# A merge made with GITHUB_TOKEN starts no workflows, so after merging it starts ci
+# and codeql on main itself, and pages when the changed files match
+# their path filters. A pull request behind main is not merged: main is merged into it and
+# ci starts again on it (that run, see below, merges it).
+#
+# This workflow starts only for runs GitHub reports (Dependabot's, a person's). The ci
+# runs that the automation dispatches on its automation/* branches are started with
+# GITHUB_TOKEN, which starts no workflow_run, so ci merges those itself (its
+# `automation` job), with the same script.
+name: automerge
+
+on:
+  workflow_run:
+    workflows: [ci, codeql]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: automerge-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      checks: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts
+            .github/workflows
+      - name: Merge when every check passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash .github/scripts/automerge.sh "$BRANCH" "$SHA"
