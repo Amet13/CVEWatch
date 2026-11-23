@@ -1,0 +1,26 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+unpatched cannot tell whether `home-assistant 2024.10.1` is affected by CVE-2026-0042.
+
+**CVE-2026-0042**: Authentication bypass in Home Assistant
+
+**Why:** No usable version data yet
+
+**Do:** No source has version data for this yet. Read the advisory and check your version by hand.
+
+**Evidence**
+
+- CVE.org: no version data (unknown)
+
+**Rules**
+
+- `UNP-UNKNOWN-NO-RANGES` No usable version data yet. No source says which versions are affected (new CVEs often wait for NVD analysis). It could matter, so check the advisory yourself. The finding goes away when data arrives.
+- Verdict: unknown · bucket: Unknown
+
+---
+
+Close this issue when it is fixed; unpatched closes it on its own once unpatched.yml shows a fixed version.
+
+<!-- unpatched:finding=home-assistant/CVE-2026-0042 -->

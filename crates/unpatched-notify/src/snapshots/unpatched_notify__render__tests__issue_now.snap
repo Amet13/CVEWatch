@@ -1,0 +1,32 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+**Office firewall** runs `fortios 7.2.5`, which is affected by CVE-2024-21762.
+
+**CVE-2024-21762**: Out-of-bounds write in sslvpnd allows remote code execution
+
+**Why now:** In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing
+
+**Do:** Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+
+**Evidence**
+
+- CVE.org: affected 7.2.0 to 7.2.6 (CNA Fortinet) (affected)
+- NVD: cpe:2.3:o:fortinet:fortios up to (excluding) 7.2.7 (affected)
+
+**Rules**
+
+- `UNP-KEV` Known to be exploited. CISA lists this vulnerability in its Known Exploited Vulnerabilities catalog, so attackers are using it now. Fix it today.
+- `UNP-EXPOSED` Affected and reachable from the internet
+- Verdict: affected · bucket: Fix today
+
+**References**
+
+- https://fortiguard.fortinet.com/psirt/FG-IR-24-015
+
+---
+
+Close this issue when it is fixed; unpatched closes it on its own once unpatched.yml shows a fixed version.
+
+<!-- unpatched:finding=office-firewall/CVE-2024-21762 -->

@@ -2178,9 +2178,13 @@ name = "unpatched-notify"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "hex",
+ "insta",
  "reqwest",
  "serde",
  "serde_json",
+ "sha2",
+ "tempfile",
  "thiserror",
  "tracing",
  "unpatched-core",
