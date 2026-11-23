@@ -1,7 +1,6 @@
 //! PEP 440 versions: epochs, pre/post/dev releases, local versions, and the
 //! spelling variants the PEP normalises (`1.0-rc.1`, `1.0.RC1`, `1.0-1`).
 
-use std::cmp::Ordering;
 use std::sync::LazyLock;
 
 use regex::Regex;

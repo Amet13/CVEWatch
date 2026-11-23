@@ -2,6 +2,8 @@
 //! See ADR-0004. Each scheme is a total order; a version that does not parse
 //! is an error, and the caller turns it into an `unknown` verdict.
 
+#![allow(clippy::many_single_char_names)]
+
 use std::cmp::Ordering;
 
 use schemars::JsonSchema;
