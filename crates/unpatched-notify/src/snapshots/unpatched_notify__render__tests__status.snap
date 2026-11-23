@@ -15,30 +15,30 @@ expression: body
 
 ### 🔴 Fix today
 
-- #10 fortios 7.2.5 (Office firewall) — CVE-2024-21762: Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+- #10 FortiOS 7.2.5 (Office firewall) — CVE-2024-21762: Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
 
 ### 🟡 This week
 
-- #11 nextcloud 29.0.3 — CVE-2026-1001: Upgrade to 29.0.8 or later.
-- #12 nextcloud 29.0.3 — CVE-2026-1002: Upgrade to 29.0.6 or later.
+- #11 Nextcloud 29.0.3 — CVE-2026-1001: Upgrade to 29.0.8 or later.
+- #12 Nextcloud 29.0.3 — CVE-2026-1002: Upgrade to 29.0.6 or later.
 
 ### ⚫ End of life
 
-- #13 postgresql 13.12 — past end of life: Upgrade to a supported release.
+- #13 PostgreSQL 13.12 — past end of life: Upgrade to a supported release.
 
 ### ❔ Unknown
 
-- #14 home-assistant 2024.10.1 — CVE-2026-0042: No source has version data for this yet. Read the advisory and check your version by hand.
+- #14 Home Assistant 2024.10.1 — CVE-2026-0042: No source has version data for this yet. Read the advisory and check your version by hand.
 
 ### ⚪ FYI
 
-- redis 7.2.1 — CVE-2025-1111: Upgrade to 7.2.4 or later.
+- Redis 7.2.1 — CVE-2025-1111: Upgrade to 7.2.4 or later.
 
 ### Closed but still affected
 
 Someone closed these issues, but the findings are still there. unpatched does not reopen them.
 
-- #11 nextcloud 29.0.3
+- #11 Nextcloud 29.0.3
 
 Database: built 2026-11-22 02:41 UTC, 1 day old
 

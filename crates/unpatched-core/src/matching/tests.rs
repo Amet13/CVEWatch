@@ -182,6 +182,8 @@ fn kev_means_now() {
     assert_eq!(f.rules, vec![RuleId::Kev]);
     assert_eq!(f.fixed_in.as_deref(), Some("7.2.6"));
     assert_eq!(f.key, "fortios/CVE-2026-0001");
+    assert_eq!(f.product, "fortios");
+    assert_eq!(f.product_name, "FORTIOS");
     assert_eq!(f.vuln.as_deref(), Some("CVE-2026-0001"));
     assert_eq!(f.evidence.len(), 1);
     assert_eq!(f.evidence[0].verdict, Verdict::Affected);
@@ -861,6 +863,7 @@ fn purl_items_use_package_vulns_and_the_purl_scheme() {
     assert_eq!(f.version, "3.0.11-1~deb12u1");
     assert_eq!(f.product, "pkg:deb/debian/openssl");
     assert_eq!(f.item, "pkg:deb/debian/openssl");
+    assert_eq!(f.product_name, "pkg:deb/debian/openssl");
     assert_eq!(f.key, "pkg-deb-debian-openssl/CVE-2026-0100");
 
     // A fixed build is not affected (Debian ordering: ~deb12u2 > ~deb12u1).

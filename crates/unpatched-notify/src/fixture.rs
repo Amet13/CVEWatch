@@ -13,11 +13,25 @@ pub fn date(y: i32, m: u32, d: u32) -> NaiveDate {
     NaiveDate::from_ymd_opt(y, m, d).unwrap()
 }
 
+/// The catalog's display name for the products the fixtures use.
+fn display_name(product: &str) -> String {
+    match product {
+        "fortios" => "FortiOS",
+        "nextcloud" => "Nextcloud",
+        "postgresql" => "PostgreSQL",
+        "home-assistant" => "Home Assistant",
+        "redis" => "Redis",
+        other => other,
+    }
+    .into()
+}
+
 pub fn base(key: &str, item: &str, product: &str, version: &str, bucket: Bucket) -> Finding {
     Finding {
         key: key.into(),
         item: item.into(),
         product: product.into(),
+        product_name: display_name(product),
         version: version.into(),
         exposure: Exposure::Internal,
         vuln: None,

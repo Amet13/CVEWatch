@@ -78,12 +78,12 @@ fn rule_explanation(id: RuleId) -> &'static str {
         .map_or("", |r| r.explanation)
 }
 
-/// "fortios 7.2.5", with the stack item's own name in brackets when it has one.
+/// "FortiOS 7.2.5", with the stack item's own name in brackets when it has one.
 pub fn subject(f: &Finding) -> String {
     if f.item == f.product {
-        format!("{} {}", f.product, f.version)
+        format!("{} {}", f.product_name, f.version)
     } else {
-        format!("{} {} ({})", f.product, f.version, f.item)
+        format!("{} {} ({})", f.product_name, f.version, f.item)
     }
 }
 
@@ -425,7 +425,7 @@ fn issue_sentence(f: &Finding) -> String {
     let who = if f.item == f.product {
         format!("`{}`", subject(f))
     } else {
-        format!("**{}** runs `{} {}`", f.item, f.product, f.version)
+        format!("**{}** runs `{} {}`", f.item, f.product_name, f.version)
     };
     let id = f.vuln.as_deref().unwrap_or("this");
     match (f.bucket, f.verdict) {
@@ -696,7 +696,7 @@ fn sarif_result(f: &Finding, suppressed: bool) -> Value {
             "physicalLocation": { "artifactLocation": { "uri": "unpatched.yml" } },
             "logicalLocations": [{
                 "name": f.item,
-                "fullyQualifiedName": format!("{} {}", f.product, f.version),
+                "fullyQualifiedName": format!("{} {}", f.product_name, f.version),
                 "kind": "resource",
             }],
         }],
@@ -814,7 +814,7 @@ mod tests {
         let (title, body) = markdown_issue(&fortios(), &r);
         assert_eq!(
             title,
-            "🔴 Fix today: fortios 7.2.5 (Office firewall) — CVE-2024-21762 (exploited)"
+            "🔴 Fix today: FortiOS 7.2.5 (Office firewall) — CVE-2024-21762 (exploited)"
         );
         insta::assert_snapshot!("issue_now", body);
     }
@@ -824,7 +824,7 @@ mod tests {
         let r = sample_report();
         let eol = r.findings.iter().find(|f| f.bucket == Bucket::Eol).unwrap();
         let (title, body) = markdown_issue(eol, &r);
-        assert_eq!(title, "⚫ End of life: postgresql 13.12 — past end of life");
+        assert_eq!(title, "⚫ End of life: PostgreSQL 13.12 — past end of life");
         insta::assert_snapshot!("issue_eol", body);
         let unk = r
             .findings
@@ -832,7 +832,7 @@ mod tests {
             .find(|f| f.bucket == Bucket::Unknown)
             .unwrap();
         let (title, body) = markdown_issue(unk, &r);
-        assert!(title.starts_with("❔ Unknown: home-assistant 2024.10.1"));
+        assert!(title.starts_with("❔ Unknown: Home Assistant 2024.10.1"));
         insta::assert_snapshot!("issue_unknown", body);
     }
 

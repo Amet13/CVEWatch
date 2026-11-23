@@ -2,7 +2,7 @@
 source: crates/unpatched-notify/src/render.rs
 expression: body
 ---
-unpatched cannot tell whether `home-assistant 2024.10.1` is affected by CVE-2026-0042.
+unpatched cannot tell whether `Home Assistant 2024.10.1` is affected by CVE-2026-0042.
 
 **CVE-2026-0042**: Authentication bypass in Home Assistant
 
