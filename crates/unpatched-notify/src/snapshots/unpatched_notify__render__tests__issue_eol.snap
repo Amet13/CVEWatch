@@ -1,0 +1,26 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+`postgresql 13.12` is past end of life and no longer gets security fixes.
+
+postgresql 13.12 is past end of life: the 13 release cycle no longer gets security fixes
+
+**Why:** End of life
+
+**Do:** Upgrade to a supported release.
+
+**Evidence**
+
+- endoflife.date: release cycle 13 reached end of life on 2025-11-13 (endoflife.date) (affected)
+
+**Rules**
+
+- `UNP-EOL` End of life. This release cycle no longer gets security fixes (endoflife.date). New vulnerabilities will not be patched, so plan an upgrade to a supported cycle.
+- Verdict: affected · bucket: End of life
+
+---
+
+Close this issue when it is fixed; unpatched closes it on its own once unpatched.yml shows a fixed version.
+
+<!-- unpatched:finding=postgresql/eol -->

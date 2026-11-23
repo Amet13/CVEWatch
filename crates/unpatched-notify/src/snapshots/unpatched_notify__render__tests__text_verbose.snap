@@ -1,0 +1,71 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: "text(&r, &opts)"
+---
+🔴 Fix today (1)
+
+  fortios 7.2.5 (Office firewall)
+  CVE-2024-21762  Out-of-bounds write in sslvpnd allows remote code execution
+    Why   In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing
+    Do    Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+    Rule  UNP-KEV, UNP-EXPOSED · verdict affected
+    Evidence  CVE.org: affected 7.2.0 to 7.2.6 (CNA Fortinet) (affected)
+    Evidence  NVD: cpe:2.3:o:fortinet:fortios up to (excluding) 7.2.7 (affected)
+    Rule UNP-KEV  CISA lists this vulnerability in its Known Exploited Vulnerabilities catalog, so attackers are using it now. Fix it today.
+    Rule UNP-EXPOSED  This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.
+    See   https://fortiguard.fortinet.com/psirt/FG-IR-24-015
+
+🟡 This week (2)
+
+  nextcloud 29.0.3
+  CVE-2026-1001  Improper access control in Nextcloud Server (CVE-2026-1001)
+    Why   EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
+    Do    Upgrade to 29.0.8 or later.
+    Rule  UNP-EPSS, UNP-EXPOSED · verdict affected
+    Evidence  CVE.org: affected 29.0.0 to 29.0.7 (CNA GitHub_M) (affected)
+    Rule UNP-EPSS  The EPSS score is at or above your threshold (default 0.05), which means exploitation in the next 30 days is more likely than for most vulnerabilities. Fix it this week.
+    Rule UNP-EXPOSED  This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.
+
+  nextcloud 29.0.3
+  CVE-2026-1002  Improper access control in Nextcloud Server (CVE-2026-1002)
+    Why   EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
+    Do    Upgrade to 29.0.6 or later.
+    Rule  UNP-EPSS, UNP-EXPOSED · verdict affected
+    Evidence  CVE.org: affected 29.0.0 to 29.0.7 (CNA GitHub_M) (affected)
+    Rule UNP-EPSS  The EPSS score is at or above your threshold (default 0.05), which means exploitation in the next 30 days is more likely than for most vulnerabilities. Fix it this week.
+    Rule UNP-EXPOSED  This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.
+
+⚫ End of life (1)
+
+  postgresql 13.12
+  postgresql 13.12 is past end of life: the 13 release cycle no longer gets security fixes
+    Why   End of life
+    Do    Upgrade to a supported release.
+    Rule  UNP-EOL · verdict affected
+    Evidence  endoflife.date: release cycle 13 reached end of life on 2025-11-13 (endoflife.date) (affected)
+    Rule UNP-EOL  This release cycle no longer gets security fixes (endoflife.date). New vulnerabilities will not be patched, so plan an upgrade to a supported cycle.
+
+❔ Unknown (1)
+
+  home-assistant 2024.10.1
+  CVE-2026-0042  Authentication bypass in Home Assistant
+    Why   No usable version data yet
+    Do    No source has version data for this yet. Read the advisory and check your version by hand.
+    Rule  UNP-UNKNOWN-NO-RANGES · verdict unknown
+    Evidence  CVE.org: no version data (unknown)
+    Rule UNP-UNKNOWN-NO-RANGES  No source says which versions are affected (new CVEs often wait for NVD analysis). It could matter, so check the advisory yourself. The finding goes away when data arrives.
+
+⚪ FYI (1)
+
+  redis 7.2.1
+  CVE-2025-1111  Denial of service in redis streams
+    Why   CVSS 5.3
+    Do    Upgrade to 7.2.4 or later.
+    Rule  UNP-AFFECTED · verdict affected
+    Rule UNP-AFFECTED  This version is affected, but nothing says it is exploited, it is not internet-facing and the scores are below your thresholds. Fix it with your normal updates.
+    See   https://example.com/redis-advisory
+
+🟢 1,412 checked, nothing else affects you
+1 ignored on purpose (see unpatched.yml)
+Database: built 2026-11-22 02:41 UTC, 1 day old
+Note: The catalog entry for home-assistant has not been verified for 40 days.

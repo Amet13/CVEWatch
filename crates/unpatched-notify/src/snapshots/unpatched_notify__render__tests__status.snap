@@ -1,0 +1,51 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+6 open findings. 🟢 1,412 checked, nothing else affects you
+
+| Bucket | Findings |
+| --- | ---: |
+| 🔴 Fix today | 1 |
+| 🟡 This week | 2 |
+| ⚫ End of life | 1 |
+| ❔ Unknown | 1 |
+| ⚪ FYI | 1 |
+| Ignored on purpose | 1 |
+
+### 🔴 Fix today
+
+- #10 fortios 7.2.5 (Office firewall) — CVE-2024-21762: Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+
+### 🟡 This week
+
+- #11 nextcloud 29.0.3 — CVE-2026-1001: Upgrade to 29.0.8 or later.
+- #12 nextcloud 29.0.3 — CVE-2026-1002: Upgrade to 29.0.6 or later.
+
+### ⚫ End of life
+
+- #13 postgresql 13.12 — past end of life: Upgrade to a supported release.
+
+### ❔ Unknown
+
+- #14 home-assistant 2024.10.1 — CVE-2026-0042: No source has version data for this yet. Read the advisory and check your version by hand.
+
+### ⚪ FYI
+
+- redis 7.2.1 — CVE-2025-1111: Upgrade to 7.2.4 or later.
+
+### Closed but still affected
+
+Someone closed these issues, but the findings are still there. unpatched does not reopen them.
+
+- #11 nextcloud 29.0.3
+
+Database: built 2026-11-22 02:41 UTC, 1 day old
+
+Last run: 2026-11-23 06:17 UTC
+
+### Notes
+
+- The catalog entry for home-assistant has not been verified for 40 days.
+
+<!-- unpatched:state {"version":1,"last_run":"2026-11-23T06:17:00Z","last_digest":null,"sent":{"home-assistant/CVE-2026-0042":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"unknown","channels":[],"issue":14},"nextcloud/CVE-2026-1001":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"week","channels":[],"issue":11,"closed_by_human":true},"nextcloud/CVE-2026-1002":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"week","channels":[],"issue":12},"office-firewall/CVE-2024-21762":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"now","channels":[],"issue":10},"postgresql/eol":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"eol","channels":[],"issue":13},"redis/CVE-2025-1111":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"fyi","channels":[]}}} -->
