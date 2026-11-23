@@ -10,7 +10,6 @@ repository.workspace = true
 [dependencies]
 unpatched-core.workspace = true
 unpatched-sources.workspace = true
-unpatched-catalog.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 chrono.workspace = true
@@ -19,8 +18,14 @@ rusqlite.workspace = true
 zstd.workspace = true
 sha2.workspace = true
 hex.workspace = true
-reqwest.workspace = true
+flate2.workspace = true
 tracing.workspace = true
+tempfile.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+serde_norway.workspace = true
+tracing-subscriber.workspace = true
 
 [lints]
 workspace = true
