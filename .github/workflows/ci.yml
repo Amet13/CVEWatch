@@ -1,173 +1,36 @@
-name: CI/CD Pipeline
+name: ci
 
 on:
   push:
-    branches: [main, develop]
-    tags: ["v*"]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.26.3"
-  GORELEASER_VERSION: "v2.14.0"
-  TASK_VERSION: "v3.48.0"
+  CARGO_TERM_COLOR: always
 
 jobs:
-  # Quality Gates
-  quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
-        with:
-          task-version: ${{ env.TASK_VERSION }}
-
-      - name: Run CI Quality Checks
-        run: task ci-quality
-
-  # Testing
-  test:
-    name: Tests
-    runs-on: ubuntu-latest
+  check:
+    name: check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
-        go-version: ["1.26.3"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          go-version: ${{ matrix.go-version }}
-          cache: true
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
-        with:
-          task-version: ${{ env.TASK_VERSION }}
-
-      - name: Run CI Tests
-        run: task ci-test
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
-        with:
-          files: ./coverage.out
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
-  # Build and Release
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [quality, test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
-        with:
-          task-version: ${{ env.TASK_VERSION }}
-
-      - name: Run CI Build
-        run: task ci-build
-
-  # Release
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    needs: [quality, test]
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-
-      - name: Install Task
-        uses: ./.github/actions/install-task
-        with:
-          task-version: ${{ env.TASK_VERSION }}
-
-      - name: Run CI Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: task ci-release
-
-  # Dependency review
-  dependency-review:
-    name: Dependency Review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v5
-
-  # CodeQL Analysis
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: go
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
