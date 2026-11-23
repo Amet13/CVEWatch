@@ -1,0 +1,90 @@
+[
+  {
+    "cycle": "11-26h2-e",
+    "releaseLabel": "11 26H2 (E)",
+    "releaseDate": "2026-09-29",
+    "eol": "2029-10-09",
+    "latest": "10.0.26300",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information",
+    "lts": false,
+    "support": "2029-10-09",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "11-26h2-w",
+    "releaseLabel": "11 26H2 (W)",
+    "releaseDate": "2026-09-29",
+    "eol": "2028-10-10",
+    "latest": "10.0.26300",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information",
+    "lts": false,
+    "support": "2028-10-10",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "11-26h1-e",
+    "releaseLabel": "11 26H1 (E)",
+    "releaseDate": "2026-02-10",
+    "eol": "2029-03-13",
+    "latest": "10.0.28000",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information",
+    "lts": false,
+    "support": "2029-03-13",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "11-26h1-w",
+    "releaseLabel": "11 26H1 (W)",
+    "releaseDate": "2026-02-10",
+    "eol": "2028-03-14",
+    "latest": "10.0.28000",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information",
+    "lts": false,
+    "support": "2028-03-14",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "11-25h2-e",
+    "releaseLabel": "11 25H2 (E)",
+    "releaseDate": "2025-09-30",
+    "eol": "2028-10-10",
+    "latest": "10.0.26200",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information",
+    "lts": false,
+    "support": "2028-10-10",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "11-25h2-w",
+    "releaseLabel": "11 25H2 (W)",
+    "releaseDate": "2025-09-30",
+    "eol": "2027-10-12",
+    "latest": "10.0.26200",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information",
+    "lts": false,
+    "support": "2027-10-12",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "11-24h2-iot-lts",
+    "releaseLabel": "11 24H2 IoT",
+    "releaseDate": "2024-10-01",
+    "lts": true,
+    "eol": "2034-10-10",
+    "latest": "10.0.26100",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information#enterprise-and-iot-enterprise-ltsc-editions",
+    "support": "2029-10-09",
+    "extendedSupport": false
+  },
+  {
+    "cycle": "11-24h2-e-lts",
+    "releaseLabel": "11 24H2 (E)",
+    "releaseDate": "2024-10-01",
+    "lts": true,
+    "eol": "2029-10-09",
+    "latest": "10.0.26100",
+    "link": "https://learn.microsoft.com/windows/release-health/windows11-release-information#enterprise-and-iot-enterprise-ltsc-editions",
+    "support": "2029-10-09",
+    "extendedSupport": false
+  }
+]

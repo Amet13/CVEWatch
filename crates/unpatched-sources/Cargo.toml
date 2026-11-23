@@ -17,6 +17,12 @@ reqwest.workspace = true
 flate2.workspace = true
 csv.workspace = true
 tracing.workspace = true
+sha2.workspace = true
+hex.workspace = true
+walkdir.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true
