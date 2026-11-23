@@ -60,6 +60,8 @@ missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 doc_markdown = "allow"
 too_many_lines = "allow"
+struct_excessive_bools = "allow"
+implicit_hasher = "allow"
 
 [profile.release]
 lto = "thin"
