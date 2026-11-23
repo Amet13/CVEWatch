@@ -10,3 +10,4 @@
 .idea/
 .vscode/
 *.snap.new
+.claude/worktrees/
