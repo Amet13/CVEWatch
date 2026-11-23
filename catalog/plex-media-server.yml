@@ -1,0 +1,16 @@
+id: plex-media-server
+name: Plex Media Server
+vendor: Plex
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "plex:media_server"
+  cna:
+    - { vendor: Plex, product: Media Server }
+    - { vendor: "n/a", product: Plex Media Server }
+  kev:
+    - { vendorProject: Plex, product: Media Server }
+aliases: [plex, pms]
+homepage: https://www.plex.tv/media-server-downloads/
+checked: 2026-11-23

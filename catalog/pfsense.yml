@@ -1,0 +1,17 @@
+id: pfsense
+name: pfSense
+vendor: Netgate
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "netgate:pfsense"
+    - "pfsense:pfsense"
+  cna:
+    - { vendor: Netgate, product: pfSense CE }
+    - { vendor: Netgate, product: pfSense Plus }
+    - { vendor: Netgate, product: Netgate pfSense }
+    - { vendor: pfSense, product: pfSense CE and pfSense Plus }
+aliases: [pfsense ce, pfsense plus, netgate pfsense]
+homepage: https://www.pfsense.org/
+checked: 2026-11-23

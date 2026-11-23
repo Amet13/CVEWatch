@@ -1,0 +1,17 @@
+id: redis
+name: Redis
+vendor: Redis
+kind: database
+versioning: dotted
+match:
+  cpe:
+    - "redis:redis"
+  cna:
+    - { vendor: redis, product: redis }
+    - { vendor: Debian, product: redis }
+  kev:
+    - { vendorProject: Redis, product: Debian-specific Redis Servers }
+eol: redis
+aliases: [redis server]
+homepage: https://redis.io/
+checked: 2026-11-23

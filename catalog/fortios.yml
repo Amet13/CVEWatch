@@ -1,0 +1,21 @@
+id: fortios
+name: FortiOS
+vendor: Fortinet
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "fortinet:fortios"
+  cna:
+    - { vendor: Fortinet, product: FortiOS }
+    - { vendor: Fortinet, product: "Fortinet FortiOS, FortiProxy, FortiSwitchManager" }
+    - { vendor: Fortinet, product: FortiOS-6K7K }
+  kev:
+    - { vendorProject: Fortinet, product: FortiOS }
+    - { vendorProject: Fortinet, product: FortiOS and FortiProxy }
+    - { vendorProject: Fortinet, product: FortiOS and FortiProxy SSL-VPN }
+    - { vendorProject: Fortinet, product: FortiOS and FortiADC }
+eol: fortios
+aliases: [fortigate, fortinet firewall]
+homepage: https://www.fortinet.com/products/fortigate/fortios
+checked: 2026-11-23

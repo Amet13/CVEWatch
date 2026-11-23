@@ -1,0 +1,14 @@
+id: truenas
+name: TrueNAS
+vendor: iXsystems
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "ixsystems:truenas"
+  cna:
+    - { vendor: iXsystems, product: TrueNAS CORE }
+eol: truenas
+aliases: [truenas core, truenas scale, freenas]
+homepage: https://www.truenas.com/
+checked: 2026-11-23

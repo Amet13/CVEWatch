@@ -1,0 +1,16 @@
+id: apache-http-server
+name: Apache HTTP Server
+vendor: Apache Software Foundation
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "apache:http_server"
+  cna:
+    - { vendor: Apache Software Foundation, product: Apache HTTP Server }
+  kev:
+    - { vendorProject: Apache, product: HTTP Server }
+eol: apache-http-server
+aliases: [apache, httpd, apache2, apache httpd]
+homepage: https://httpd.apache.org/
+checked: 2026-11-23

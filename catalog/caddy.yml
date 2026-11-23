@@ -1,0 +1,14 @@
+id: caddy
+name: Caddy
+vendor: Caddy
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "caddyserver:caddy"
+  cna:
+    - { vendor: caddyserver, product: caddy }
+eol: caddy
+aliases: [caddyserver, caddy server]
+homepage: https://caddyserver.com/
+checked: 2026-11-23

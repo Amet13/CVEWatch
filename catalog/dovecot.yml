@@ -1,0 +1,14 @@
+id: dovecot
+name: Dovecot
+vendor: Dovecot
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "dovecot:dovecot"
+  cna:
+    - { vendor: The Dovecot Project, product: Dovecot }
+    - { vendor: The Dovecot Project, product: dovecot }
+eol: dovecot
+homepage: https://www.dovecot.org/
+checked: 2026-11-23

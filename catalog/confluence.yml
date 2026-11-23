@@ -1,0 +1,24 @@
+id: confluence
+name: Atlassian Confluence (Data Center and Server)
+vendor: Atlassian
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "atlassian:confluence_data_center"
+    - "atlassian:confluence_server"
+    - "atlassian:confluence"
+  cna:
+    - { vendor: Atlassian, product: Confluence Data Center }
+    - { vendor: Atlassian, product: Confluence Server }
+  kev:
+    - { vendorProject: Atlassian, product: Confluence }
+    - { vendorProject: Atlassian, product: Confluence Data Center and Server }
+    - { vendorProject: Atlassian, product: Confluence Server }
+    - { vendorProject: Atlassian, product: Confluence Server and Data Center }
+    - { vendorProject: Atlassian, product: Confluence Server and Data Server }
+    - { vendorProject: Atlassian, product: Confluence Server/Data Center }
+eol: confluence
+aliases: [atlassian confluence, confluence data center, confluence server]
+homepage: https://www.atlassian.com/software/confluence
+checked: 2026-11-23

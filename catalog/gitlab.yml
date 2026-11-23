@@ -1,0 +1,20 @@
+id: gitlab
+name: GitLab
+vendor: GitLab
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "gitlab:gitlab"
+  cna:
+    - { vendor: GitLab, product: GitLab }
+    - { vendor: GitLab, product: GitLab Community and Enterprise Editions }
+  kev:
+    - { vendorProject: GitLab, product: GitLab }
+    - { vendorProject: GitLab, product: Community Edition and Enterprise Edition }
+    - { vendorProject: GitLab, product: Community and Enterprise Editions }
+    - { vendorProject: GitLab, product: GitLab CE/EE }
+eol: gitlab
+aliases: [gitlab ce, gitlab ee]
+homepage: https://about.gitlab.com/
+checked: 2026-11-23

@@ -1,0 +1,14 @@
+id: python
+name: Python (CPython)
+vendor: Python Software Foundation
+kind: server
+versioning: pep440
+match:
+  cpe:
+    - "python:python"
+  cna:
+    - { vendor: Python Software Foundation, product: CPython }
+eol: python
+aliases: [cpython]
+homepage: https://www.python.org/
+checked: 2026-11-23

@@ -1,0 +1,21 @@
+id: drupal
+name: Drupal
+vendor: Drupal
+kind: cms
+versioning: dotted
+match:
+  cpe:
+    - "drupal:drupal"
+  cna:
+    - { vendor: Drupal, product: Drupal core }
+    - { vendor: Drupal, product: Drupal Core }
+    - { vendor: Drupal, product: Core }
+    - { vendor: Drupal, product: core }
+  kev:
+    - { vendorProject: Drupal, product: Core }
+    - { vendorProject: Drupal, product: Drupal Core }
+    - { vendorProject: Drupal, product: Drupal core }
+eol: drupal
+aliases: [drupal core]
+homepage: https://www.drupal.org/
+checked: 2026-11-23

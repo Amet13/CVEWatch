@@ -1,0 +1,17 @@
+id: check-point-quantum
+name: Check Point Quantum Security Gateway
+vendor: Check Point
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "checkpoint:quantum_security_gateway"
+    - "checkpoint:security_gateway"
+  cna:
+    - { vendor: checkpoint, product: "Check Point Quantum Gateway, Spark Gateway and CloudGuard Network" }
+  kev:
+    - { vendorProject: Check Point, product: Quantum Security Gateways }
+    - { vendorProject: Check Point, product: Security Gateway }
+aliases: [checkpoint, check point gateway, quantum gateway]
+homepage: https://www.checkpoint.com/quantum/network-security/
+checked: 2026-11-23

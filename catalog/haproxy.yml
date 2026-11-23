@@ -1,0 +1,14 @@
+id: haproxy
+name: HAProxy
+vendor: HAProxy
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "haproxy:haproxy"
+  cna:
+    - { vendor: HAProxy, product: HAProxy }
+    - { vendor: haproxy, product: haproxy }
+eol: haproxy
+homepage: https://www.haproxy.org/
+checked: 2026-11-23

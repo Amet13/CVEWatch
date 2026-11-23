@@ -1,0 +1,14 @@
+id: traefik
+name: Traefik
+vendor: Traefik Labs
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "traefik:traefik"
+  cna:
+    - { vendor: traefik, product: traefik }
+eol: traefik
+aliases: [traefik proxy]
+homepage: https://traefik.io/traefik/
+checked: 2026-11-23

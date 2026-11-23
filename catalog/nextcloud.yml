@@ -1,0 +1,17 @@
+id: nextcloud
+name: Nextcloud Server
+vendor: Nextcloud
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "nextcloud:nextcloud_server"
+    - "nextcloud:nextcloud"
+  cna:
+    - { vendor: Nextcloud, product: Nextcloud Server }
+    - { vendor: "n/a", product: Nextcloud Server }
+    - { vendor: nextcloud, product: security-advisories }
+eol: nextcloud
+aliases: [nextcloud server, nextcloud hub]
+homepage: https://nextcloud.com/
+checked: 2026-11-23

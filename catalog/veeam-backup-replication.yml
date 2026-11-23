@@ -1,0 +1,18 @@
+id: veeam-backup-replication
+name: "Veeam Backup & Replication"
+vendor: Veeam
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "veeam:veeam_backup_\\&_replication"
+  cna:
+    - { vendor: Veeam, product: "Backup & Replication" }
+    - { vendor: Veeam, product: Backup and Replication }
+    - { vendor: "n/a", product: "Veeam Backup & Replication" }
+  kev:
+    - { vendorProject: Veeam, product: "Backup & Replication" }
+eol: veeam-backup-and-replication
+aliases: [veeam, vbr, veeam backup]
+homepage: https://www.veeam.com/products/veeam-data-platform/backup-recovery.html
+checked: 2026-11-23

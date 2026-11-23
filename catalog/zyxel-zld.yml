@@ -1,0 +1,21 @@
+id: zyxel-zld
+name: "Zyxel firewalls (ZLD: USG FLEX, ATP, VPN series)"
+vendor: Zyxel
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "zyxel:zld"
+    - "zyxel:usg_flex_100_firmware"
+  cna:
+    - { vendor: Zyxel, product: USG FLEX series firmware }
+    - { vendor: Zyxel, product: ATP series firmware }
+    - { vendor: Zyxel, product: VPN series firmware }
+    - { vendor: Zyxel, product: USG20(W)-VPN series firmware }
+    - { vendor: Zyxel, product: USG FLEX 50(W) series firmware }
+    - { vendor: Zyxel, product: ZyWALL/USG series firmware }
+  kev:
+    - { vendorProject: Zyxel, product: Multiple Firewalls }
+aliases: [zyxel, zyxel usg, zyxel atp, zyxel zywall, usg flex]
+homepage: https://www.zyxel.com/global/en/products/security
+checked: 2026-11-23

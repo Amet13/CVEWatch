@@ -1,0 +1,18 @@
+id: php
+name: PHP
+vendor: PHP Group
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "php:php"
+  cna:
+    - { vendor: PHP Group, product: PHP }
+  kev:
+    - { vendorProject: PHP Group, product: PHP }
+    - { vendorProject: PHP, product: PHP }
+    - { vendorProject: PHP, product: FastCGI Process Manager (FPM) }
+eol: php
+aliases: [php-fpm]
+homepage: https://www.php.net/
+checked: 2026-11-23

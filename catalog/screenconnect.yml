@@ -1,0 +1,15 @@
+id: screenconnect
+name: ConnectWise ScreenConnect
+vendor: ConnectWise
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "connectwise:screenconnect"
+  cna:
+    - { vendor: ConnectWise, product: ScreenConnect }
+  kev:
+    - { vendorProject: ConnectWise, product: ScreenConnect }
+aliases: [connectwise control, connectwise screenconnect]
+homepage: https://www.connectwise.com/platform/unified-remote-monitoring-management/remote-support
+checked: 2026-11-23

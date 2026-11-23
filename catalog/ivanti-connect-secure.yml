@@ -1,0 +1,23 @@
+id: ivanti-connect-secure
+name: Ivanti Connect Secure
+vendor: Ivanti
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "ivanti:connect_secure"
+    - "pulsesecure:pulse_connect_secure"
+  cna:
+    - { vendor: Ivanti, product: Connect Secure }
+    - { vendor: Ivanti, product: ICS }
+    - { vendor: "n/a", product: Pulse Connect Secure }
+  kev:
+    - { vendorProject: Ivanti, product: Connect Secure }
+    - { vendorProject: Ivanti, product: Connect Secure and Policy Secure }
+    - { vendorProject: Ivanti, product: "Connect Secure, Policy Secure, and Neurons" }
+    - { vendorProject: Ivanti, product: "Connect Secure, Policy Secure, and ZTA Gateways" }
+    - { vendorProject: Ivanti, product: Pulse Connect Secure }
+    - { vendorProject: Ivanti, product: Pulse Connect Secure and Pulse Policy Secure }
+aliases: [ics, pulse secure, pulse connect secure, ivanti vpn]
+homepage: https://www.ivanti.com/products/connect-secure-vpn
+checked: 2026-11-23

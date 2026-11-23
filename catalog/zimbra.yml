@@ -1,0 +1,18 @@
+id: zimbra
+name: Zimbra Collaboration
+vendor: Synacor
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "zimbra:collaboration"
+    - "synacor:zimbra_collaboration_suite"
+  cna:
+    - { vendor: Synacor, product: Zimbra Server }
+  kev:
+    - { vendorProject: Synacor, product: Zimbra Collaboration Suite (ZCS) }
+    - { vendorProject: Synacor, product: Zimbra Collaboration Suite }
+    - { vendorProject: Synacor, product: Zimbra Collaborate Suite (ZCS) }
+aliases: [zcs, zimbra collaboration suite, zimbra collaboration]
+homepage: https://www.zimbra.com/
+checked: 2026-11-23

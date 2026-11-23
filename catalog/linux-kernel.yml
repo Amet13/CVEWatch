@@ -1,0 +1,17 @@
+id: linux-kernel
+name: Linux kernel
+vendor: Linux
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "linux:linux_kernel"
+  cna:
+    - { vendor: Linux, product: Kernel }
+    - { vendor: Linux, product: Linux }
+  kev:
+    - { vendorProject: Linux, product: Kernel }
+eol: linux
+aliases: [linux, kernel]
+homepage: https://www.kernel.org/
+checked: 2026-11-23

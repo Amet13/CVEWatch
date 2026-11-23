@@ -1,0 +1,14 @@
+id: mysql
+name: MySQL
+vendor: Oracle
+kind: database
+versioning: dotted
+match:
+  cpe:
+    - "oracle:mysql"
+  cna:
+    - { vendor: Oracle Corporation, product: MySQL Server }
+eol: mysql
+aliases: [mysql server, mysql community]
+homepage: https://www.mysql.com/
+checked: 2026-11-23

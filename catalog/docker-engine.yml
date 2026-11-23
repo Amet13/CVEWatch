@@ -1,0 +1,16 @@
+id: docker-engine
+name: Docker Engine (Moby)
+vendor: Docker
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "mobyproject:moby"
+    - "docker:docker"
+  cna:
+    - { vendor: moby, product: moby }
+    - { vendor: Docker, product: Docker Engine }
+eol: docker-engine
+aliases: [docker, moby, dockerd]
+homepage: https://docs.docker.com/engine/
+checked: 2026-11-23
