@@ -1,0 +1,70 @@
+# A small catalog for the database tests. Each entry matches something in the
+# frozen fixtures, except synology-dsm, which matches nothing on purpose
+# (it must come out "unverified").
+- id: fortios
+  name: FortiOS
+  vendor: Fortinet
+  kind: appliance
+  versioning: dotted
+  match:
+    cpe: [fortinet:fortios]
+    cna: [{ vendor: Fortinet, product: FortiOS }]
+    kev: [{ vendorProject: Fortinet, product: FortiOS }]
+  aliases: [fortigate]
+  checked: 2026-11-23
+- id: nextcloud
+  name: Nextcloud
+  vendor: Nextcloud
+  kind: app
+  versioning: dotted
+  match:
+    cpe: [nextcloud:nextcloud, nextcloud:global_site_selector]
+    cna: [{ vendor: nextcloud, product: security-advisories }]
+  eol: nextcloud
+  checked: 2026-11-23
+- id: ivanti-connect-secure
+  name: Ivanti Connect Secure
+  vendor: Ivanti
+  kind: appliance
+  versioning: dotted
+  match:
+    cna: [{ vendor: Ivanti, product: ICS }]
+  aliases: [pulse-secure]
+  checked: 2026-11-23
+- id: citrix-netscaler
+  name: Citrix NetScaler
+  vendor: Citrix
+  kind: appliance
+  versioning: dotted
+  match:
+    cna:
+      - { vendor: Citrix, product: NetScaler ADC }
+      - { vendor: Citrix, product: NetScaler Gateway }
+  checked: 2026-11-23
+- id: apache-httpd
+  name: Apache HTTP Server
+  vendor: Apache
+  kind: server
+  versioning: dotted
+  match:
+    cpe: [apache:http_server]
+    cna: [{ vendor: Apache Software Foundation, product: Apache HTTP Server }]
+  checked: 2026-11-23
+- id: linux-kernel
+  name: Linux kernel
+  vendor: Linux
+  kind: os
+  versioning: dotted
+  match:
+    cpe: [linux:linux_kernel]
+    cna: [{ vendor: Linux, product: Linux }]
+  checked: 2026-11-23
+- id: synology-dsm
+  name: Synology DSM
+  vendor: Synology
+  kind: appliance
+  versioning: dotted
+  match:
+    cpe: [synology:diskstation_manager]
+    cna: [{ vendor: Synology, product: DiskStation Manager }]
+  checked: 2026-11-23
