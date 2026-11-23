@@ -1,0 +1,13 @@
+id: jellyfin
+name: Jellyfin
+vendor: Jellyfin
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "jellyfin:jellyfin"
+  cna:
+    - { vendor: jellyfin, product: jellyfin }
+aliases: [jellyfin server]
+homepage: https://jellyfin.org/
+checked: 2026-11-23

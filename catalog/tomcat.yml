@@ -1,0 +1,17 @@
+id: tomcat
+name: Apache Tomcat
+vendor: Apache Software Foundation
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "apache:tomcat"
+  cna:
+    - { vendor: Apache Software Foundation, product: Apache Tomcat }
+    - { vendor: Apache, product: Apache Tomcat }
+  kev:
+    - { vendorProject: Apache, product: Tomcat }
+eol: tomcat
+aliases: [apache tomcat]
+homepage: https://tomcat.apache.org/
+checked: 2026-11-23

@@ -2100,6 +2100,7 @@ dependencies = [
 name = "unpatched-catalog"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "serde",
  "serde_json",
  "thiserror",
@@ -2523,6 +2524,13 @@ name = "xtask"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "chrono",
+ "reqwest",
+ "schemars",
+ "serde_json",
+ "serde_norway",
+ "unpatched-catalog",
+ "unpatched-core",
 ]
 
 [[package]]

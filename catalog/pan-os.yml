@@ -1,0 +1,16 @@
+id: pan-os
+name: PAN-OS
+vendor: Palo Alto Networks
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "paloaltonetworks:pan-os"
+  cna:
+    - { vendor: Palo Alto Networks, product: PAN-OS }
+  kev:
+    - { vendorProject: Palo Alto Networks, product: PAN-OS }
+eol: panos
+aliases: [panos, palo alto, globalprotect]
+homepage: https://www.paloaltonetworks.com/network-security/pan-os
+checked: 2026-11-23

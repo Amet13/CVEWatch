@@ -1,0 +1,16 @@
+id: sonicos
+name: SonicOS
+vendor: SonicWall
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "sonicwall:sonicos"
+  cna:
+    - { vendor: SonicWall, product: SonicOS }
+  kev:
+    - { vendorProject: SonicWall, product: SonicOS }
+    - { vendorProject: SonicWall, product: SonicOS SSLVPN }
+aliases: [sonicwall, sonicwall firewall]
+homepage: https://www.sonicwall.com/products/firewalls
+checked: 2026-11-23

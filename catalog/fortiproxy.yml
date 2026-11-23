@@ -1,0 +1,16 @@
+id: fortiproxy
+name: FortiProxy
+vendor: Fortinet
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "fortinet:fortiproxy"
+  cna:
+    - { vendor: Fortinet, product: FortiProxy }
+    - { vendor: Fortinet, product: "Fortinet FortiOS, FortiProxy, FortiSwitchManager" }
+  kev:
+    - { vendorProject: Fortinet, product: FortiOS and FortiProxy }
+    - { vendorProject: Fortinet, product: FortiOS and FortiProxy SSL-VPN }
+homepage: https://www.fortinet.com/products/secure-web-gateway/fortiproxy
+checked: 2026-11-23

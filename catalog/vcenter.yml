@@ -1,0 +1,21 @@
+id: vcenter
+name: VMware vCenter Server
+vendor: Broadcom
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "vmware:vcenter_server"
+  cna:
+    - { vendor: VMware, product: vCenter Server }
+    - { vendor: "n/a", product: VMware vCenter Server }
+    - { vendor: "n/a", product: VMware vCenter Server and VMware Cloud Foundation }
+  kev:
+    - { vendorProject: VMware, product: vCenter Server }
+    - { vendorProject: VMware, product: vCenter Server and Cloud Foundation }
+    - { vendorProject: Broadcom, product: VMware vCenter }
+    - { vendorProject: Broadcom, product: VMware vCenter Server }
+eol: vcenter
+aliases: [vmware vcenter, vcsa, vcenter server]
+homepage: https://www.vmware.com/products/cloud-infrastructure/vsphere
+checked: 2026-11-23

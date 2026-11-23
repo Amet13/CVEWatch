@@ -1,0 +1,21 @@
+id: cisco-asa
+name: Cisco Adaptive Security Appliance (ASA) Software
+vendor: Cisco
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "cisco:adaptive_security_appliance_software"
+  cna:
+    - { vendor: Cisco, product: Cisco Adaptive Security Appliance (ASA) Software }
+    - { vendor: Cisco, product: Cisco Secure Firewall Adaptive Security Appliance (ASA) Software }
+  kev:
+    - { vendorProject: Cisco, product: Adaptive Security Appliance (ASA) }
+    - { vendorProject: Cisco, product: Adaptive Security Appliance (ASA) and Firepower Threat Defense (FTD) }
+    - { vendorProject: Cisco, product: Adaptive Security Appliance and Firepower Threat Defense }
+    - { vendorProject: Cisco, product: Secure Firewall ASA Software and Cisco Secure FTD Software }
+    - { vendorProject: Cisco, product: Secure Firewall Adaptive Security Appliance (ASA) and Secure Firewall Threat Defense (FTD) }
+    - { vendorProject: Cisco, product: Secure Firewall Adaptive Security Appliance and Secure Firewall Threat Defense }
+aliases: [asa, cisco asa, adaptive security appliance]
+homepage: https://www.cisco.com/site/us/en/products/security/firewalls/adaptive-security-appliance-asa-software/index.html
+checked: 2026-11-23

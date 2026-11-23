@@ -1,0 +1,17 @@
+id: wordpress
+name: WordPress
+vendor: WordPress
+kind: cms
+versioning: dotted
+match:
+  cpe:
+    - "wordpress:wordpress"
+  cna:
+    - { vendor: WordPress, product: wordpress-develop }
+  kev:
+    - { vendorProject: WordPress, product: Core }
+    - { vendorProject: WordPress, product: WordPress Core }
+eol: wordpress
+aliases: [wp, wordpress core]
+homepage: https://wordpress.org/
+checked: 2026-11-23

@@ -1,0 +1,12 @@
+id: proxmox-ve
+name: Proxmox Virtual Environment
+vendor: Proxmox
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "proxmox:virtual_environment"
+eol: proxmox-ve
+aliases: [proxmox, pve]
+homepage: https://www.proxmox.com/proxmox-virtual-environment/overview
+checked: 2026-11-23

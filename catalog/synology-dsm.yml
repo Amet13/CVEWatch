@@ -1,0 +1,15 @@
+id: synology-dsm
+name: Synology DiskStation Manager (DSM)
+vendor: Synology
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "synology:diskstation_manager"
+  cna:
+    - { vendor: Synology, product: DiskStation Manager (DSM) }
+  kev:
+    - { vendorProject: Synology, product: DiskStation Manager (DSM) }
+aliases: [dsm, synology, diskstation manager, synology nas]
+homepage: https://www.synology.com/dsm
+checked: 2026-11-23

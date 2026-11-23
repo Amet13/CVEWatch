@@ -1,0 +1,13 @@
+id: vaultwarden
+name: Vaultwarden
+vendor: Vaultwarden
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "dani-garcia:vaultwarden"
+  cna:
+    - { vendor: dani-garcia, product: vaultwarden }
+aliases: [bitwarden_rs, bitwarden rs]
+homepage: https://github.com/dani-garcia/vaultwarden
+checked: 2026-11-23

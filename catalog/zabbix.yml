@@ -1,0 +1,18 @@
+id: zabbix
+name: Zabbix
+vendor: Zabbix
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "zabbix:zabbix"
+  cna:
+    - { vendor: Zabbix, product: Frontend }
+    - { vendor: Zabbix, product: Zabbix Server }
+    - { vendor: Zabbix, product: Zabbix }
+  kev:
+    - { vendorProject: Zabbix, product: Frontend }
+eol: zabbix
+aliases: [zabbix server]
+homepage: https://www.zabbix.com/
+checked: 2026-11-23

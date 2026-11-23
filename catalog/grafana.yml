@@ -1,0 +1,15 @@
+id: grafana
+name: Grafana
+vendor: Grafana Labs
+kind: app
+versioning: semver
+match:
+  cpe:
+    - "grafana:grafana"
+  cna:
+    - { vendor: grafana, product: grafana }
+  kev:
+    - { vendorProject: Grafana Labs, product: Grafana }
+eol: grafana
+homepage: https://grafana.com/
+checked: 2026-11-23

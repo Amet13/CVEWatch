@@ -1,0 +1,15 @@
+id: gitea
+name: Gitea
+vendor: Gitea
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "gitea:gitea"
+  cna:
+    - { vendor: Gitea, product: Gitea }
+    - { vendor: go-gitea, product: go-gitea/gitea }
+  kev:
+    - { vendorProject: Gitea, product: Gitea }
+homepage: https://about.gitea.com/
+checked: 2026-11-23

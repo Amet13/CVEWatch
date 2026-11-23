@@ -1,0 +1,22 @@
+id: jira
+name: Atlassian Jira (Data Center and Server)
+vendor: Atlassian
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "atlassian:jira_data_center"
+    - "atlassian:jira_server"
+  cna:
+    - { vendor: Atlassian, product: Jira Server }
+    - { vendor: Atlassian, product: Jira Data Center }
+    - { vendor: Atlassian, product: Jira Server and Data Center }
+    - { vendor: Atlassian, product: Jira }
+    - { vendor: Atlassian, product: Jira Software Server }
+    - { vendor: Atlassian, product: Jira Software Data Center }
+  kev:
+    - { vendorProject: Atlassian, product: Jira Server and Data Center }
+eol: jira-software
+aliases: [atlassian jira, jira software, jira data center, jira server]
+homepage: https://www.atlassian.com/software/jira
+checked: 2026-11-23

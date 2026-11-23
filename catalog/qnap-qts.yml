@@ -1,0 +1,20 @@
+id: qnap-qts
+name: QNAP QTS
+vendor: QNAP
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "qnap:qts"
+    - "qnap:quts_hero"
+  cna:
+    - { vendor: QNAP Systems Inc., product: QTS }
+    - { vendor: QNAP Systems Inc., product: QuTS hero }
+    - { vendor: QNAP, product: QNAP QTS }
+  kev:
+    - { vendorProject: QNAP, product: QTS }
+    - { vendorProject: QNAP, product: QNAP Network-Attached Storage (NAS) }
+    - { vendorProject: QNAP, product: Network Attached Storage (NAS) }
+aliases: [qts, qnap, qnap nas, quts hero]
+homepage: https://www.qnap.com/qts
+checked: 2026-11-23

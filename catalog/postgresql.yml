@@ -1,0 +1,14 @@
+id: postgresql
+name: PostgreSQL
+vendor: PostgreSQL
+kind: database
+versioning: dotted
+match:
+  cpe:
+    - "postgresql:postgresql"
+  cna:
+    - { vendor: "n/a", product: PostgreSQL }
+eol: postgresql
+aliases: [postgres, pg]
+homepage: https://www.postgresql.org/
+checked: 2026-11-23

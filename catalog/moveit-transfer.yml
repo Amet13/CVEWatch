@@ -1,0 +1,17 @@
+id: moveit-transfer
+name: MOVEit Transfer
+vendor: Progress
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "progress:moveit_transfer"
+  cna:
+    - { vendor: Progress, product: MOVEit Transfer }
+    - { vendor: Progress Software Corporation, product: MOVEit Transfer }
+    - { vendor: Progress Software, product: MOVEit Transfer }
+  kev:
+    - { vendorProject: Progress, product: MOVEit Transfer }
+aliases: [moveit, progress moveit]
+homepage: https://www.progress.com/moveit
+checked: 2026-11-23

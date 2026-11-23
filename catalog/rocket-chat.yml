@@ -1,0 +1,15 @@
+id: rocket-chat
+name: Rocket.Chat
+vendor: Rocket.Chat
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "rocket.chat:rocket.chat"
+  cna:
+    - { vendor: "n/a", product: Rocket.Chat }
+    - { vendor: RocketChat, product: Rocket.Chat }
+eol: rocket-chat
+aliases: [rocketchat, rocket.chat]
+homepage: https://rocket.chat/
+checked: 2026-11-23

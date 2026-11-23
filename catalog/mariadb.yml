@@ -1,0 +1,12 @@
+id: mariadb
+name: MariaDB
+vendor: MariaDB Foundation
+kind: database
+versioning: dotted
+match:
+  cpe:
+    - "mariadb:mariadb"
+eol: mariadb
+aliases: [mariadb server]
+homepage: https://mariadb.org/
+checked: 2026-11-23

@@ -1,0 +1,16 @@
+id: keycloak
+name: Keycloak
+vendor: Red Hat
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "redhat:keycloak"
+    - "keycloak:keycloak"
+  cna:
+    - { vendor: Red Hat, product: keycloak }
+    - { vendor: "n/a", product: Keycloak }
+eol: keycloak
+aliases: [red hat sso]
+homepage: https://www.keycloak.org/
+checked: 2026-11-23

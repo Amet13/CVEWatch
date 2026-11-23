@@ -1,0 +1,27 @@
+id: exchange-server
+name: Microsoft Exchange Server
+vendor: Microsoft
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "microsoft:exchange_server"
+  cna:
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2013 Cumulative Update 21 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2013 Cumulative Update 22 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2013 Cumulative Update 23 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2016 Cumulative Update 22 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2016 Cumulative Update 23 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2019 Cumulative Update 11 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2019 Cumulative Update 12 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2019 Cumulative Update 13 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2019 Cumulative Update 14 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server 2019 Cumulative Update 15 }
+    - { vendor: Microsoft, product: Microsoft Exchange Server Subscription Edition RTM }
+  kev:
+    - { vendorProject: Microsoft, product: Exchange Server }
+    - { vendorProject: Microsoft, product: Exchange }
+eol: msexchange
+aliases: [exchange, ms exchange, microsoft exchange]
+homepage: https://learn.microsoft.com/exchange/
+checked: 2026-11-23

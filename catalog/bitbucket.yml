@@ -1,0 +1,19 @@
+id: bitbucket
+name: Atlassian Bitbucket (Data Center and Server)
+vendor: Atlassian
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "atlassian:bitbucket_data_center"
+    - "atlassian:bitbucket_server"
+    - "atlassian:bitbucket"
+  cna:
+    - { vendor: Atlassian, product: Bitbucket Server }
+    - { vendor: Atlassian, product: Bitbucket Data Center }
+  kev:
+    - { vendorProject: Atlassian, product: Bitbucket Server and Data Center }
+eol: bitbucket
+aliases: [atlassian bitbucket, bitbucket server, bitbucket data center]
+homepage: https://www.atlassian.com/software/bitbucket
+checked: 2026-11-23
