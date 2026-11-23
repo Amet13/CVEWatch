@@ -1,6 +1,6 @@
 # Rewrite plan: CVEWatch → `unpatched`
 
-Status: **draft for review**. Nothing is implemented yet.
+Status: **approved with the review in §16** (name `unpatched` chosen). §16 overrides earlier sections where they differ.
 Date: 2026-11-23.
 
 ## 0. Summary
@@ -41,8 +41,7 @@ Alternatives (all free on crates.io, no notable GitHub projects):
 | `kevwatch` | An insider pun on CISA KEV, but too narrow and too much like the old name. |
 | `stillvuln` | Memorable, slightly negative. |
 
-To do before deciding: check the `unpatched` name on GitHub Marketplace and
-Homebrew, and do a quick trademark search.
+Decision: `unpatched`.
 
 ---
 
@@ -592,3 +591,117 @@ the live pipeline is being hardened.
 5. **License:** keep MIT (proposed), or MIT OR Apache-2.0 (the Rust convention)?
 6. **Catalog v1:** fine to pick the 50 products from KEV frequency and
    awesome-selfhosted, or do you have a list of what you run?
+
+---
+
+## 16. Review round 2: problems found and decisions
+
+This section was written after grilling the plan above. Where it differs
+from an earlier section, this one wins.
+
+### Bugs and wrong assumptions
+
+1. **The 60-day schedule pause only hits public repos.** GitHub disables
+   scheduled workflows after 60 idle days only in *public* repositories. We
+   tell people to use private repos, so the "state commit as a heartbeat" idea
+   is not needed, and it was harmful: it needs `contents: write` and fails on
+   protected default branches. **Decision:** the Action never commits. It
+   needs only `issues: write`.
+2. **State lives in GitHub Issues, not in a committed file.** Each finding issue
+   carries a hidden marker (`<!-- unpatched:finding=<key> -->`). One pinned
+   "unpatched status" issue is the dashboard, kept current on every run, and
+   holds the delivery state for other channels (which messages were sent) in a
+   hidden JSON block. The CLI keeps `.unpatched/state.json` locally. Same state
+   model, two stores behind one trait.
+3. **NVD bulk feeds exist again and need no key.** Yearly JSON 2.0 feeds
+   (`nvdcve-2.0-<year>.json.gz`, about 25 MB for 2024) plus a `modified` feed
+   every 2 hours, each with a `.meta` file holding a SHA-256. Checked
+   2026-11-23. **Decision:** `build-db` uses the feeds, not the
+   rate-limited API.
+4. **CVE.org data has the CISA ADP container inside.** `cvelistV5` records
+   already carry CISA Vulnrichment (SSVC exploitation, automatable).
+   **Decision:** no separate vulnrichment source. `build-db` takes a
+   shallow clone of `cvelistV5` in Actions.
+5. **Source "precedence" was wrong for a security tool.** CSAF is not in v1, and
+   picking one source over another hides bugs in the higher-ranked one.
+   **Decision:** each source is evaluated on its own and the verdict is
+   combined:
+   - `affected` if any source with a parseable range says affected
+   - `not-affected` only if every source with data says not affected and at
+     least one has data
+   - otherwise `unknown`
+
+   Conflicts are shown in `explain`. When in doubt, report.
+6. **CSAF parsing is a project of its own.** Moved to phase 8. v1 takes the fix
+   version from range upper bounds (`lessThan`, `versionEndExcluding`), and
+   the "latest in your branch" from endoflife.date.
+7. **Rejected and disputed CVEs.** Rejected records are dropped and their open
+   issues closed with a note. Disputed ones are kept, with a label.
+8. **The database release needs a bootstrap.** Until `build-db` has run
+   once, there is no `db` release. **Decision:** the CLI can build the
+   database itself (`unpatched db build`, slow, used by CI and by people who
+   do not trust our build). `check` also accepts `--db <path>`.
+9. **The Action cannot fetch a binary before the first release.** **Decision:**
+   `action.yml` takes a `version` input (default: the Action's own tag) and a
+   `binary` input (a path, for CI and forks). It verifies the SHA-256 against
+   the release's `SHA256SUMS`.
+10. **The timing between `build-db` and user runs.** Users' default cron is
+    06:17 UTC; `build-db` runs at 02:41 UTC and takes well under an hour.
+11. **Product catalog ids versus CPE truth.** A wrong `cpe` id in the catalog
+    silently means "no vulnerabilities". **Decision:** `cargo xtask catalog
+    verify` (network, weekly in `maintenance`) checks that every `cpe` and
+    `cna` key matches at least one record. A product whose keys match nothing
+    in the database is marked "unverified" in the output, so it is never read
+    as safe.
+
+### Feature requests accepted into v1
+
+- **Ignore / accept-risk entries** (a VEX-style "not affected because…"):
+  ```yaml
+  ignore:
+    - cve: CVE-2024-1234
+      product: nextcloud        # optional, else all
+      reason: "app disabled"
+      until: 2027-01-31         # required: no silent forever
+  ```
+  An expired ignore becomes a finding again.
+- **Upgrade target.** Every finding shows: the minimum fixed version, and the
+  latest release in the same cycle (endoflife.date) when it is newer.
+- **Several instances** of the same product with different versions: one
+  stack item each, with `name` to tell them apart.
+- **`unpatched check --exit-code`** returns non-zero when there are `now`
+  findings, so the tool can gate CI or a cron alert.
+- **A "nothing to do" heartbeat** in the digest and the status issue, with the
+  database date, so silence never means "broken".
+- **Data freshness is a finding:** if the database is older than 3 days, the
+  status issue says so, and the run fails at 7 days.
+
+### Rejected or deferred
+
+- Uploading SARIF to the GitHub Security tab needs Advanced Security on
+  private repos. SARIF output stays; uploading is the user's choice.
+- Email over SMTP adds a dependency and most users get the issue emails from
+  GitHub anyway. **Deferred** to phase 8; the webhook covers the rest.
+- A web dashboard on GitHub Pages: deferred (the status issue is the dashboard).
+
+### Answers to §15 (decided without asking, as requested)
+
+1. Name: `unpatched`.
+2. Versions: the crate starts at `0.1.0`; `1.0.0` comes at launch. Go releases stay as `v2.x`.
+3. Site: **mdBook**, not Astro. It's Rust-native and needs no Node toolchain
+   to build docs for a Rust project. `llms.txt` is generated by `xtask`.
+4. Default notification: GitHub Issues plus the status issue. Other
+   channels are opt-in.
+5. License: MIT, unchanged.
+6. Catalog v1: about 50 products from KEV vendor frequency and common
+   self-hosted software, each checked against real data.
+
+### What "implement everything" covers in PR #18
+
+Phases 1–6 in full, and the tooling for phase 7 (release workflow, packaging,
+manifests). What stays with the owner:
+- renaming the repository
+- running the first release
+- the crates.io and MCP Registry tokens
+- approving the `release` environment
+- turning on GitHub Pages
