@@ -1,0 +1,233 @@
+---
+source: crates/unpatched-core/src/matching/tests.rs
+expression: "run(&cfg, &rich_dataset())"
+---
+{
+  "format": 1,
+  "generated_at": "2026-11-23T06:00:00Z",
+  "db": {
+    "schema_version": 1,
+    "built_at": "2026-11-23T02:41:00Z",
+    "sources": [
+      {
+        "source": "cve-org",
+        "fetched_at": "2026-11-23T02:00:00Z",
+        "records": 100,
+        "ok": true,
+        "note": null
+      }
+    ]
+  },
+  "summary": {
+    "now": 1,
+    "week": 1,
+    "eol": 1,
+    "unknown": 1,
+    "fyi": 0,
+    "ignored": 1,
+    "not_affected": 1
+  },
+  "findings": [
+    {
+      "key": "office-firewall/CVE-2026-0001",
+      "item": "Office firewall",
+      "product": "fortios",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "vuln": "CVE-2026-0001",
+      "title": "Heap overflow in the SSL VPN portal",
+      "verdict": "affected",
+      "bucket": "now",
+      "rules": [
+        "UNP-KEV",
+        "UNP-EXPLOIT-EXPOSED",
+        "UNP-EPSS",
+        "UNP-CVSS",
+        "UNP-EXPOSED"
+      ],
+      "fixed_in": "7.2.6",
+      "latest_in_cycle": "7.2.11",
+      "cvss": {
+        "version": "3.1",
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "signals": {
+        "kev": {
+          "date_added": "2026-02-01",
+          "due_date": null,
+          "known_ransomware": false,
+          "required_action": "Apply updates",
+          "vendor_project": "Acme",
+          "product": "FortiOS"
+        },
+        "epss": {
+          "score": 0.91,
+          "percentile": 0.9,
+          "date": "2026-11-22"
+        },
+        "ssvc_exploitation": null,
+        "ssvc_automatable": null,
+        "exploits": [
+          {
+            "source": "exploit-db",
+            "id": "12345",
+            "url": null
+          }
+        ]
+      },
+      "evidence": [
+        {
+          "source": "cve-org",
+          "verdict": "affected",
+          "detail": "affected: 7.2.5 is inside >= 7.2.0 and < 7.2.6"
+        }
+      ],
+      "references": [
+        "https://example.com/advisory/1"
+      ]
+    },
+    {
+      "key": "office-firewall/CVE-2026-0002",
+      "item": "Office firewall",
+      "product": "fortios",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "vuln": "CVE-2026-0002",
+      "title": "Path traversal in the admin API",
+      "verdict": "affected",
+      "bucket": "week",
+      "rules": [
+        "UNP-EXPOSED",
+        "UNP-CONFLICT"
+      ],
+      "fixed_in": "7.2.8",
+      "latest_in_cycle": "7.2.11",
+      "cvss": null,
+      "signals": {
+        "kev": null,
+        "epss": null,
+        "ssvc_exploitation": null,
+        "ssvc_automatable": null
+      },
+      "evidence": [
+        {
+          "source": "cve-org",
+          "verdict": "affected",
+          "detail": "affected: 7.2.5 is inside >= 7.2.0 and < 7.2.8"
+        },
+        {
+          "source": "nvd",
+          "verdict": "not-affected",
+          "detail": "not affected: 7.2.5 is outside >= 7.0.0 and < 7.2.3"
+        }
+      ]
+    },
+    {
+      "key": "office-firewall/eol",
+      "item": "Office firewall",
+      "product": "fortios",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "vuln": null,
+      "title": "Office firewall 7.2.5 is past end of life: the 7.2 release cycle no longer gets security fixes",
+      "verdict": "affected",
+      "bucket": "eol",
+      "rules": [
+        "UNP-EOL"
+      ],
+      "fixed_in": null,
+      "latest_in_cycle": null,
+      "cvss": null,
+      "signals": {
+        "kev": null,
+        "epss": null,
+        "ssvc_exploitation": null,
+        "ssvc_automatable": null
+      },
+      "evidence": [
+        {
+          "source": "endoflife",
+          "verdict": "affected",
+          "detail": "release cycle 7.2 reached end of life on 2025-09-30 (endoflife.date)"
+        }
+      ]
+    },
+    {
+      "key": "office-firewall/CVE-2026-0003",
+      "item": "Office firewall",
+      "product": "fortios",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "vuln": "CVE-2026-0003",
+      "title": "Brand new, not analysed yet",
+      "verdict": "unknown",
+      "bucket": "unknown",
+      "rules": [
+        "UNP-UNKNOWN-NO-RANGES",
+        "UNP-EPSS",
+        "UNP-EXPOSED"
+      ],
+      "fixed_in": null,
+      "latest_in_cycle": null,
+      "cvss": null,
+      "signals": {
+        "kev": null,
+        "epss": {
+          "score": 0.3,
+          "percentile": 0.9,
+          "date": "2026-11-22"
+        },
+        "ssvc_exploitation": null,
+        "ssvc_automatable": null
+      },
+      "evidence": [
+        {
+          "source": "nvd",
+          "verdict": "unknown",
+          "detail": "unknown: no usable version data"
+        }
+      ]
+    }
+  ],
+  "ignored": [
+    {
+      "key": "nextcloud/CVE-2026-0050",
+      "item": "nextcloud",
+      "product": "nextcloud",
+      "version": "29.0.3",
+      "exposure": "internal",
+      "vuln": "CVE-2026-0050",
+      "title": "Share link bypass",
+      "verdict": "affected",
+      "bucket": "fyi",
+      "rules": [
+        "UNP-IGNORED",
+        "UNP-AFFECTED"
+      ],
+      "fixed_in": "29.0.4",
+      "latest_in_cycle": "29.0.9",
+      "cvss": null,
+      "signals": {
+        "kev": null,
+        "epss": null,
+        "ssvc_exploitation": null,
+        "ssvc_automatable": null
+      },
+      "evidence": [
+        {
+          "source": "cve-org",
+          "verdict": "affected",
+          "detail": "affected: 29.0.3 is inside < 29.0.4"
+        }
+      ],
+      "ignored": {
+        "reason": "app disabled",
+        "until": "2027-01-31"
+      }
+    }
+  ],
+  "notes": [
+    "stack[2]: unknown product \"nope\". Run `unpatched catalog list` to see the ids."
+  ]
+}
