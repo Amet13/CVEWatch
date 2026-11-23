@@ -1,0 +1,12 @@
+{
+  // Prose is wrapped by hand or not at all; tables and URLs are long.
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": { "allowed_elements": ["br", "details", "summary", "img", "picture", "source", "p", "a"] },
+    "MD041": false,
+    "MD024": { "siblings_only": true },
+    "MD060": false
+  },
+  "ignores": ["node_modules", "target", "book", "CHANGELOG.md", "PLAN.md"]
+}

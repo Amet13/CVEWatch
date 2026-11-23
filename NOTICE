@@ -1,0 +1,43 @@
+unpatched
+Copyright (c) Amet Umierov. Released under the MIT License (see LICENSE).
+
+unpatched matches the software you run against public vulnerability data.
+The code is MIT. The data keeps the terms of the people who publish it:
+
+CVE Program (cvelistV5)
+  CVE records come from the CVE Program, https://www.cve.org. CVE is a
+  registered trademark of The MITRE Corporation. Use of the records is under
+  the CVE Terms of Use: https://www.cve.org/Legal/TermsOfUse
+  Records may include CISA ADP (Vulnrichment) data, published under CC0.
+
+NVD
+  This product uses data from the NVD API but is not endorsed or certified by
+  the NVD. https://nvd.nist.gov
+
+OSV
+  Data from OSV.dev (https://osv.dev) is licensed under CC-BY 4.0:
+  https://creativecommons.org/licenses/by/4.0/ . Each record names its own
+  upstream database; those databases may carry their own licenses.
+
+CISA Known Exploited Vulnerabilities (KEV) catalog
+  Published by the US Cybersecurity and Infrastructure Security Agency.
+  Public domain (US government work). https://www.cisa.gov/kev
+
+EPSS
+  Exploit Prediction Scoring System, by FIRST (Forum of Incident Response and
+  Security Teams). Used under FIRST's terms, with attribution:
+  https://www.first.org/epss
+
+endoflife.date
+  End-of-life dates and release data from https://endoflife.date, MIT License.
+
+Exploit-DB and Metasploit
+  Only CVE identifiers from the Exploit-DB index (Offensive Security) and the
+  Metasploit Framework module metadata (Rapid7) are used, to tell whether a
+  public exploit exists. No exploit code or description is stored or
+  redistributed.
+
+The prebuilt database (unpatched-db.sqlite.zst) contains facts and identifiers
+derived from the sources above. It carries no warranty: see "Not a guarantee"
+in the guide. Third-party Rust crates keep their own licenses; `cargo deny
+check licenses` checks them (see deny.toml).

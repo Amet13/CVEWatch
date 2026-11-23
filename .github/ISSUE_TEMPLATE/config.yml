@@ -1,11 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 💬 Questions and Discussions
-    url: https://github.com/Amet13/CVEWatch/discussions
-    about: Ask questions and discuss ideas with the community
-  - name: 🔒 Security Vulnerability
-    url: https://github.com/Amet13/CVEWatch/security/advisories/new
-    about: Report a security vulnerability (private disclosure)
-  - name: 📖 Documentation
-    url: https://github.com/Amet13/CVEWatch/blob/main/README.md
-    about: Read the documentation
+  - name: Questions and ideas
+    url: https://github.com/Amet13/unpatched/discussions
+    about: Ask how to use unpatched, or share an idea.
+  - name: Security problem in unpatched
+    url: https://github.com/Amet13/unpatched/security/advisories/new
+    about: Report it privately. Do not open a public issue.

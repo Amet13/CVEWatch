@@ -1,25 +1,28 @@
 # Support
 
-## Getting Help
+## Getting help
 
-If you need help using CVEWatch:
+1. Read the [README](README.md) and the guide at <https://amet13.github.io/unpatched/>.
+2. Search the [issues](https://github.com/Amet13/unpatched/issues) and
+   [discussions](https://github.com/Amet13/unpatched/discussions).
+3. Ask in Discussions, or open an issue with the right template:
+   - **Wrong verdict**: unpatched says affected, not affected or unknown, and you think it is wrong.
+   - **Add a product**: a product is not in the catalog.
+   - **Bug report**: something does not work.
 
-1. Read [README.md](README.md)
-2. Check [CONTRIBUTING.md](CONTRIBUTING.md)
-3. Search existing GitHub issues
-4. Open a new issue with details (OS, command, config snippet, and logs)
+## What to include
 
-## What to Include in Issues
+- The output of `unpatched --version` and `unpatched db info`
+- How you run it (CLI, Docker, GitHub Action) and on which OS
+- The command, and the smallest `unpatched.yml` that shows the problem (remove secrets)
+- The full error message. For a verdict, the output of `unpatched explain <CVE>`
 
-Please include:
+## Security problems
 
-- CVEWatch version (`cvewatch version`)
-- Operating system and architecture
-- Command used
-- Relevant configuration (remove secrets)
-- Full error output
+Do not open a public issue. Follow [SECURITY.md](SECURITY.md).
 
-## Security Issues
+## What this is not
 
-For security vulnerabilities, do not open a public issue.
-Use the process in [SECURITY.md](SECURITY.md).
+unpatched is a free tool that reads public data and tells you what it finds.
+It can be wrong, and a quiet report is not a guarantee that nothing is
+affected. There is no support contract.
