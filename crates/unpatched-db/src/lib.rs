@@ -5,6 +5,7 @@
 //! newer major `schema_version` than [`SCHEMA_VERSION`] is refused.
 
 mod build;
+mod check;
 mod codec;
 mod download;
 mod error;
@@ -14,6 +15,7 @@ mod read;
 pub mod schema;
 
 pub use build::{BuildOptions, BuildSummary, build};
+pub use check::run_check;
 pub use download::{DEFAULT_DB_URL, db_url, download};
 pub use error::{DbError, Result};
 pub use health::sources_health;
