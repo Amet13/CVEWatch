@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Changed
+
+- Faster checks with packages: OSV records are fetched 8 at a time (4 packages: 8.1 s → 1.7 s).
+- Faster checks of large products (`linux-kernel`): one query per product, and SQLite keeps its query plans (1.5 s → 1.3 s).
+- The daily database build reads NVD feeds, CVE.org records, endoflife.date and the exploit indexes in parallel (60 s → 44 s with cached NVD feeds). The unpacked database is 19% smaller (283 → 230 MB) and the download 7% smaller (19.6 → 18.4 MB).
+- Releases are titled by their tag (`v3.0.1`), not by the changelog heading.
+
 ## [3.0.0] - 2026-11-24
 
 ### Added

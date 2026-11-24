@@ -12,6 +12,7 @@ mod http;
 pub mod kev;
 pub mod nvd;
 pub mod osv;
+pub mod par;
 mod util;
 
 #[cfg(test)]

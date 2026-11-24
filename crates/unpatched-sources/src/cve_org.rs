@@ -5,7 +5,7 @@
 //! says nothing (empty constraints, which the core reads as "unknown") when
 //! it cannot be sure. It never guesses a bound.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
 use serde::Deserialize;
@@ -775,6 +775,12 @@ pub(crate) fn fetch_record_at(http: &Http, base: &str, id: &str) -> Result<CveRe
 /// (or under `path` itself when it has no `cves` folder), in path order.
 /// A file that cannot be read gives an `Err` item and the walk goes on.
 pub fn walk_cvelist_dir(path: &Path) -> impl Iterator<Item = Result<CveRecord>> {
+    cvelist_files(path).map(|f| f.and_then(|p| read_record_file(&p)))
+}
+
+/// The `CVE-*.json` files of a `cvelistV5` checkout, in path order, without
+/// reading them (so callers can parse them in parallel with [`read_record_file`]).
+pub fn cvelist_files(path: &Path) -> impl Iterator<Item = Result<PathBuf>> {
     let root = if path.join("cves").is_dir() {
         path.join("cves")
     } else {
@@ -794,7 +800,7 @@ pub fn walk_cvelist_dir(path: &Path) -> impl Iterator<Item = Result<CveRecord>> 
             Ok(e) => {
                 let name = e.file_name().to_string_lossy();
                 if e.file_type().is_file() && name.starts_with("CVE-") && name.ends_with(".json") {
-                    Some(read_record_file(e.path()))
+                    Some(Ok(e.into_path()))
                 } else {
                     None
                 }
@@ -802,7 +808,8 @@ pub fn walk_cvelist_dir(path: &Path) -> impl Iterator<Item = Result<CveRecord>> 
         })
 }
 
-fn read_record_file(path: &Path) -> Result<CveRecord> {
+/// Read and parse one CVE record file.
+pub fn read_record_file(path: &Path) -> Result<CveRecord> {
     let bytes = std::fs::read(path).map_err(|source| SourceError::Io {
         path: path.to_path_buf(),
         source,
