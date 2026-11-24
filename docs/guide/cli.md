@@ -234,6 +234,7 @@ Usage: unpatched db info [OPTIONS]
 
 Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
+      --json           Print the counts and the sources as JSON
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
   -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
@@ -260,6 +261,7 @@ Options:
       --nvd-cache <DIR>   Keep downloaded NVD feeds here between builds
   -v, --verbose...        More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
       --quiet             Print only what was asked for, and errors
+      --strict            Fail, and write nothing, when any source failed (CI uses this)
       --color <WHEN>      When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help              Print help
   -V, --version           Print version

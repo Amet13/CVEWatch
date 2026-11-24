@@ -28,7 +28,7 @@ Windows, arm64.
 | `config` | `unpatched.yml` | Path to your stack file. |
 | `db` | empty | Path to a database file. Empty: download the daily database. |
 | `dry-run` | `false` | Send nothing and write no issues; only print what would happen. |
-| `version` | empty | The unpatched release to run, like v3.0.0 or v3 (the newest v3.x.y). Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest release. |
+| `version` | empty | The unpatched release to run, like v3.0.0, v3.1.0-rc.1 or v3 (the newest stable v3.x.y). Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest release. Set it when you pin the action to a commit SHA (`uses: amet13/unpatched@<sha>`), because a SHA says nothing about the version. |
 
 <!-- generated:end -->
 
