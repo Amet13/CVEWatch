@@ -1,7 +1,7 @@
 //! Read access to a built database, as a [`Dataset`].
 
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
@@ -352,7 +352,14 @@ impl Dataset for Db {
 fn sha256_file(path: &Path) -> Result<String> {
     let mut f = BufReader::new(File::open(path).map_err(io_err(path))?);
     let mut h = Sha256::new();
-    std::io::copy(&mut f, &mut h).map_err(io_err(path))?;
+    let mut buf = vec![0u8; 64 * 1024];
+    loop {
+        let n = f.read(&mut buf).map_err(io_err(path))?;
+        if n == 0 {
+            break;
+        }
+        h.update(&buf[..n]);
+    }
     Ok(hex::encode(h.finalize()))
 }
 
