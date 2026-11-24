@@ -78,7 +78,7 @@ Do these once. The workflows cannot do them for you.
    for your approval first). Without it, `publish-crates.yml` says so in the log
    and publishes nothing. crates.io limits new crates to 5 at once, then one every
    10 minutes, and `unpatched` has 7. Either ask crates.io for a higher limit first
-   (email help@crates.io), or let the job wait: it retries on the limit for up to
+   (email <help@crates.io>), or let the job wait: it retries on the limit for up to
    about 85 minutes, and if it still fails, re-run it (published crates are skipped).
 7. **Run `build-db` once by hand:** Actions → build-db → Run workflow. It creates
    the rolling `db` release. The action and the CLI need it. Check that the
