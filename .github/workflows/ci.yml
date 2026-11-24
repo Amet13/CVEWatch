@@ -42,7 +42,7 @@ jobs:
         with:
           toolchain: 1.100.0
           components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       # fmt, clippy (warnings are errors), tests, and the generated-file checks.
       - run: cargo xtask check
 
@@ -63,7 +63,7 @@ jobs:
         with:
           toolchain: 1.100.0
           components: clippy
-      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
 
@@ -82,7 +82,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           toolchain: "1.90"
-      - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo check --workspace --locked
 
   deny:
@@ -162,7 +162,7 @@ jobs:
         with:
           toolchain: 1.100.0
       - if: hashFiles('action.yml') != ''
-        uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - if: hashFiles('action.yml') != ''
         run: cargo build --release --locked -p unpatched
       # The stack a new user starts from, checked against the frozen fixture database
