@@ -13,7 +13,7 @@ matching as the Action. Without GitHub, it keeps its delivery state in
 | Shell (Linux, macOS) | `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.sh \| sh` |
 | PowerShell (Windows) | `powershell -ExecutionPolicy Bypass -c "irm https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.ps1 \| iex"` |
 | Homebrew | Download `unpatched.rb` from the [latest release](https://github.com/Amet13/unpatched/releases/latest), then `brew install --formula ./unpatched.rb` |
-| Cargo | `cargo install unpatched --locked` |
+| From source | `cargo install --git https://github.com/Amet13/unpatched unpatched --locked` |
 | Archive | Download the `.tar.xz` (Linux, macOS) or `.zip` (Windows) from the releases page, check the `.sha256` file, and put `unpatched` on your `PATH` |
 
 The installers put the binary in `$CARGO_HOME/bin` (usually `~/.cargo/bin`).

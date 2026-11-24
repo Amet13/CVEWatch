@@ -19,7 +19,7 @@ when, and what is still yours.
 | When ci or codeql finishes | `automerge.yml` | Merges a same-repository pull request labelled `automerge` (opened by you, by the repository's own workflows or by Dependabot) once every check on its head commit has passed. A pull request behind `main` gets `main` merged in and CI runs again. |
 | 1st of the month | `autorelease.yml` (propose) | When shipped files changed since the last release, opens "Release vX.Y.Z": a minor bump when `[Unreleased]` has `### Added` entries, else a patch bump (never a major one), the version in `Cargo.toml`, and a dated CHANGELOG section with the commit subjects. |
 | Daily | `autorelease.yml` (publish) | When `Cargo.toml` has a version with no tag yet and CI passed on `main`, creates the tag and starts `release.yml` on it. Never makes the very first release. |
-| On a release | `release.yml` | `dist` builds archives for Linux (x86_64, aarch64, musl), macOS (x86_64, arm64) and Windows (x86_64), the shell and PowerShell installers, the Homebrew formula (`unpatched.rb`, a release asset: there is no tap), checksums and attestations, and creates the GitHub release. Then `publish-crates.yml` (crates.io, one crate at a time in dependency order; versions already there are skipped, and when crates.io limits new crates it waits 11 minutes and tries again, up to about 85 minutes) and `publish-docker.yml` (`ghcr.io/amet13/unpatched`, amd64 and arm64) run in the `release` environment, then the MCP Registry entry (`server.json`) is updated; a failure of that last job does not fail the release. `action-e2e.yml` runs the Action with the released binary on Linux, macOS and Windows, and only then does the major tag (`v3`) move: it needs the GitHub release and that test, not crates.io or Docker, and it never moves backwards. |
+| On a release | `release.yml` | `dist` builds archives for Linux (x86_64, aarch64, musl), macOS (x86_64, arm64) and Windows (x86_64), the shell and PowerShell installers, the Homebrew formula (`unpatched.rb`, a release asset: there is no tap), checksums and attestations, and creates the GitHub release. Then `publish-docker.yml` (`ghcr.io/amet13/unpatched`, amd64 and arm64) runs in the `release` environment, then the MCP Registry entry (`server.json`) is updated; a failure of that last job does not fail the release. `action-e2e.yml` runs the Action with the released binary on Linux, macOS and Windows, and only then does the major tag (`v3`) move: it needs the GitHub release and that test, not Docker, and it never moves backwards. |
 | On changes to the docs | `pages.yml` | Builds the guide with mdBook and publishes it to GitHub Pages. Does nothing until `book.toml` exists. |
 | After any of the above, and hourly | `watchdog.yml` | Opens "Automation failed: …" when a run on `main`, a scheduled run, an automation branch or a release tag fails, and closes it when the newest run succeeds. A job that never got a runner is re-run once. The hourly sweep also covers runs the automation started itself, and restarts a run stuck in the queue. |
 | Weekly | `codeql.yml`, `scorecard.yml` | CodeQL for Rust and for the workflows, and the OpenSSF Scorecard. |
@@ -53,33 +53,26 @@ a red or missing check.
 
 Do these once. The workflows cannot do them for you.
 
-1. **Rename the repository** `Amet13/CVEWatch` to `Amet13/unpatched` (Settings →
-   General). GitHub redirects the old URLs. Tag the last Go commit `v2-final`
-   before the rewrite is merged: `git tag v2-final dba17e2 && git push origin v2-final`.
-   Delete the stray tags `rm` and `tm` (`git push origin :refs/tags/rm :refs/tags/tm`),
-   so no tag looks like a version to `autorelease.yml` or the Action.
-2. **Allow Actions to open pull requests:** Settings → Actions → General →
+1. **Mark the Go history:** tag the last Go commit `v2-final`
+   (`git tag v2-final dba17e2 && git push origin v2-final`) and delete the stray tags
+   `rm` and `tm` (`git push origin :refs/tags/rm :refs/tags/tm`), so no tag looks like
+   a version to `autorelease.yml` or the Action.
+2. **Turn on Issues and Dependabot alerts:** Settings → General → Features → Issues,
+   and Settings → Code security → Dependabot alerts. The watchdog and `build-db` report
+   problems as issues; with Issues off they only warn in the run's summary.
+3. **Allow Actions to open pull requests:** Settings → Actions → General →
    Workflow permissions → tick "Allow GitHub Actions to create and approve pull
    requests". Without it the maintenance workflows cannot open their pull requests.
-3. **Protect `main`:** a ruleset that requires the "CI passed" check (source:
+4. **Protect `main`:** a ruleset that requires the "CI passed" check (source:
    GitHub Actions). That one job passes only when every CI job passed or was
    skipped on purpose, so the list never needs updating when jobs change. Do not
    require reviews: the automation's merges would be refused.
-4. **Turn on GitHub Pages:** Settings → Pages → Source: GitHub Actions. The guide
+5. **Turn on GitHub Pages:** Settings → Pages → Source: GitHub Actions. The guide
    appears at `https://amet13.github.io/unpatched/` after `pages.yml` runs.
-5. **Create the `release` environment:** Settings → Environments → New
+6. **Create the `release` environment:** Settings → Environments → New
    environment → `release` (the first release run also creates it). Add yourself
-   as a required reviewer: crates.io and Docker publishing then wait for your
+   as a required reviewer: Docker publishing then waits for your
    approval, so a compromised dependency cannot publish with no person involved.
-6. **Add the crates.io token:** create an API token at crates.io (scope:
-   publish-new and publish-update for the `unpatched*` crates) and store it as the
-   repository secret `CARGO_REGISTRY_TOKEN` (not an environment secret: `release.yml`
-   passes it on to `publish-crates.yml`, and the `release` environment still asks
-   for your approval first). Without it, `publish-crates.yml` says so in the log
-   and publishes nothing. crates.io limits new crates to 5 at once, then one every
-   10 minutes, and `unpatched` has 7. Either ask crates.io for a higher limit first
-   (email <help@crates.io>), or let the job wait: it retries on the limit for up to
-   about 85 minutes, and if it still fails, re-run it (published crates are skipped).
 7. **Run `build-db` once by hand:** Actions → build-db → Run workflow. It creates
    the rolling `db` release. The action and the CLI need it. Check that the
    release is marked as a pre-release and not as the latest release.
@@ -88,8 +81,8 @@ Do these once. The workflows cannot do them for you.
 9. **Protect release tags (recommended):** Settings → Rules → New tag ruleset,
    target `v*.*.*`, restrict updates and deletions only. Do not restrict creations:
    `autorelease.yml` creates tags with `GITHUB_TOKEN`, which cannot be a bypass
-   actor. Do not cover the floating major tag (`v3`): `release.yml` moves it with a
-   force push, and `v*.*.*` does not match it.
+   actor. Do not cover the floating major tag (`v3`): `release.yml` moves it through
+   the API, and `v*.*.*` does not match it.
 10. **Make the first release by hand:** `CHANGELOG.md` already has the
     `## [3.0.0]` section (dist puts it in the release notes: check
     `dist plan --tag=v3.0.0 --output-format=json`, field `announcement_changelog`).
@@ -106,8 +99,7 @@ Change it in one pull request, in these places (they all say `1.100.0` now):
 
 - `rust-toolchain.toml` (`channel`): the one source. `release.yml` reads it for the
   release builds.
-- `toolchain:` in `ci.yml`, `build-db.yml`, `maintenance.yml`, `autorelease.yml` and
-  `publish-crates.yml`.
+- `toolchain:` in `ci.yml`, `build-db.yml`, `maintenance.yml` and `autorelease.yml`.
 - The tag of the `rust:` image in `docker/Dockerfile` (with its digest: look it up with
   `docker buildx imagetools inspect rust:<version>-alpine`).
 

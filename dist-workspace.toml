@@ -34,9 +34,9 @@ create-release = true
 pr-run-mode = "plan"
 # Third-party actions pinned to commits (tag in the comment of release.yml).
 github-action-commits = { "actions/checkout" = "3d3c42e5aac5ba805825da76410c181273ba90b1", "actions/upload-artifact" = "cf430e030ddbb5b0abf93d22962f4752f3646cd9", "actions/download-artifact" = "9000827ccba6bdab643e8b6fd33ac0654aef8333", "actions/attest" = "1e69f48acb82d1966a394da916b4c1698aa569d6" }
-# crates.io and the Docker image, after the GitHub release exists. Both run in the
+# The Docker image, after the GitHub release exists. It runs in the
 # `release` environment (reviewers can be required there).
-publish-jobs = ["./publish-crates", "./publish-docker"]
+publish-jobs = ["./publish-docker"]
 # The release.yml file is generated, then edited once to add `workflow_dispatch`
 # (autorelease.yml starts a release of an existing tag). `dist generate` therefore
 # leaves it alone.
@@ -51,5 +51,4 @@ aarch64-unknown-linux-musl = "ubuntu-latest"
 x86_64-pc-windows-msvc = "windows-latest"
 
 [dist.github-custom-job-permissions]
-publish-crates = { contents = "read" }
 publish-docker = { contents = "read", packages = "write", id-token = "write", attestations = "write" }

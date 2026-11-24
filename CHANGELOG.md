@@ -8,10 +8,6 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 
 ## [Unreleased]
 
-### Security
-
-- Release and CI workflows: `dist`, `cargo-zigbuild` and actionlint are installed from pinned, hash-checked downloads (no `curl | sh`); `release.yml` is read-only by default and moves the major tag through the API; the Dependabot labeller uses `pull_request` instead of `pull_request_target`; `workflow_run` jobs ignore runs from forks; CI runs zizmor.
-
 ## [3.0.0] - 2026-11-24
 
 ### Added
@@ -35,6 +31,7 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 
 ### Security
 
+- Release and CI workflows: `dist`, `cargo-zigbuild` and actionlint are installed from pinned, hash-checked downloads (no `curl | sh`); `release.yml` is read-only by default and moves the major tag through the API; the Dependabot labeller uses `pull_request` instead of `pull_request_target`; `workflow_run` jobs ignore runs from forks; CI runs zizmor.
 - The MCP server refuses a `config_path` by its name before looking at the file system, so a caller cannot learn which other files exist.
 - MCP `check_stack` only reads the server's own config file, or a file named `unpatched*.yml` or `unpatched*.yaml` under the server's working directory (links are resolved first). Before, any readable file could be named, and a YAML error could echo its content. Errors about a config file now give only the line and column.
 

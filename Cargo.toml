@@ -8,6 +8,8 @@ version = "3.0.0"
 edition = "2024"
 rust-version = "1.90"
 license = "MIT"
+# Not published to crates.io: install from releases, the Action, Docker or Git.
+publish = false
 repository = "https://github.com/Amet13/unpatched"
 homepage = "https://amet13.github.io/unpatched/"
 authors = ["Amet Umierov"]

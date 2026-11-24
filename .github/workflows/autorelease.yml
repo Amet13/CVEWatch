@@ -5,7 +5,7 @@
 #     section plus the commit subjects. automerge.yml merges it when CI passes;
 #   - daily, when the version in Cargo.toml has no tag yet and ci passed on main's head,
 #     it creates the tag and starts release.yml on it (dist builds, GitHub release;
-#     crates.io and the Docker image then wait for the `release` environment).
+#     the Docker image then waits for the `release` environment).
 # A tag made with GITHUB_TOKEN starts no workflow, so release.yml is dispatched on it.
 # The very first release (no `v3` or later tag exists) is never made here: that one is yours.
 # Tags before v3 are the Go CVEWatch releases and are ignored.
