@@ -10,6 +10,25 @@ Source: https://amet13.github.io/unpatched/index.html
 # What is unpatched
 
 
+<div class="unp-hero">
+<img src="assets/logo.svg" alt="">
+<p class="unp-title">Patch what matters, today.</p>
+<p class="unp-tagline">List what you run once. Every day unpatched checks it against open vulnerability data and speaks up only when something you run is affected: what to upgrade to, and how urgent it is.</p>
+<p>
+<a class="unp-btn primary" href="start-github.html">Start in 5 minutes</a>
+<a class="unp-btn" href="catalog.html">Supported products</a>
+<a class="unp-btn" href="https://github.com/Amet13/unpatched">GitHub</a>
+</p>
+</div>
+
+<p>
+<span class="unp-chip now">today</span> exploited, act now ·
+<span class="unp-chip week">this week</span> likely to be ·
+<span class="unp-chip eol">end of life</span> no more fixes ·
+<span class="unp-chip unknown">unknown</span> the data cannot say ·
+<span class="unp-chip fyi">FYI</span> affected, low urgency
+</p>
+
 unpatched tells you when software you run is affected by a vulnerability, which
 version to upgrade to, and whether the bug is being exploited. You write down
 what you run, with versions, in one file (`unpatched.yml`). Every day it checks
@@ -1160,7 +1179,7 @@ renderer's own test fixture, so the CVE text and numbers differ from the sample
 database):
 
 
-```markdown
+````markdown
 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
 
 This item is marked as internet-facing.
@@ -1183,7 +1202,7 @@ ignore:
 ```
 
 <!-- unpatched:item=office-firewall -->
-```
+````
 
 
 - The first line is the recommendation for the item: counts per bucket and the
@@ -1666,9 +1685,8 @@ A wrong name in the catalog would silently mean "no vulnerabilities". Three
 things guard against that:
 
 1. A person checks every entry against a real CVE record and NVD entry before it
-   is added, and sets `checked:` to that date. The evidence (the NVD hit counts,
-   the CNA names from real records, the KEV names and the endoflife slug) is kept in
-   `catalog/VERIFIED.md`.
+   is added, and sets `checked:` to that date. The pull request that adds or
+   changes an entry names the CVE records its CNA names were copied from.
 2. `cargo xtask catalog verify` re-checks the CPE, KEV and endoflife keys against
    the live sources. It runs weekly in the repository. It cannot check CNA keys,
    because CVE.org cannot be searched by vendor.
@@ -1677,9 +1695,14 @@ things guard against that:
    `unknown` finding with the rule `UNP-UNVERIFIED-PRODUCT`, so an empty result
    is never read as "safe".
 
-Known gaps are listed at the top of `catalog/VERIFIED.md`. For example, a few
-products have no CNA keys because every record names them `n/a`; matching uses
-the CPE (and KEV) keys for them.
+Known gaps:
+
+- `mariadb`, `proxmox-ve` and `phpmyadmin` have no CNA keys: every record names
+  the product `n/a`. They match on CPE (and KEV for phpMyAdmin).
+- `truenas` matches TrueNAS CORE only: TrueNAS SCALE has no CPE in NVD.
+- `docker-engine` has no KEV key: KEV only lists Docker Desktop.
+- Some products have no endoflife.date page, so their end of life is not checked
+  (see the table above).
 
 ## Ask for a product
 

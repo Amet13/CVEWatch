@@ -3,10 +3,10 @@
   "config": {
     "default": true,
     "MD013": false,
-    "MD033": { "allowed_elements": ["br", "details", "summary", "img", "picture", "source", "p", "a"] },
+    "MD033": { "allowed_elements": ["br", "details", "summary", "img", "picture", "source", "p", "a", "h1", "strong", "div", "span"] },
     "MD041": false,
     "MD024": { "siblings_only": true },
     "MD060": false
   },
-  "ignores": ["node_modules", "target", "book", "CHANGELOG.md", "PLAN.md", "docs/guide/SUMMARY.md"]
+  "ignores": ["node_modules", "target", "book", "CHANGELOG.md", "docs/guide/SUMMARY.md"]
 }

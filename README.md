@@ -1,8 +1,25 @@
-<p align="center"><img src="logo.png" alt="unpatched" width="140"></p>
+<p align="center"><img src="docs/guide/assets/logo.svg" alt="unpatched logo" width="112"></p>
 
-# unpatched
+<h1 align="center">unpatched</h1>
 
-**Hear about vulnerabilities only when something you run is affected.**
+<p align="center"><strong>Hear about vulnerabilities only when something you run is affected.</strong></p>
+
+<p align="center">
+  <a href="https://github.com/Amet13/unpatched/actions/workflows/ci.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml/badge.svg?branch=main" alt="Daily database"></a>
+  <a href="https://github.com/Amet13/unpatched/releases"><img src="https://img.shields.io/github/v/release/Amet13/unpatched?filter=v3*&amp;sort=semver&amp;label=release" alt="Latest release"></a>
+  <a href="https://crates.io/crates/unpatched"><img src="https://img.shields.io/crates/v/unpatched?label=crates.io" alt="crates.io"></a>
+  <a href="https://amet13.github.io/unpatched/"><img src="https://img.shields.io/badge/docs-guide-ff6b35" alt="Docs"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/Amet13/unpatched"><img src="https://api.scorecard.dev/projects/github.com/Amet13/unpatched/badge" alt="OpenSSF Scorecard"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22a565" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="https://amet13.github.io/unpatched/start-github.html">Quick start</a> ·
+  <a href="https://amet13.github.io/unpatched/">Guide</a> ·
+  <a href="https://amet13.github.io/unpatched/catalog.html">Supported products</a> ·
+  <a href="https://amet13.github.io/unpatched/with-an-agent.html">AI agents (MCP)</a>
+</p>
 
 You run software you did not write: a firewall, a VPN, a NAS, Nextcloud,
 PostgreSQL, Home Assistant. Dependabot and Trivy scan code and containers, not

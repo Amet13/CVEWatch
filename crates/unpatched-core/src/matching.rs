@@ -1,17 +1,17 @@
-//! From stack + data to findings. See ADR-0005 for how sources combine.
+//! From stack + data to findings.
 //!
 //! How a finding is made, for one stack item and one vulnerability:
 //!
 //! 1. Each source is judged on its own (`affected`, `not-affected` or
 //!    `unknown`) from the ranges it gave.
-//! 2. The verdicts are combined (ADR-0006): `affected` if any source says so
+//! 2. The verdicts are combined: `affected` if any source says so
 //!    from a specific range or version; `not-affected` only if every source
 //!    that has data says so and at least one has data; otherwise `unknown`.
 //!    An affected verdict that came only from an `all versions` constraint is
 //!    weak: when a source with specific ranges says the version is outside
 //!    them and every affected verdict is weak, the result is `unknown` with
 //!    `UNP-CONFLICT`. Disagreement adds `UNP-CONFLICT`.
-//! 3. An affected finding goes to `now`, `week` or `fyi` by its signals (ADR-0008). An
+//! 3. An affected finding goes to `now`, `week` or `fyi` by its signals. An
 //!    `unknown` finding is kept (bucket `unknown`) only when the signals
 //!    would have made it `now` or `week` if confirmed. The others are dropped
 //!    and not counted anywhere: the data cannot say whether they matter, and

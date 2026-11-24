@@ -1,7 +1,7 @@
 //! The `unpatched` SQLite database: build it from the sources, read it
 //! (as a [`unpatched_core::Dataset`]), download it.
 //!
-//! See `PLAN.md` §4 and §16. The schema is in [`schema`]; a database with a
+//! The schema is in [`schema`]; a database with a
 //! newer major `schema_version` than [`SCHEMA_VERSION`] is refused.
 
 mod build;

@@ -2,6 +2,25 @@
 
 <!-- description: What unpatched does, who it is for, and what it is not. -->
 
+<div class="unp-hero">
+<img src="assets/logo.svg" alt="">
+<p class="unp-title">Patch what matters, today.</p>
+<p class="unp-tagline">List what you run once. Every day unpatched checks it against open vulnerability data and speaks up only when something you run is affected: what to upgrade to, and how urgent it is.</p>
+<p>
+<a class="unp-btn primary" href="start-github.html">Start in 5 minutes</a>
+<a class="unp-btn" href="catalog.html">Supported products</a>
+<a class="unp-btn" href="https://github.com/Amet13/unpatched">GitHub</a>
+</p>
+</div>
+
+<p>
+<span class="unp-chip now">today</span> exploited, act now ·
+<span class="unp-chip week">this week</span> likely to be ·
+<span class="unp-chip eol">end of life</span> no more fixes ·
+<span class="unp-chip unknown">unknown</span> the data cannot say ·
+<span class="unp-chip fyi">FYI</span> affected, low urgency
+</p>
+
 unpatched tells you when software you run is affected by a vulnerability, which
 version to upgrade to, and whether the bug is being exploited. You write down
 what you run, with versions, in one file (`unpatched.yml`). Every day it checks

@@ -43,7 +43,7 @@ evidence, not a guess. Read `AGENTS.md` and `CONTEXT.md` first. Look at
    cargo xtask catalog verify     # network: checks cpe, KEV and eol keys
    ```
 
-   Fix every failure. Add a line for the new entry to `catalog/VERIFIED.md`:
+   Fix every failure. In the pull request description, record the evidence for the new entry:
    the CVE ids you took `cna` keys from, and the verify numbers. Never edit
    `crates/unpatched-catalog/src/catalog.generated.json` by hand.
 7. **Add a corpus case** in `corpus/<id>-<cve>/`, copying the shape of an

@@ -1,8 +1,12 @@
 # AGENTS.md
 
 Instructions for agents (and people) working on the `unpatched` repository.
-Read `PLAN.md` §2, §5 and §16 for what the product does and why, and
-`CONTEXT.md` for the words we use.
+`CONTEXT.md` has the words we use; `docs/guide/` is the user documentation.
+
+`unpatched` tells people who run software they did not write (firewalls, VPNs,
+NAS boxes, self-hosted apps, servers) when something they run is affected by a
+vulnerability, what to upgrade to, and how urgent it is. It runs as a daily
+GitHub Action in the user's private repository, as a CLI, or as an MCP server.
 
 ## Layout
 
@@ -39,6 +43,24 @@ test to get green. A wrong verdict is fixed by adding a failing corpus case firs
   or unparseable, the verdict is `unknown`, with the reason.
 - No model or heuristic decides a verdict. Every finding lists its evidence and rule ids.
 - Nothing needs an account or API key. Secrets only come from environment variables.
+
+## Decisions (do not reopen without a reason)
+
+- Open data only, no accounts or API keys: CVE.org, NVD feeds, OSV, CISA KEV,
+  EPSS, endoflife.date, Exploit-DB and Metasploit ids.
+- GitHub only, no servers: `build-db.yml` publishes the database daily on the
+  rolling `db` release; users' Actions download it.
+- The Action never commits. State lives in GitHub Issues (one issue per stack
+  item, plus a pinned status issue that holds the delivery state).
+- Versions are compared per product scheme (`crates/unpatched-core/src/version/`).
+  A version that does not parse gives `unknown`, never a guess.
+- Sources are judged one by one and combined: a specific `affected` from any
+  source wins; `not-affected` needs a source with ranges; weak evidence ("all
+  versions" only) never decides alone. Details in the `matching.rs` module docs.
+- Buckets rank by exploitation (KEV, SSVC, public exploits, EPSS, exposure), not
+  by CVSS alone.
+- Versions continue the CVEWatch line: Go was 2.x, `unpatched` is 3.x. The
+  Rust toolchain is pinned in `rust-toolchain.toml`. MIT license.
 
 ## Style
 

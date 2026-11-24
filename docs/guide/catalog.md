@@ -132,9 +132,8 @@ A wrong name in the catalog would silently mean "no vulnerabilities". Three
 things guard against that:
 
 1. A person checks every entry against a real CVE record and NVD entry before it
-   is added, and sets `checked:` to that date. The evidence (the NVD hit counts,
-   the CNA names from real records, the KEV names and the endoflife slug) is kept in
-   `catalog/VERIFIED.md`.
+   is added, and sets `checked:` to that date. The pull request that adds or
+   changes an entry names the CVE records its CNA names were copied from.
 2. `cargo xtask catalog verify` re-checks the CPE, KEV and endoflife keys against
    the live sources. It runs weekly in the repository. It cannot check CNA keys,
    because CVE.org cannot be searched by vendor.
@@ -143,9 +142,14 @@ things guard against that:
    `unknown` finding with the rule `UNP-UNVERIFIED-PRODUCT`, so an empty result
    is never read as "safe".
 
-Known gaps are listed at the top of `catalog/VERIFIED.md`. For example, a few
-products have no CNA keys because every record names them `n/a`; matching uses
-the CPE (and KEV) keys for them.
+Known gaps:
+
+- `mariadb`, `proxmox-ve` and `phpmyadmin` have no CNA keys: every record names
+  the product `n/a`. They match on CPE (and KEV for phpMyAdmin).
+- `truenas` matches TrueNAS CORE only: TrueNAS SCALE has no CPE in NVD.
+- `docker-engine` has no KEV key: KEV only lists Docker Desktop.
+- Some products have no endoflife.date page, so their end of life is not checked
+  (see the table above).
 
 ## Ask for a product
 

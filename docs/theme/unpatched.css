@@ -203,3 +203,7 @@ blockquote { border-radius: 0 var(--unp-radius) var(--unp-radius) 0; border-inli
   .unp-hero { padding: 1.6em 1.2em; }
   .unp-hero .unp-title { font-size: 2em; }
 }
+
+/* Hero links keep the hero's colours (more specific than `.content a`). */
+.content .unp-hero a.unp-btn { color: #f4f1ea; }
+.content .unp-hero a.unp-btn.primary { color: #12141c; }

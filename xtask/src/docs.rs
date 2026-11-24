@@ -265,7 +265,15 @@ fn generate(name: &str) -> Result<String> {
 }
 
 fn fenced(lang: &str, text: &str) -> String {
-    format!("```{lang}\n{}\n```", text.trim_end())
+    // A fence longer than any run of backticks in the text, so a code block
+    // inside the example (an issue body with a YAML snippet) cannot close it.
+    let longest = text
+        .split(|c| c != '`')
+        .map(str::len)
+        .max()
+        .unwrap_or(0);
+    let fence = "`".repeat(longest.max(2) + 1);
+    format!("{fence}{lang}\n{}\n{fence}", text.trim_end())
 }
 
 fn template_config() -> String {
@@ -439,11 +447,11 @@ fn snapshot_body(name: &str) -> Result<String> {
 
 fn example_issue() -> Result<String> {
     let body = snapshot_body("render__tests__issue_item_now")?;
-    Ok(format!("```markdown\n{body}\n```"))
+    Ok(fenced("markdown", &body))
 }
 
 fn example_snapshot(name: &str) -> Result<String> {
-    Ok(format!("```text\n{}\n```", snapshot_body(name)?))
+    Ok(fenced("text", &snapshot_body(name)?))
 }
 
 // ---- config reference (from the JSON Schema)

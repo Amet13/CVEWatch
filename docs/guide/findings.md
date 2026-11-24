@@ -78,7 +78,7 @@ database):
 
 <!-- generated:start example-issue -->
 
-```markdown
+````markdown
 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
 
 This item is marked as internet-facing.
@@ -101,7 +101,7 @@ ignore:
 ```
 
 <!-- unpatched:item=office-firewall -->
-```
+````
 
 <!-- generated:end -->
 
