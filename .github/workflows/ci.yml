@@ -141,8 +141,20 @@ jobs:
           persist-credentials: false
       - name: shellcheck
         run: shellcheck .github/scripts/*.sh
+      # The official image, pinned by digest (Dependabot's docker updates do not reach
+      # this line; bump the tag and digest together).
       - name: actionlint
-        run: pipx run actionlint-py==1.7.12.25 -color
+        run: >-
+          docker run --rm -v "$PWD:/repo" --workdir /repo
+          rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+          -color
+      # Security lint for workflows and the Action (template injection, dangerous
+      # triggers, unpinned code, broad permissions). Fails on medium and above.
+      - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
+        with:
+          tool: zizmor
+      - name: zizmor
+        run: zizmor --offline --min-severity medium --format github .github/workflows action.yml .github/actions
 
   action:
     name: action smoke test

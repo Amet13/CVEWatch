@@ -12,7 +12,9 @@
 name: watchdog
 
 on:
-  workflow_run:
+  # Reviewed: reads run results through the API and files issues; it never checks out or
+  # runs code from the run it reports on, and ignores runs from forks.
+  workflow_run:  # zizmor: ignore[dangerous-triggers]
     workflows:
       - ci
       - codeql
@@ -68,6 +70,7 @@ jobs:
       github.event_name == 'workflow_run' &&
       contains(fromJSON('["failure","timed_out","startup_failure","success"]'), github.event.workflow_run.conclusion) &&
       github.event.workflow_run.event != 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
       (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.event == 'schedule' ||
        startsWith(github.event.workflow_run.head_branch, 'automation/') ||
        (startsWith(github.event.workflow_run.head_branch, 'v') &&

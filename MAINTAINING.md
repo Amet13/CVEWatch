@@ -116,6 +116,26 @@ sure nothing is left. The MSRV (`rust-version` in `Cargo.toml`, and the `msrv` j
 `ci.yml`) is separate: raise it only when the code needs it. `maintenance.yml` opens
 "A newer Rust is out" on Thursdays when the pin is behind.
 
+## Bumping dist
+
+The release build installs `dist` (cargo-dist) through
+`.github/actions/install-dist`, which checks every download against a SHA-256:
+the shell installer for Linux and macOS (it carries the checksums of the archives
+it fetches), and the Windows zip directly. To move to a new dist version:
+
+1. Change `cargo-dist-version` in `dist-workspace.toml` and run `dist generate`;
+   keep the edits marked `# CUSTOM` in `release.yml`.
+2. In `.github/actions/install-dist/action.yml`, set `DIST_VERSION` and the two
+   hashes: `sha256sum` of `cargo-dist-installer.sh` and of
+   `cargo-dist-x86_64-pc-windows-msvc.zip` from that dist release (the release
+   also lists them in `*.sha256` files).
+3. If dist's build needs other tools, pin them the same way. `cargo-zigbuild` for
+   the aarch64 Linux build is pinned with hashes in
+   `.github/requirements/zigbuild.txt`.
+
+The CI `workflows and scripts` job runs zizmor; an unpinned download or a new
+`curl | sh` fails it.
+
 ## Turning it off
 
 Disable a workflow under Actions → the workflow → "Disable workflow". Any task of

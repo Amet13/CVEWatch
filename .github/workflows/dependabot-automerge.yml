@@ -1,10 +1,14 @@
 # Labels Dependabot's patch and minor updates (and Docker digest updates, such as a new
 # base image) with `automerge`; automerge.yml merges them once every check passes.
 # Major updates stay open for a person. Never checks out the pull request's code.
+#
+# `pull_request`, not `pull_request_target`: GitHub runs Dependabot's pull_request
+# workflows with a token limited to the permissions below, which is all labelling
+# needs, and nothing here runs with the base branch's secrets on untrusted code.
 name: Dependabot auto-merge
 
 on:
-  pull_request_target:
+  pull_request:
     branches: [main]
 
 permissions:
