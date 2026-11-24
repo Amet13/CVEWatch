@@ -34,7 +34,9 @@ a red or missing check.
   3.0.0, goes out this way). `patch`, `minor`, `major` or `auto` open a "Release
   vX.Y.Z" pull request with the version and the changelog; it merges when CI passes
   and is published right after. The monthly run proposes `auto` releases on its own
-  when shipped files changed.
+  when shipped files changed. If a release run fails before it publishes (the tag
+  exists but there is no GitHub release), fix the cause on `main` and run `publish`
+  again: it moves the tag to `main`'s head and retries.
 - **Major updates.** Dependabot's major-version pull requests are not labelled
   `automerge`. Read the changelog of the dependency, then merge or close.
 - **Wrong verdicts.** Each report becomes a failing corpus case, then a fix. A
@@ -82,7 +84,9 @@ Do these once. The workflows cannot do them for you.
    target `v*.*.*`, restrict updates and deletions only. Do not restrict creations:
    `autorelease.yml` creates tags with `GITHUB_TOKEN`, which cannot be a bypass
    actor. Do not cover the floating major tag (`v3`): `release.yml` moves it through
-   the API, and `v*.*.*` does not match it.
+   the API, and `v*.*.*` does not match it. With updates restricted, a release run
+   that fails before publishing cannot be retried by moving its tag: delete the tag
+   (Code → Tags), then run `publish` again.
 10. **Release 3.0.0:** Actions → autorelease → Run workflow → `publish`. It waits
     for CI on `main`, creates the `v3.0.0` tag and starts `release.yml`. The notes
     come from the `## [3.0.0]` section of `CHANGELOG.md`.

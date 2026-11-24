@@ -147,11 +147,21 @@ jobs:
         shell: bash
         env:
           TARGETS: ${{ join(matrix.targets, ' ') }}
+        # Every component rust-toolchain.toml lists is installed here, up front. Missing
+        # ones would be added by rustup on the first cargo call instead, and cargo-zigbuild
+        # (the aarch64 musl build) starts several at once: two rustups adding rustfmt at
+        # the same time fail with "detected conflict: 'bin/cargo-fmt'".
         run: |
+          set -euo pipefail
           version="$(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)"
-          rustup toolchain install "$version" --profile minimal
-          for target in $TARGETS; do rustup target add --toolchain "$version" "$target"; done
+          args=()
+          for c in $(sed -n 's/^components *= *\[\(.*\)\]/\1/p' rust-toolchain.toml | tr -d '" ' | tr ',' ' '); do
+            args+=(--component "$c")
+          done
+          for target in $TARGETS; do args+=(--target "$target"); done
+          rustup toolchain install "$version" --profile minimal "${args[@]}"
           rustc "+$version" --version
+          rustup component list --toolchain "$version" --installed
       # CUSTOM: hash-checked install instead of the generated `curl | sh` / `irm | iex`.
       - name: Install dist
         uses: ./.github/actions/install-dist
