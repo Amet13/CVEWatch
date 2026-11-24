@@ -27,6 +27,12 @@ pub enum DbError {
         "this database needs a newer unpatched (schema version {found}, this build reads up to {supported}); run `unpatched db update` after upgrading"
     )]
     NewerSchema { found: u32, supported: u32 },
+    /// A range or exploit row names a source this build does not know, so
+    /// reading it would silently drop findings.
+    #[error(
+        "this database needs a newer unpatched (it holds data from the source {source_name:?}, which this build does not know); upgrade unpatched, then run `unpatched db update`"
+    )]
+    UnknownSource { source_name: String },
     /// The file is not a database this program made.
     #[error(
         "{path} is not an unpatched database ({reason}). Run `unpatched db update` to download one"
