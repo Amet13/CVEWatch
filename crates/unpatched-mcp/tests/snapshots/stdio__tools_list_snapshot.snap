@@ -11,13 +11,37 @@ expression: tools
       "readOnlyHint": true,
       "title": "Check the stack"
     },
-    "description": "Check every item in unpatched.yml against the vulnerability database and return the report: findings sorted by urgency (now, week, eol, unknown, fyi) with verdict, rules, evidence and fixed_in. Package (purl) items are looked up in OSV unless the server runs offline.",
+    "description": "Check every item in unpatched.yml against the vulnerability database. Always returns `summary` (counts per bucket) and `items` (one per stack item, with the upgrade that fixes the most), plus `findings` sorted by urgency (now, week, eol, unknown, fyi) with verdict, rules and fixed_in. By default only now, week, eol and unknown findings come back, at most 50, without evidence: ask for more with `bucket`, `limit` and `include_evidence`. Package (purl) items are looked up in OSV unless the server runs offline.",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
+        "bucket": {
+          "description": "Which buckets to list findings from. Default: now, week, eol, unknown (not fyi).",
+          "items": {
+            "enum": [
+              "now",
+              "week",
+              "eol",
+              "unknown",
+              "fyi"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
         "config_path": {
-          "description": "Path to unpatched.yml. Defaults to the server's configured file.",
+          "description": "Path to unpatched.yml. Only the server's configured file, or a file named unpatched*.yml or unpatched*.yaml under the server's working directory, is allowed. Defaults to the server's configured file.",
           "type": "string"
+        },
+        "include_evidence": {
+          "description": "Add the evidence and reference links to each finding (large). Default false.",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "At most this many findings (default 50). `summary` always has the full counts.",
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
         }
       },
       "type": "object"
@@ -49,6 +73,10 @@ expression: tools
           ],
           "type": "string"
         },
+        "include_raw": {
+          "description": "Give each source's full text in the structured result. Default false: it is cut to about 200 characters.",
+          "type": "boolean"
+        },
         "product": {
           "description": "Catalog product id or alias, e.g. fortios.",
           "type": "string"
@@ -71,17 +99,21 @@ expression: tools
     "annotations": {
       "destructiveHint": false,
       "idempotentHint": true,
-      "openWorldHint": false,
+      "openWorldHint": true,
       "readOnlyHint": true,
-      "title": "Explain a CVE or a rule"
+      "title": "Explain a CVE, a rule or a finding"
     },
-    "description": "Explain a vulnerability id (CVE or advisory id: summary, CVSS, affected ranges per source, exploitation signals) or a rule id such as UNP-KEV (what it means and why it puts a finding in a bucket).",
+    "description": "Explain a vulnerability id (CVE or advisory id: summary, CVSS, affected ranges per source, exploitation signals), a rule id such as UNP-KEV (what it means and why it puts a finding in a bucket), or a finding key from `check_stack` such as office-firewall/CVE-2024-21762 (judged with the server's configured unpatched.yml).",
     "inputSchema": {
       "additionalProperties": false,
       "properties": {
         "id": {
-          "description": "A CVE or advisory id (CVE-2024-21762) or a rule id (UNP-KEV).",
+          "description": "A CVE or advisory id (CVE-2024-21762), a rule id (UNP-KEV) or a finding key (office-firewall/CVE-2024-21762).",
           "type": "string"
+        },
+        "include_raw": {
+          "description": "Give each source's full text in the structured result. Default false: it is cut to about 200 characters.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -90,7 +122,7 @@ expression: tools
       "type": "object"
     },
     "name": "explain",
-    "title": "Explain a CVE or a rule"
+    "title": "Explain a CVE, a rule or a finding"
   },
   {
     "annotations": {
