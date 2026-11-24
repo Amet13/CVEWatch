@@ -176,12 +176,12 @@ fn gives_up_after_three_attempts() {
     let sums = format!("{}  a.zst\n", sha(b"expected"));
     let hits = Arc::new(Mutex::new(0));
     let seen = hits.clone();
-    let base = serve(Box::new(move |path| match path {
-        "/SHA256SUMS" => (200, sums.clone().into_bytes()),
-        _ => {
-            *seen.lock().unwrap() += 1;
-            (200, b"other".to_vec())
+    let base = serve(Box::new(move |path| {
+        if path == "/SHA256SUMS" {
+            return (200, sums.clone().into_bytes());
         }
+        *seen.lock().unwrap() += 1;
+        (200, b"other".to_vec())
     }));
     let dir = tempfile::tempdir().unwrap();
     let err = dl(&format!("{base}/a.zst"), dir.path(), &http()).unwrap_err();
