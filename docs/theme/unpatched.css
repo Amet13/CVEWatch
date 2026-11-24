@@ -1,17 +1,16 @@
 /* unpatched guide: the same voice as the landing page.
-   White paper, black ink, serif for reading, grotesque for the interface,
+   White paper, black ink, one family (Atkinson Hyperlegible Next and Mono),
    red only for "fix today". Fonts come from the site root (/unpatched/assets/fonts),
-   so the guide requests nothing from anyone else; locally they fall back to Georgia. */
+   so the guide requests nothing from anyone else; locally they fall back to system fonts. */
 
-@font-face { font-family: "Literata"; src: url("../../../assets/fonts/literata-var.woff2") format("woff2"); font-weight: 200 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "Literata"; src: url("../../../assets/fonts/literata-italic-var.woff2") format("woff2"); font-weight: 200 900; font-style: italic; font-display: swap; }
-@font-face { font-family: "Archivo"; src: url("../../../assets/fonts/archivo-var.woff2") format("woff2"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
-@font-face { font-family: "JetBrains Mono"; src: url("../../../assets/fonts/jetbrains-mono-var.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("../../../assets/fonts/atkinson-next-var.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("../../../assets/fonts/atkinson-next-italic-var.woff2") format("woff2"); font-weight: 200 800; font-style: italic; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Mono"; src: url("../../../assets/fonts/atkinson-mono-var.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
 
 :root {
   --unp-red: #c8102e;
   --content-max-width: 760px;
-  --mono-font: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --mono-font: "Atkinson Hyperlegible Mono", ui-monospace, Menlo, Consolas, monospace;
   --code-font-size: .86em;
 }
 
@@ -41,14 +40,14 @@
   --unp-red: #ff5c64; --color-scheme: dark;
 }
 
-html { font-family: "Literata", Georgia, "Times New Roman", serif; font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
+html { font-family: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 .content main { font-size: 1.8rem; line-height: 1.65; }
 /* mdBook sets html { font-size: 62.5% }, so 1rem is 10px here. */
 
 /* Interface in the grotesque. */
-#menu-bar, .sidebar, .nav-chapters, .mobile-nav-chapters, #searchbar, .searchresults-header { font-family: "Archivo", ui-sans-serif, system-ui, sans-serif; }
+#menu-bar, .sidebar, .nav-chapters, .mobile-nav-chapters, #searchbar, .searchresults-header { font-family: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif; }
 #menu-bar { border-top: 5px solid var(--fg); border-bottom: 1px solid var(--fg); }
-.menu-title { font-family: "Archivo", ui-sans-serif, sans-serif; font-weight: 750; letter-spacing: -.02em; }
+.menu-title { font-family: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif; font-weight: 750; letter-spacing: -.02em; }
 .sidebar { border-right: 1px solid var(--sidebar-spacer); }
 .chapter li.chapter-item { line-height: 1.45; }
 .chapter li a { font-size: 1.5rem; }
@@ -56,8 +55,8 @@ html { font-family: "Literata", Georgia, "Times New Roman", serif; font-optical-
 .chapter li.part-title { color: var(--fg); font-weight: 700; font-size: 1.5rem; margin-top: 1.4em; padding-bottom: 4px; border-bottom: 1px solid var(--sidebar-spacer); }
 
 /* Headings: serif, sentence case, rules instead of colour. */
-.content h1, .content h2, .content h3, .content h4 { font-family: "Literata", Georgia, serif; font-weight: 650; letter-spacing: -.012em; }
-.content h1 { font-size: 4.2rem; line-height: 1.08; margin: .5em 0 .6em; font-variation-settings: "opsz" 72; }
+.content h1, .content h2, .content h3, .content h4 { font-family: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif; font-weight: 800; letter-spacing: -.02em; }
+.content h1 { font-size: 4.2rem; line-height: 1.08; margin: .5em 0 .6em; }
 .content h2 { font-size: 2.7rem; margin-top: 2.2em; padding-top: .7em; border-top: 1px solid var(--table-border-color); }
 .content h3 { font-size: 2.1rem; }
 .content a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
@@ -70,7 +69,7 @@ pre { border-radius: 4px; }
 pre > code.hljs { padding: 1em 1.1em; font-size: .86em; }
 
 /* Tables: rules between rows, nothing else. */
-.content table { border-collapse: collapse; font-family: "Archivo", ui-sans-serif, sans-serif; font-size: .92em; }
+.content table { border-collapse: collapse; font-family: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif; font-size: .92em; }
 .content table thead th { font-weight: 700; text-align: left; border: 0; border-bottom: 2px solid var(--fg); background: transparent; }
 .content table td, .content table th { border: 0; border-bottom: 1px solid var(--table-border-color); padding: .5em .9em .5em 0; }
 .content table tr:nth-child(2n) { background: transparent; }
