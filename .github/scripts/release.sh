@@ -4,7 +4,7 @@
 #   release.sh version          the version in [workspace.package] of Cargo.toml
 #   release.sh next             the next version: a minor bump when `## [Unreleased]` in
 #                               CHANGELOG.md has an `### Added` section, else a patch bump
-#                               (never a major bump: 1.0.0 and 2.0.0 are for a person)
+#                               (never a major bump: a new major version is for a person)
 #   release.sh notes <tag>      the commit subjects since <tag>, one per line, with the
 #                               dependency bumps folded into one line
 #   release.sh bump <next> <tag>

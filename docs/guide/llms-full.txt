@@ -227,7 +227,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: amet13/unpatched@v0
+      - uses: amet13/unpatched@v3
         # Only for the chat channels you turned on in unpatched.yml.
         # Add each value as a repository secret first (Settings > Secrets and variables > Actions).
         # env:
@@ -247,8 +247,8 @@ built at 02:41 UTC; the default run time is 06:17 UTC, a few hours later. Pick
 another time if you like, but a run before 02:41 UTC uses the day-old database,
 which is fine.
 
-`amet13/unpatched@v0` runs the newest `v0.x.y` release. To pin one exact
-release, use its full tag, such as `@v0.1.0`. See [GitHub Action](action.md).
+`amet13/unpatched@v3` runs the newest `v3.x.y` release. To pin one exact
+release, use its full tag, such as `@v3.0.0`. See [GitHub Action](action.md).
 
 ## 4. Commit, push and run it once
 
@@ -308,7 +308,7 @@ run the workflow by hand again, or run `unpatched check` on your machine
 Run the Action with `dry-run: true` to print what would happen and send nothing:
 
 ```yaml
-      - uses: amet13/unpatched@v0
+      - uses: amet13/unpatched@v3
         with:
           dry-run: "true"
 ```
@@ -703,7 +703,7 @@ else (a static build on a distroless base, running as a non-root user). It is
 for a homelab server or a NAS that can run a scheduled container, when you do not
 want GitHub Actions.
 
-Tags: a full version (`0.1.0`), `0.1`, `0` and `latest`. Pin a version if you want
+Tags: a full version (`3.0.0`), `3.0`, `3` and `latest`. Pin a version if you want
 upgrades to be your decision. The image is built for `linux/amd64` and
 `linux/arm64`.
 
@@ -1605,7 +1605,7 @@ step-by-step setup is on [Start with GitHub](start-github.md).
 
 ```yaml
 - uses: actions/checkout@v7
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
 ```
 
 It needs `actions/checkout` before it (to read `unpatched.yml`) and the job
@@ -1623,10 +1623,10 @@ Windows, arm64.
 | `config` | `unpatched.yml` | Path to your stack file. |
 | `db` | empty | Path to a database file. Empty: download the daily database. |
 | `dry-run` | `false` | Send nothing and write no issues; only print what would happen. |
-| `version` | empty | The unpatched release to run, like v0.1.0 or v0 (the newest v0.x.y). Empty: the version in the tag you used (`uses: amet13/unpatched@v0.1.0`), else the latest release. |
+| `version` | empty | The unpatched release to run, like v3.0.0 or v3 (the newest v3.x.y). Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest release. |
 
 
-`version` takes a full tag (`v0.1.0`), or a major or minor prefix (`v0`, `v0.1`),
+`version` takes a full tag (`v3.0.0`), or a major or minor prefix (`v3`, `v3.0`),
 which means the newest published release that starts with it. It defaults to the
 version in the tag you wrote after `@`, and to the latest release when that is a
 branch or a commit. The checksum comes from the `.sha256` file of the same
@@ -1649,7 +1649,7 @@ Actions tab and sends GitHub's own failure email.
 The Action reads secrets from the environment of the step. Set the ones you use:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   env:
     UNPATCHED_TELEGRAM_TOKEN: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
     UNPATCHED_SLACK_WEBHOOK: ${{ secrets.UNPATCHED_SLACK_WEBHOOK }}
@@ -1662,14 +1662,14 @@ Names for each channel are on [Notifications](notifications.md).
 **Pin an exact release**, so an upgrade is your decision:
 
 ```yaml
-- uses: amet13/unpatched@v0.1.0
+- uses: amet13/unpatched@v3.0.0
 ```
 
 **Try it without side effects.** Prints what would happen; opens no issues and
 sends nothing:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     dry-run: "true"
 ```
@@ -1677,7 +1677,7 @@ sends nothing:
 **Fail the run on a "fix today" finding**, and see more in the summary:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     args: --exit-code --verbose
 ```
@@ -1685,7 +1685,7 @@ sends nothing:
 **Another config path**, if the file is not called `unpatched.yml` or is in a folder:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     config: infra/stack.yml
 ```
@@ -1698,7 +1698,7 @@ MSP uses one private repository per client.
 **A database you built or downloaded yourself:**
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     db: ./unpatched-db.sqlite
 ```
@@ -2620,7 +2620,7 @@ rate limits (the database is prebuilt), and date and CVSS filters.
 
 ## Versions and the old releases
 
-unpatched starts at version 0.1.0 and will be 1.0.0 at launch. Go releases remain
+unpatched continues the version line: CVEWatch was 2.x, unpatched starts at 3.0.0. Go releases remain
 under the 1.x and 2.x numbers and are not updated. If you need the old tool, take
 a release from the [releases page](https://github.com/Amet13/unpatched/releases)
 or check out the `v2-final` tag. It is not maintained and will not get fixes.

@@ -9,7 +9,7 @@ step-by-step setup is on [Start with GitHub](start-github.md).
 
 ```yaml
 - uses: actions/checkout@v7
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
 ```
 
 It needs `actions/checkout` before it (to read `unpatched.yml`) and the job
@@ -28,11 +28,11 @@ Windows, arm64.
 | `config` | `unpatched.yml` | Path to your stack file. |
 | `db` | empty | Path to a database file. Empty: download the daily database. |
 | `dry-run` | `false` | Send nothing and write no issues; only print what would happen. |
-| `version` | empty | The unpatched release to run, like v0.1.0 or v0 (the newest v0.x.y). Empty: the version in the tag you used (`uses: amet13/unpatched@v0.1.0`), else the latest release. |
+| `version` | empty | The unpatched release to run, like v3.0.0 or v3 (the newest v3.x.y). Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest release. |
 
 <!-- generated:end -->
 
-`version` takes a full tag (`v0.1.0`), or a major or minor prefix (`v0`, `v0.1`),
+`version` takes a full tag (`v3.0.0`), or a major or minor prefix (`v3`, `v3.0`),
 which means the newest published release that starts with it. It defaults to the
 version in the tag you wrote after `@`, and to the latest release when that is a
 branch or a commit. The checksum comes from the `.sha256` file of the same
@@ -55,7 +55,7 @@ Actions tab and sends GitHub's own failure email.
 The Action reads secrets from the environment of the step. Set the ones you use:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   env:
     UNPATCHED_TELEGRAM_TOKEN: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
     UNPATCHED_SLACK_WEBHOOK: ${{ secrets.UNPATCHED_SLACK_WEBHOOK }}
@@ -68,14 +68,14 @@ Names for each channel are on [Notifications](notifications.md).
 **Pin an exact release**, so an upgrade is your decision:
 
 ```yaml
-- uses: amet13/unpatched@v0.1.0
+- uses: amet13/unpatched@v3.0.0
 ```
 
 **Try it without side effects.** Prints what would happen; opens no issues and
 sends nothing:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     dry-run: "true"
 ```
@@ -83,7 +83,7 @@ sends nothing:
 **Fail the run on a "fix today" finding**, and see more in the summary:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     args: --exit-code --verbose
 ```
@@ -91,7 +91,7 @@ sends nothing:
 **Another config path**, if the file is not called `unpatched.yml` or is in a folder:
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     config: infra/stack.yml
 ```
@@ -104,7 +104,7 @@ MSP uses one private repository per client.
 **A database you built or downloaded yourself:**
 
 ```yaml
-- uses: amet13/unpatched@v0
+- uses: amet13/unpatched@v3
   with:
     db: ./unpatched-db.sqlite
 ```

@@ -1,5 +1,6 @@
 ---
 source: crates/unpatched/tests/cli.rs
+assertion_line: 118
 expression: out
 ---
 {
@@ -240,7 +241,7 @@ expression: out
               }
             }
           ],
-          "version": "0.1.0"
+          "version": "3.0.0"
         }
       }
     }

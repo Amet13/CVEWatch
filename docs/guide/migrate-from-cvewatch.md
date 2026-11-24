@@ -68,7 +68,7 @@ rate limits (the database is prebuilt), and date and CVSS filters.
 
 ## Versions and the old releases
 
-unpatched starts at version 0.1.0 and will be 1.0.0 at launch. Go releases remain
+unpatched continues the version line: CVEWatch was 2.x, unpatched starts at 3.0.0. Go releases remain
 under the 1.x and 2.x numbers and are not updated. If you need the old tool, take
 a release from the [releases page](https://github.com/Amet13/unpatched/releases)
 or check out the `v2-final` tag. It is not maintained and will not get fixes.

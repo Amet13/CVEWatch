@@ -7,7 +7,7 @@ else (a static build on a distroless base, running as a non-root user). It is
 for a homelab server or a NAS that can run a scheduled container, when you do not
 want GitHub Actions.
 
-Tags: a full version (`0.1.0`), `0.1`, `0` and `latest`. Pin a version if you want
+Tags: a full version (`3.0.0`), `3.0`, `3` and `latest`. Pin a version if you want
 upgrades to be your decision. The image is built for `linux/amd64` and
 `linux/arm64`.
 

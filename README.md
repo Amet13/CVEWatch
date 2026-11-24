@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: amet13/unpatched@v0
+      - uses: amet13/unpatched@v3
 ```
 
 Push, then run the workflow once from the Actions tab. Find product ids with
@@ -115,7 +115,7 @@ Telegram, Slack and the others, is in
 
 | How | Command |
 | --- | --- |
-| GitHub Action | `uses: amet13/unpatched@v0` (downloads the release binary and checks its SHA-256) |
+| GitHub Action | `uses: amet13/unpatched@v3` (downloads the release binary and checks its SHA-256) |
 | Shell (Linux, macOS) | `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.sh \| sh` |
 | PowerShell (Windows) | `powershell -ExecutionPolicy Bypass -c "irm https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.ps1 \| iex"` |
 | Homebrew | Download `unpatched.rb` from the [latest release](https://github.com/Amet13/unpatched/releases/latest), then `brew install --formula ./unpatched.rb` (there is no tap) |

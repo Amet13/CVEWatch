@@ -15,7 +15,7 @@ The project, the crate, the command and the config file are called
 The repository `Amet13/CVEWatch` is renamed to `Amet13/unpatched` at launch.
 GitHub redirects the old URLs.
 
-The version starts again at `0.1.0` and `1.0.0` comes at launch. The Go
+The version line continues: CVEWatch was 2.x (Go), unpatched starts at `3.0.0`. The Go
 releases stay listed as `v2.x`, and the last Go commit has the tag `v2-final`.
 
 ## Consequences

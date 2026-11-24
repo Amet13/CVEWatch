@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: amet13/unpatched@v0
+      - uses: amet13/unpatched@v3
         # Only for the chat channels you turned on in unpatched.yml.
         # Add each value as a repository secret first (Settings > Secrets and variables > Actions).
         # env:

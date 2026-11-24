@@ -8,8 +8,8 @@ branding:
 inputs:
   version:
     description: >-
-      The unpatched release to run, like v0.1.0 or v0 (the newest v0.x.y).
-      Empty: the version in the tag you used (`uses: amet13/unpatched@v0.1.0`), else the latest release.
+      The unpatched release to run, like v3.0.0 or v3 (the newest v3.x.y).
+      Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest release.
     required: false
     default: ""
   binary:
@@ -59,15 +59,15 @@ runs:
           v[0-9]*.[0-9]*.[0-9]*)
             tag="$want" ;;
           v[0-9]*)
-            # v0 or v0.1: the newest release that starts with it.
+            # v3 or v3.0: the newest release that starts with it.
             prefix="${want}."
             tag="$(gh api "repos/$repo/releases?per_page=100" --jq "[.[] | select(.prerelease == false and .draft == false) | .tag_name | select(startswith(\"$prefix\"))] | .[0] // empty")"
             if [ -z "$tag" ]; then
-              echo "::error::No release of $repo starts with $prefix. Use a full version such as v0.1.0."
+              echo "::error::No release of $repo starts with $prefix. Use a full version such as v3.0.0."
               exit 1
             fi ;;
           *)
-            echo "::error::version must look like v0.1.0 or v0, not '$want'."
+            echo "::error::version must look like v3.0.0 or v3, not '$want'."
             exit 1 ;;
         esac
         case "$RUNNER_OS_NAME/$RUNNER_ARCH_NAME" in

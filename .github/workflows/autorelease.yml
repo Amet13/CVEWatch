@@ -7,7 +7,8 @@
 #     it creates the tag and starts release.yml on it (dist builds, GitHub release;
 #     crates.io and the Docker image then wait for the `release` environment).
 # A tag made with GITHUB_TOKEN starts no workflow, so release.yml is dispatched on it.
-# The very first release (no `v*` tag exists) is never made here: that one is yours.
+# The very first release (no `v3` or later tag exists) is never made here: that one is yours.
+# Tags before v3 are the Go CVEWatch releases and are ignored.
 name: autorelease
 
 on:
@@ -46,7 +47,7 @@ jobs:
       - id: need
         name: Is a release due?
         run: |
-          last="$(git tag --list 'v[0-9]*' --sort=-version:refname | head -n 1)"
+          last="$(git tag --list 'v[3-9].*' 'v[1-9][0-9]*.*' --sort=-version:refname | head -n 1)"
           if [ -z "$last" ]; then
             echo "No release exists yet: the first one is made by a person."
             echo "due=false" >> "$GITHUB_OUTPUT"; exit 0
@@ -103,7 +104,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$(git tag --list 'v[0-9]*' | head -n 1)" ]; then
+          if [ -z "$(git tag --list 'v[3-9].*' 'v[1-9][0-9]*.*' | head -n 1)" ]; then
             echo "No release exists yet: the first one is made by a person."; exit 0
           fi
           v="$(bash .github/scripts/release.sh version)"

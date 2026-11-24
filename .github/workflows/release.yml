@@ -343,8 +343,8 @@ jobs:
           persist-credentials: false
           submodules: recursive
 
-  # CUSTOM: move the major tag (v0, v1, …) to this release, so workflows that use
-  # `amet13/unpatched@v0` get the newest stable release. Prereleases do not move it.
+  # CUSTOM: move the major tag (v3, v4, …) to this release, so workflows that use
+  # `amet13/unpatched@v3` get the newest stable release. Prereleases do not move it.
   move-major-tag:
     needs:
       - plan

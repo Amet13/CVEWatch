@@ -134,7 +134,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: amet13/unpatched@v0
+      - uses: amet13/unpatched@v3
         # Only for the chat channels you turned on in unpatched.yml.
         # Add each value as a repository secret first (Settings > Secrets and variables > Actions).
         # env:
@@ -155,8 +155,8 @@ built at 02:41 UTC; the default run time is 06:17 UTC, a few hours later. Pick
 another time if you like, but a run before 02:41 UTC uses the day-old database,
 which is fine.
 
-`amet13/unpatched@v0` runs the newest `v0.x.y` release. To pin one exact
-release, use its full tag, such as `@v0.1.0`. See [GitHub Action](action.md).
+`amet13/unpatched@v3` runs the newest `v3.x.y` release. To pin one exact
+release, use its full tag, such as `@v3.0.0`. See [GitHub Action](action.md).
 
 ## 4. Commit, push and run it once
 
@@ -216,7 +216,7 @@ run the workflow by hand again, or run `unpatched check` on your machine
 Run the Action with `dry-run: true` to print what would happen and send nothing:
 
 ```yaml
-      - uses: amet13/unpatched@v0
+      - uses: amet13/unpatched@v3
         with:
           dry-run: "true"
 ```

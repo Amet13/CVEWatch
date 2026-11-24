@@ -66,7 +66,7 @@ lives in `unpatched.yml` in a private repository.
        steps:
          - uses: actions/checkout@v5
            with: { persist-credentials: false }
-         - uses: amet13/unpatched@v0
+         - uses: amet13/unpatched@v3
            env:
              UNPATCHED_TELEGRAM_TOKEN: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
    ```

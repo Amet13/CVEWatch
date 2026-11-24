@@ -434,7 +434,7 @@ fn init_github_writes_the_workflow() {
         .success()
         .stdout(predicate::str::contains("PRIVATE"));
     let wf = std::fs::read_to_string(dir.path().join(".github/workflows/unpatched.yml")).unwrap();
-    assert!(wf.contains("amet13/unpatched@v0"));
+    assert!(wf.contains("amet13/unpatched@v3"));
     assert!(wf.contains("17 6 * * *"));
 }
 

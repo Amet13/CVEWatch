@@ -28,9 +28,9 @@ a red or missing check.
 
 ## What stays with a person
 
-- **The first release.** Nothing makes `v0.1.0` or `v1.0.0` for you. See
+- **The first release.** Nothing makes the first release (`v3.0.0`) for you. See
   "First-time steps" below. After that, `autorelease.yml` makes the patch and
-  minor releases. A major release (`1.0.0`, `2.0.0`) is always yours: change the
+  minor releases. A major release (`4.0.0`, …) is always yours: change the
   version in `Cargo.toml` and in the path dependencies, move `[Unreleased]` in
   `CHANGELOG.md`, and merge.
 - **Major updates.** Dependabot's major-version pull requests are not labelled
@@ -81,7 +81,7 @@ Do these once. The workflows cannot do them for you.
    target `v*`, restrict creations, updates and deletions. Put only you and the
    GitHub Actions app in the bypass list, because `autorelease.yml` creates tags.
 10. **Make the first release by hand:** set the version, update `CHANGELOG.md`,
-    merge, then `git tag v0.1.0 && git push origin v0.1.0` (or `1.0.0` at launch).
+    merge, then `git tag v3.0.0 && git push origin v3.0.0`.
     `release.yml` starts on the tag. After that, `autorelease.yml` takes over.
 
 The `automerge` and `maintenance` labels are created by the workflows on first
