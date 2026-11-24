@@ -605,7 +605,23 @@ fn release_parts(version: &str) -> Vec<&str> {
 /// True when `version` starts with the components of `prefix`.
 fn has_release_prefix(version: &str, prefix: &[&str]) -> bool {
     let parts = release_parts(version);
-    prefix.len() <= parts.len() && prefix.iter().zip(&parts).all(|(a, b)| same_part(a, b))
+    prefix.len() <= parts.len()
+        && prefix.iter().zip(&parts).all(|(a, b)| {
+            if !a.is_empty() && a.bytes().all(|c| c.is_ascii_digit()) {
+                // "9.6" matches "9.6p1": compare the leading number.
+                same_part(a, leading_number(b))
+            } else {
+                same_part(a, b)
+            }
+        })
+}
+
+fn leading_number(s: &str) -> &str {
+    let end = s
+        .bytes()
+        .position(|c| !c.is_ascii_digit())
+        .unwrap_or(s.len());
+    &s[..end]
 }
 
 /// The recommendation for one stack item (see [`ItemSummary`]).
@@ -638,7 +654,8 @@ fn item_summary(info: &ItemInfo, findings: &[Finding]) -> ItemSummary {
         None => release_parts(&info.version)
             .into_iter()
             .take(2)
-            .map(str::to_string)
+            .map(|p| leading_number(p).to_string())
+            .filter(|p| !p.is_empty())
             .collect(),
     };
     let prefix: Vec<&str> = prefix_owned.iter().map(String::as_str).collect();

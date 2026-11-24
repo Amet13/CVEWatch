@@ -1284,3 +1284,11 @@ fn item_summary_without_fixes_or_findings() {
     );
     assert_eq!(i.counts.total(), 0);
 }
+
+#[test]
+fn release_prefix_ignores_letter_suffixes() {
+    assert!(has_release_prefix("9.6p2", &["9", "6"]));
+    assert!(!has_release_prefix("9.8p1", &["9", "6"]));
+    assert!(has_release_prefix("29.0.17.12", &["29"]));
+    assert!(!has_release_prefix("290.0", &["29"]));
+}
