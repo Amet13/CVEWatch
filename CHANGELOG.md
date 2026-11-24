@@ -67,4 +67,5 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 - A product that is in the catalog but not in the database now says so ("the database has no data for product ... yet. Run `unpatched db update`").
 - `unpatched init --github` prints `.github/workflows/unpatched.yml` without a stray `./`; every command and argument has a help line; the config schema has a description for every key.
 - The project, the crate, the command and the config file are now called `unpatched` (was CVEWatch).
-- Everything from the Go tool is removed. The last Go commit is tagged `v2-final`.
+- Everything from the Go tool is removed. The last Go release is `v2.6.1`.
+- Releasing needs no clone or local tag: Actions → autorelease → Run workflow → `publish` releases the version in `Cargo.toml` (waiting for CI on `main`), and `patch`, `minor`, `major` or `auto` open a release pull request that is published when it merges.

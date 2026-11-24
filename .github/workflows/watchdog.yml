@@ -24,7 +24,6 @@ on:
       - maintenance
       - autorelease
       - automerge
-      - OpenSSF Scorecard
     types: [completed]
   schedule:
     - cron: "13 * * * *"

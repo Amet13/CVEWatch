@@ -2,9 +2,9 @@
 # Release helpers for autorelease.yml. Run from the repository root.
 #
 #   release.sh version          the version in [workspace.package] of Cargo.toml
-#   release.sh next             the next version: a minor bump when `## [Unreleased]` in
+#   release.sh next [kind]      the next version. kind is patch, minor or major; with no
+#                               kind (or `auto`): a minor bump when `## [Unreleased]` in
 #                               CHANGELOG.md has an `### Added` section, else a patch bump
-#                               (never a major bump: a new major version is for a person)
 #   release.sh notes <tag>      the commit subjects since <tag>, one per line, with the
 #                               dependency bumps folded into one line
 #   release.sh bump <next> <tag>
@@ -25,10 +25,17 @@ version() {
 }
 
 next() {
-  local current major minor patch
+  local kind="${1:-auto}" current major minor patch
   current="$(version)"
   IFS=. read -r major minor patch <<< "$current"
   patch="${patch%%[-+]*}"
+  case "$kind" in
+    major) echo "$((major + 1)).0.0"; return ;;
+    minor) echo "$major.$((minor + 1)).0"; return ;;
+    patch) echo "$major.$minor.$((patch + 1))"; return ;;
+    auto) ;;
+    *) echo "release.sh next: kind must be patch, minor, major or auto, not '$kind'" >&2; exit 2 ;;
+  esac
   if awk '/^## \[Unreleased\]/ { on = 1; next } /^## \[/ { on = 0 } on && /^### Added/ { found = 1 } END { exit !found }' CHANGELOG.md; then
     echo "$major.$((minor + 1)).0"
   else
@@ -95,7 +102,7 @@ cmd="${1:-}"
 shift || true
 case "$cmd" in
   version) version ;;
-  next) next ;;
+  next) next "$@" ;;
   notes) notes "$@" ;;
   bump) bump "$@" ;;
   *) echo "usage: release.sh version|next|notes <tag>|bump <next> <tag>" >&2; exit 2 ;;
