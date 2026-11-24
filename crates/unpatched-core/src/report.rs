@@ -55,6 +55,9 @@ pub struct Finding {
     /// The stack item's `name`, else product id or purl.
     pub item: String,
     pub product: String,
+    /// Display name of the product: the catalog name ("FortiOS"), or the purl
+    /// without its version for packages.
+    pub product_name: String,
     pub version: String,
     pub exposure: Exposure,
     /// CVE or advisory id; `None` for EOL and data findings.

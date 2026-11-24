@@ -78,12 +78,12 @@ fn rule_explanation(id: RuleId) -> &'static str {
         .map_or("", |r| r.explanation)
 }
 
-/// "fortios 7.2.5", with the stack item's own name in brackets when it has one.
+/// "FortiOS 7.2.5", with the stack item's own name in brackets when it has one.
 pub fn subject(f: &Finding) -> String {
     if f.item == f.product {
-        format!("{} {}", f.product, f.version)
+        format!("{} {}", f.product_name, f.version)
     } else {
-        format!("{} {} ({})", f.product, f.version, f.item)
+        format!("{} {} ({})", f.product_name, f.version, f.item)
     }
 }
 
@@ -425,7 +425,7 @@ fn issue_sentence(f: &Finding) -> String {
     let who = if f.item == f.product {
         format!("`{}`", subject(f))
     } else {
-        format!("**{}** runs `{} {}`", f.item, f.product, f.version)
+        format!("**{}** runs `{} {}`", f.item, f.product_name, f.version)
     };
     let id = f.vuln.as_deref().unwrap_or("this");
     match (f.bucket, f.verdict) {
@@ -627,6 +627,84 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
     b
 }
 
+// ---------------------------------------------------------------- markdown: run summary
+
+fn md_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// A summary of one run, for `$GITHUB_STEP_SUMMARY`: counts, the findings by
+/// bucket, the data age and the notes.
+pub fn markdown_summary(report: &Report) -> String {
+    let s = &report.summary;
+    let mut b = String::from("## unpatched\n\n");
+    if report.findings.is_empty() {
+        let _ = writeln!(b, "Nothing to fix. {}\n", heartbeat(report));
+    } else {
+        let n = report.findings.len();
+        let _ = writeln!(
+            b,
+            "{n} finding{} to look at. {}\n",
+            if n == 1 { "" } else { "s" },
+            heartbeat(report)
+        );
+        b.push_str("| Bucket | Findings |\n| --- | ---: |\n");
+        for (bucket, n) in [
+            (Bucket::Now, s.now),
+            (Bucket::Week, s.week),
+            (Bucket::Eol, s.eol),
+            (Bucket::Unknown, s.unknown),
+            (Bucket::Fyi, s.fyi),
+        ] {
+            let _ = writeln!(
+                b,
+                "| {} {} | {n} |",
+                bucket_emoji(bucket),
+                bucket_label(bucket)
+            );
+        }
+        b.push('\n');
+    }
+    for bucket in BUCKETS {
+        let group: Vec<&Finding> = report
+            .findings
+            .iter()
+            .filter(|f| f.bucket == bucket)
+            .collect();
+        if group.is_empty() {
+            continue;
+        }
+        let _ = writeln!(b, "### {} {}\n", bucket_emoji(bucket), bucket_label(bucket));
+        for f in group {
+            let _ = writeln!(
+                b,
+                "- **{}**: {}",
+                md_escape(&subject(f)),
+                md_escape(&issue_what(f))
+            );
+            let _ = writeln!(b, "  - Why: {}", md_escape(&why(f)));
+            let _ = writeln!(b, "  - Do: {}", md_escape(&action(f)));
+            let rules: Vec<String> = f.rules.iter().map(|r| format!("`{}`", r.code())).collect();
+            let _ = writeln!(b, "  - Rules: {}", rules.join(", "));
+        }
+        b.push('\n');
+    }
+    if s.ignored > 0 {
+        let _ = writeln!(b, "{} ignored on purpose (see unpatched.yml).\n", s.ignored);
+    }
+    let _ = writeln!(b, "{}\n", db_line(report));
+    if !report.notes.is_empty() {
+        b.push_str("### Notes\n\n");
+        for n in &report.notes {
+            let _ = writeln!(b, "- {}", md_escape(n));
+        }
+        b.push('\n');
+    }
+    b
+}
+
 // ---------------------------------------------------------------- digest
 
 /// A short digest for chat: plain text with light Markdown.
@@ -696,7 +774,7 @@ fn sarif_result(f: &Finding, suppressed: bool) -> Value {
             "physicalLocation": { "artifactLocation": { "uri": "unpatched.yml" } },
             "logicalLocations": [{
                 "name": f.item,
-                "fullyQualifiedName": format!("{} {}", f.product, f.version),
+                "fullyQualifiedName": format!("{} {}", f.product_name, f.version),
                 "kind": "resource",
             }],
         }],
@@ -814,7 +892,7 @@ mod tests {
         let (title, body) = markdown_issue(&fortios(), &r);
         assert_eq!(
             title,
-            "🔴 Fix today: fortios 7.2.5 (Office firewall) — CVE-2024-21762 (exploited)"
+            "🔴 Fix today: FortiOS 7.2.5 (Office firewall) — CVE-2024-21762 (exploited)"
         );
         insta::assert_snapshot!("issue_now", body);
     }
@@ -824,7 +902,7 @@ mod tests {
         let r = sample_report();
         let eol = r.findings.iter().find(|f| f.bucket == Bucket::Eol).unwrap();
         let (title, body) = markdown_issue(eol, &r);
-        assert_eq!(title, "⚫ End of life: postgresql 13.12 — past end of life");
+        assert_eq!(title, "⚫ End of life: PostgreSQL 13.12 — past end of life");
         insta::assert_snapshot!("issue_eol", body);
         let unk = r
             .findings
@@ -832,7 +910,7 @@ mod tests {
             .find(|f| f.bucket == Bucket::Unknown)
             .unwrap();
         let (title, body) = markdown_issue(unk, &r);
-        assert!(title.starts_with("❔ Unknown: home-assistant 2024.10.1"));
+        assert!(title.starts_with("❔ Unknown: Home Assistant 2024.10.1"));
         insta::assert_snapshot!("issue_unknown", body);
     }
 
@@ -847,6 +925,12 @@ mod tests {
             );
         }
         assert_eq!(parse_finding_marker("no marker"), None);
+    }
+
+    #[test]
+    fn run_summary() {
+        let r = sample_report();
+        insta::assert_snapshot!("summary", markdown_summary(&r));
     }
 
     #[test]

@@ -32,6 +32,7 @@ expression: "run(&cfg, &rich_dataset())"
       "key": "fortios/CVE-2026-0003",
       "item": "fortios",
       "product": "fortios",
+      "product_name": "FORTIOS",
       "version": "7.4.3",
       "exposure": "internal",
       "vuln": "CVE-2026-0003",

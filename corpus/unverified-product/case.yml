@@ -1,0 +1,31 @@
+description: A product whose keys match nothing in the data is reported, never read as safe.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  unverified:
+  - fortios
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/unverified
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNVERIFIED-PRODUCT

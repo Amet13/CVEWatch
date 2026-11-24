@@ -1,0 +1,34 @@
+description: A cycle that ends later is not an eol finding yet.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: postgresql
+      version: "16.1"
+data:
+  products:
+  - id: postgresql
+    name: PostgreSQL
+    vendor: PostgreSQL
+    kind: database
+    versioning: dotted
+    match:
+      cpe:
+      - postgresql:postgresql
+    checked: '2026-11-01'
+    eol: postgresql
+  vulns: []
+  eol:
+    postgresql:
+    - cycle: '16'
+      eol: '2028-11-09'
+      eol_reached: false
+      latest: '16.6'
+      lts: false
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect: []
+absent:
+- postgresql/eol

@@ -2,7 +2,7 @@
 source: crates/unpatched-notify/src/render.rs
 expression: body
 ---
-`postgresql 13.12` is past end of life and no longer gets security fixes.
+`PostgreSQL 13.12` is past end of life and no longer gets security fixes.
 
 postgresql 13.12 is past end of life: the 13 release cycle no longer gets security fixes
 

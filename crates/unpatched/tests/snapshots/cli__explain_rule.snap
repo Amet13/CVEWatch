@@ -1,0 +1,9 @@
+---
+source: crates/unpatched/tests/cli.rs
+expression: out
+---
+UNP-KEV: Known to be exploited
+
+CISA lists this vulnerability in its Known Exploited Vulnerabilities catalog, so attackers are using it now. Fix it today.
+
+This rule puts an affected finding in: Fix today (now).

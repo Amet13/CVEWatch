@@ -1,0 +1,45 @@
+description: 'Semver product: 10.2.0 is before the fix 10.2.3.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: grafana
+      version: "10.2.0"
+data:
+  products:
+  - id: grafana
+    name: Grafana
+    vendor: Grafana
+    kind: app
+    versioning: semver
+    match:
+      cpe:
+      - grafana:grafana
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0500
+    summary: Grafana flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: grafana
+      constraints:
+      - kind: range
+        start:
+          version: 10.0.0
+          inclusive: true
+        end:
+          version: 10.2.3
+          inclusive: false
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: grafana/CVE-2026-0500
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 10.2.3

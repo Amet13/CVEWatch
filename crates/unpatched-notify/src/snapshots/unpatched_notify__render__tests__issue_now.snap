@@ -2,7 +2,7 @@
 source: crates/unpatched-notify/src/render.rs
 expression: body
 ---
-**Office firewall** runs `fortios 7.2.5`, which is affected by CVE-2024-21762.
+**Office firewall** runs `FortiOS 7.2.5`, which is affected by CVE-2024-21762.
 
 **CVE-2024-21762**: Out-of-bounds write in sslvpnd allows remote code execution
 

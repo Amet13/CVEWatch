@@ -1,0 +1,34 @@
+# Checks your stack (unpatched.yml) every day and opens a GitHub issue for each
+# finding. Use it in a PRIVATE repository. It needs no token of your own.
+name: unpatched
+
+on:
+  schedule:
+    # Every day at 06:17 UTC. The database is rebuilt at 02:41 UTC.
+    - cron: "17 6 * * *"
+  # Lets you run it by hand from the Actions tab.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: amet13/unpatched@v0
+        # Only for the chat channels you turned on in unpatched.yml.
+        # Add each value as a repository secret first (Settings > Secrets and variables > Actions).
+        # env:
+        #   UNPATCHED_TELEGRAM_TOKEN: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
+        #   UNPATCHED_SLACK_WEBHOOK: ${{ secrets.UNPATCHED_SLACK_WEBHOOK }}
+        #   UNPATCHED_DISCORD_WEBHOOK: ${{ secrets.UNPATCHED_DISCORD_WEBHOOK }}
+        #   UNPATCHED_NTFY_TOKEN: ${{ secrets.UNPATCHED_NTFY_TOKEN }}
+        #   UNPATCHED_WEBHOOK_URL: ${{ secrets.UNPATCHED_WEBHOOK_URL }}
+        with:
+          config: unpatched.yml

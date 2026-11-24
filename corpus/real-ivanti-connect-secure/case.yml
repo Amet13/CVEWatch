@@ -1,0 +1,61 @@
+description: Ivanti Connect Secure 22.6 on the internet with CVE-2024-21887 in KEV.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: ivanti-connect-secure
+      version: "22.6"
+      exposure: internet
+      name: "VPN"
+data:
+  products:
+  - id: ivanti-connect-secure
+    name: Ivanti Connect Secure
+    vendor: Ivanti
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - ivanti:ivanti-connect-secure
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-21887
+    summary: Command injection in web components of Ivanti Connect Secure
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.1
+    ranges:
+    - source: cve-org
+      product: ivanti-connect-secure
+      constraints:
+      - kind: range
+        start:
+          version: '22.0'
+          inclusive: true
+        end:
+          version: '22.7'
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2024-21887:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Ivanti
+        product: Connect Secure
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: vpn/CVE-2024-21887
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-CVSS
+  - UNP-EXPOSED
+  fixed_in: '22.7'

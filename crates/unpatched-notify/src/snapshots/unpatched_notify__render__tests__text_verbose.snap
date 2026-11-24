@@ -4,7 +4,7 @@ expression: "text(&r, &opts)"
 ---
 🔴 Fix today (1)
 
-  fortios 7.2.5 (Office firewall)
+  FortiOS 7.2.5 (Office firewall)
   CVE-2024-21762  Out-of-bounds write in sslvpnd allows remote code execution
     Why   In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing
     Do    Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
@@ -17,7 +17,7 @@ expression: "text(&r, &opts)"
 
 🟡 This week (2)
 
-  nextcloud 29.0.3
+  Nextcloud 29.0.3
   CVE-2026-1001  Improper access control in Nextcloud Server (CVE-2026-1001)
     Why   EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
     Do    Upgrade to 29.0.8 or later.
@@ -26,7 +26,7 @@ expression: "text(&r, &opts)"
     Rule UNP-EPSS  The EPSS score is at or above your threshold (default 0.05), which means exploitation in the next 30 days is more likely than for most vulnerabilities. Fix it this week.
     Rule UNP-EXPOSED  This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.
 
-  nextcloud 29.0.3
+  Nextcloud 29.0.3
   CVE-2026-1002  Improper access control in Nextcloud Server (CVE-2026-1002)
     Why   EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
     Do    Upgrade to 29.0.6 or later.
@@ -37,7 +37,7 @@ expression: "text(&r, &opts)"
 
 ⚫ End of life (1)
 
-  postgresql 13.12
+  PostgreSQL 13.12
   postgresql 13.12 is past end of life: the 13 release cycle no longer gets security fixes
     Why   End of life
     Do    Upgrade to a supported release.
@@ -47,7 +47,7 @@ expression: "text(&r, &opts)"
 
 ❔ Unknown (1)
 
-  home-assistant 2024.10.1
+  Home Assistant 2024.10.1
   CVE-2026-0042  Authentication bypass in Home Assistant
     Why   No usable version data yet
     Do    No source has version data for this yet. Read the advisory and check your version by hand.
@@ -57,7 +57,7 @@ expression: "text(&r, &opts)"
 
 ⚪ FYI (1)
 
-  redis 7.2.1
+  Redis 7.2.1
   CVE-2025-1111  Denial of service in redis streams
     Why   CVSS 5.3
     Do    Upgrade to 7.2.4 or later.
