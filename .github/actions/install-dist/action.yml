@@ -1,0 +1,40 @@
+# Installs cargo-dist (the `dist` command) at a pinned version, checking every
+# download against a SHA-256 kept here. Replaces the `curl | sh` and `irm | iex`
+# one-liners that `dist generate` writes: the shell installer itself carries the
+# checksums of the archives it fetches, so pinning its hash pins the whole chain;
+# the PowerShell installer does not, so on Windows the zip is fetched and checked
+# directly. To bump dist: change the version and the three hashes together
+# (MAINTAINING.md, "Bumping dist").
+name: Install dist
+description: Install cargo-dist at a pinned version, verified by SHA-256
+runs:
+  using: composite
+  steps:
+    - name: Install dist (Linux, macOS)
+      if: runner.os != 'Windows'
+      shell: bash
+      env:
+        DIST_VERSION: "0.34.0"
+        INSTALLER_SHA256: abb014a8486f08a3c2d9dd8bbf2c646c62fab61b1f1c9ff5bf2811ab305d17b1
+      run: |
+        set -euo pipefail
+        installer="$RUNNER_TEMP/cargo-dist-installer.sh"
+        curl --proto '=https' --tlsv1.2 -LsSf -o "$installer" \
+          "https://github.com/axodotdev/cargo-dist/releases/download/v${DIST_VERSION}/cargo-dist-installer.sh"
+        echo "${INSTALLER_SHA256}  ${installer}" | shasum -a 256 -c -
+        sh "$installer"
+    - name: Install dist (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      env:
+        DIST_VERSION: "0.34.0"
+        ZIP_SHA256: 7bb53fbc998321f77a3bbb044084a52747c8ed041cf6d6a604802aa57b9c80c6
+      run: |
+        set -euo pipefail
+        zip="$RUNNER_TEMP/cargo-dist.zip"
+        curl --proto '=https' --tlsv1.2 -LsSf -o "$zip" \
+          "https://github.com/axodotdev/cargo-dist/releases/download/v${DIST_VERSION}/cargo-dist-x86_64-pc-windows-msvc.zip"
+        echo "${ZIP_SHA256}  ${zip}" | sha256sum -c -
+        mkdir -p "$HOME/.cargo/bin"
+        # ~/.cargo/bin is already on PATH on GitHub's Windows runners (rustup).
+        unzip -o -j "$zip" dist.exe -d "$HOME/.cargo/bin"

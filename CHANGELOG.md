@@ -8,6 +8,10 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 
 ## [Unreleased]
 
+### Security
+
+- Release and CI workflows: `dist`, `cargo-zigbuild` and actionlint are installed from pinned, hash-checked downloads (no `curl | sh`); `release.yml` is read-only by default and moves the major tag through the API; the Dependabot labeller uses `pull_request` instead of `pull_request_target`; `workflow_run` jobs ignore runs from forks; CI runs zizmor.
+
 ## [3.0.0] - 2026-11-24
 
 ### Added
