@@ -1,9 +1,11 @@
 # Releases without a clone, a local tag or a manual merge order.
 #
 # By hand: Actions → autorelease → Run workflow, and pick what to release:
-#   - `publish`: release the version that Cargo.toml has now, if it has no tag yet (this
-#     is how the first release, 3.0.0, goes out). It waits for ci on main's head, then
-#     creates the tag and starts release.yml on it.
+#   - `publish`: release the version that Cargo.toml has now, if it has no release yet
+#     (this is how the first release, 3.0.0, goes out). It waits for ci on main's head,
+#     then creates the tag and starts release.yml on it. If a release run failed and left
+#     a tag with no release, running `publish` again moves the tag to main's head and
+#     tries again.
 #   - `patch`, `minor`, `major`, `auto`: open a "Release vX.Y.Z" pull request (version in
 #     Cargo.toml and the other manifests, CHANGELOG `[Unreleased]` turned into a dated
 #     section). When it merges, it is published: by automerge.yml when CI passes, which
@@ -133,8 +135,16 @@ jobs:
           set -euo pipefail
           v="$(bash .github/scripts/release.sh version)"
           case "$v" in *-*) echo "::notice::$v is a pre-release version; tag it by hand if you mean it."; exit 0 ;; esac
+          retag=false
           if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$v" > /dev/null 2>&1; then
-            echo "v$v is already released."; exit 0
+            if gh release view "v$v" > /dev/null 2>&1; then
+              echo "v$v is already released."; exit 0
+            fi
+            # A tag without a GitHub release is a release run that failed before it
+            # published anything. Try again from main's head: the tag moves there once
+            # ci has passed on it.
+            echo "::notice::v$v is tagged but was never released (a failed release run): trying again from $GITHUB_SHA."
+            retag=true
           fi
           # ci on this exact commit must pass first. After a merge it is still running:
           # wait for it (up to about 50 minutes), but never release on a red or missing run.
@@ -155,7 +165,11 @@ jobs:
           fi
           running="$(gh run list --workflow release.yml --json status --jq '[.[] | select(.status != "completed")] | length')"
           if [ "$running" -gt 0 ]; then echo "::notice::A release is already running."; exit 0; fi
-          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/v$v" -f sha="$GITHUB_SHA" > /dev/null
+          if [ "$retag" = true ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/v$v" -f sha="$GITHUB_SHA" -F force=true > /dev/null
+          else
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/v$v" -f sha="$GITHUB_SHA" > /dev/null
+          fi
           gh workflow run release.yml --ref "v$v"
           {
             echo "### Releasing v$v"
