@@ -106,9 +106,10 @@ pub(crate) fn cmp_to_bound(
 ///
 /// An update such as `update2` follows its release (`8.0` and `update2` is
 /// 8.0.2), so only a version that clearly belongs to another release is ruled
-/// out: both start with a number of the same width, and `base` is not the start
-/// of `version`. When the numbers are not alike (build 15.2.1544 against the
-/// name `2019`), nothing can be said.
+/// out: both start with a number of the same kind, and `base` is not the start
+/// of `version`. A first number of four or more digits is a year or a name
+/// (`2019`), shorter ones are release numbers (`9`, `22`). When the kinds
+/// differ (build 15.2.1544 against the name `2019`), nothing can be said.
 fn unplaced_is_elsewhere(version: &str, base: &str) -> bool {
     let parts = |s: &'_ str| -> Vec<String> {
         s.trim()
@@ -125,7 +126,7 @@ fn unplaced_is_elsewhere(version: &str, base: &str) -> bool {
     let (Some(v0), Some(b0)) = (v.first(), b.first()) else {
         return false;
     };
-    if v0.is_empty() || b0.is_empty() || v0.len() != b0.len() {
+    if v0.is_empty() || b0.is_empty() || (v0.len() >= 4) != (b0.len() >= 4) {
         return false;
     }
     b.iter().enumerate().any(|(i, bp)| {
@@ -200,6 +201,7 @@ mod tests {
         assert!(!constraint_matches(&d, &u("7.0", "update3o"), "8.0.2").unwrap());
         assert!(!constraint_matches(&d, &u("8.1", "update1"), "8.0.2").unwrap());
         assert!(!constraint_matches(&d, &u("2.8.4", "a"), "6.4.1").unwrap());
+        assert!(!constraint_matches(&d, &u("9.0", "rx"), "22.7R2").unwrap());
         // A name against a build number (Exchange 2019 against 15.2.1544.4): cannot say.
         assert!(constraint_matches(&d, &u("2019", "cumulative_update_14"), "15.2.1544.4").is_err());
         // A version that does not parse is still an error.
