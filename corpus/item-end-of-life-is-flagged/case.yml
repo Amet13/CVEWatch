@@ -1,0 +1,60 @@
+description: 'An item past end of life is flagged eol in its recommendation.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.0.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+    eol: fortios
+  vulns:
+  - id: CVE-2026-0001
+    summary: Flaw CVE-2026-0001
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.0.0'
+          inclusive: true
+        end:
+          version: '7.0.9'
+          inclusive: false
+      raw: ''
+  eol:
+    fortios:
+    - cycle: '7.0'
+      release_date: '2021-03-31'
+      eol: '2025-09-30'
+      eol_reached: true
+      latest: '7.0.17'
+      lts: false
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/eol
+  bucket: eol
+  verdict: affected
+- key: fortios/CVE-2026-0001
+  bucket: fyi
+  verdict: affected
+expect_items:
+- key: fortios
+  upgrade_to: 7.0.9
+  eol: true
+  fixes: 1
+  of: 1

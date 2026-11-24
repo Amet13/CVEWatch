@@ -14,7 +14,7 @@ use unpatched_notify::{
 
 use super::out;
 use crate::cli::{CheckArgs, Format};
-use crate::ctx::{Ctx, load_config, parse_now};
+use crate::ctx::{Ctx, load_config};
 use crate::error::{EXIT_FIX_TODAY, Failure, Res};
 
 /// Evaluate the stack: load the config and the database, run the check.
@@ -47,7 +47,7 @@ pub fn evaluate(ctx: &Ctx, config: &Config, now: DateTime<Utc>, allow_stale: boo
 }
 
 pub fn run(ctx: &Ctx, args: &CheckArgs) -> Res<u8> {
-    let now = parse_now(args.now.as_deref())?;
+    let now = ctx.now;
     let config = load_config(&ctx.config)?;
     let report = evaluate(ctx, &config, now, args.allow_stale)?;
 
@@ -125,6 +125,24 @@ fn write_output(path: &Path, text: &str) -> Res<()> {
         })
 }
 
+/// A GitHub Actions `::warning::` line when the event says the repository is
+/// public: issues and the status issue name the stack, and anyone can read them.
+fn public_repo_warning(event_json: &str) -> Option<String> {
+    let v: serde_json::Value = serde_json::from_str(event_json).ok()?;
+    let repo = v.get("repository")?;
+    let public = match (repo.get("private"), repo.get("visibility")) {
+        (Some(p), _) if p.is_boolean() => p.as_bool() == Some(false),
+        (_, Some(vis)) => vis.as_str() == Some("public"),
+        _ => false,
+    };
+    public.then(|| {
+        "::warning title=unpatched::This repository is public, so your stack and the issues \
+         unpatched opens are visible to everyone. Run unpatched in a private repository, or set \
+         `notify.issues: false`."
+            .to_owned()
+    })
+}
+
 fn notify(
     ctx: &Ctx,
     args: &CheckArgs,
@@ -142,6 +160,13 @@ fn notify(
             "Check the channel settings in unpatched.yml.",
         ),
     })?;
+    if GitHub::in_actions()
+        && let Some(w) = std::env::var_os("GITHUB_EVENT_PATH")
+            .and_then(|p| std::fs::read_to_string(p).ok())
+            .and_then(|text| public_repo_warning(&text))
+    {
+        eprintln!("{w}");
+    }
     let use_github = args.github || GitHub::in_actions();
     let github = if use_github {
         Some(GitHub::from_env().map_err(|e| {
@@ -218,5 +243,30 @@ fn notify(
             outcome.errors.join("\n"),
             "The other channels were still delivered. Fix the failing channel and run again.",
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::public_repo_warning;
+
+    #[test]
+    fn public_repositories_get_a_warning() {
+        let w = public_repo_warning(r#"{"repository":{"private":false}}"#).unwrap();
+        assert!(w.starts_with("::warning"), "{w}");
+        assert!(w.contains("public"));
+        assert!(public_repo_warning(r#"{"repository":{"visibility":"public"}}"#).is_some());
+    }
+
+    #[test]
+    fn private_or_unreadable_events_get_none() {
+        assert!(public_repo_warning(r#"{"repository":{"private":true}}"#).is_none());
+        assert!(public_repo_warning(r#"{"repository":{"visibility":"private"}}"#).is_none());
+        assert!(
+            public_repo_warning(r#"{"repository":{"private":true,"visibility":"public"}}"#)
+                .is_none()
+        );
+        assert!(public_repo_warning("{}").is_none());
+        assert!(public_repo_warning("not json").is_none());
     }
 }

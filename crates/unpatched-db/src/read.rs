@@ -265,10 +265,9 @@ impl Dataset for Db {
             )
             .into_iter()
             .find_map(|(score, percentile, date)| {
-                #[allow(clippy::cast_possible_truncation)]
                 Some(Epss {
-                    score: score as f32,
-                    percentile: percentile as f32,
+                    score,
+                    percentile,
                     date: NaiveDate::parse_from_str(&date, "%Y-%m-%d").ok()?,
                 })
             });

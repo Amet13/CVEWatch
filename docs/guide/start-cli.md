@@ -41,7 +41,7 @@ commented template instead.
 ```text
 $ unpatched init --github
 Wrote unpatched.yml
-Wrote ./.github/workflows/unpatched.yml
+Wrote .github/workflows/unpatched.yml
 
 Next steps:
   1. Edit unpatched.yml: list what you really run, with exact versions.
@@ -90,10 +90,13 @@ compare. Your output uses live data. The stack is the template from above.
 
 ```text
 $ unpatched check
+🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
+⚫ Nextcloud 29.0.3  1 eol  →  upgrade to a supported release
+
 🔴 Fix today (1)
 
   FortiOS 7.2.5 (Office firewall)
-  CVE-2024-21762  A out-of-bounds write vulnerability in Fortinet FortiOS 7.4.0 through 7.4.2, FortiOS 7.2.0 through 7.2.6, FortiOS 7.0.0 through 7.0.13, FortiOS 6.4.0 through 6.4.14, FortiOS 6.2.0 through 6.2.15, FortiOS 6.0 all versions, FortiProxy 7.4.0 through 7.4.2, FortiProxy 7.2.0 through 7.2.8, FortiProxy 7.0.0 through 7.0.14, FortiProxy 2.0.0 through 2.0.13, FortiProxy 01.02 all versions, FortiProxy 1.2 all versions, FortiProxy 01.01 all versions, FortiProxy 1.1 all versions, FortiProxy 01.00 all versions allows attacker to execute unauthorized code or commands via specifically crafted requests
+  CVE-2024-21762  A out-of-bounds write vulnerability in Fortinet FortiOS 7.4.0 through 7.4.2, FortiOS 7.2.0 through 7.2.6, FortiOS 7.0.0 through 7.0.13, For…
     Why   In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 84.6% (percentile 100) · CVSS 9.6 · internet-facing
     Do    Upgrade to 7.2.7 or later.
     Rule  UNP-KEV, UNP-SSVC-ACTIVE, UNP-EPSS, UNP-CVSS, UNP-EXPOSED · verdict affected
@@ -108,8 +111,8 @@ $ unpatched check
 
 🟢 1 checked, nothing else affects you
 Database: built 2026-11-23 12:00 UTC, 0 days old
-Note: stack[2]: unknown product "postgresql". Run `unpatched catalog list` to see the ids.
-Note: stack[3]: unknown product "home-assistant". Run `unpatched catalog list` to see the ids.
+Note: stack[2]: the database has no data for product "postgresql" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
+Note: stack[3]: the database has no data for product "home-assistant" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
 ```
 
 <!-- generated:end -->
@@ -187,8 +190,8 @@ finding.
           "product": "FortiOS"
         },
         "epss": {
-          "score": 0.84589,
-          "percentile": 0.99711,
+          "score": 0.8458899855613708,
+          "percentile": 0.9971100091934204,
           "date": "2026-11-23"
         },
         "ssvc_exploitation": "active",
@@ -204,9 +207,13 @@ finding.
     ...
   ],
   "ignored": [],
+  "items": [
+    ...
+    ...
+  ],
   "notes": [
-    "stack[2]: unknown product \"postgresql\". Run `unpatched catalog list` to see the ids.",
-    "stack[3]: unknown product \"home-assistant\". Run `unpatched catalog list` to see the ids."
+    "stack[2]: the database has no data for product \"postgresql\" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.",
+    "stack[3]: the database has no data for product \"home-assistant\" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids."
   ]
 }
 ```

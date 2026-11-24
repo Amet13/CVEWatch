@@ -319,7 +319,7 @@ The precedence is written down in an ADR.
 | Bucket | Rule (defaults; can be changed in `unpatched.yml`) |
 | --- | --- |
 | 🔴 `now` | `affected` and (in KEV, or the vendor says exploited, or SSVC exploitation=active, or (a public exploit exists and exposure is internet)) |
-| 🟡 `week` | `affected` and (EPSS ≥ 0.05, or CVSS ≥ 9, or exposure is internet) |
+| 🟡 `week` | `affected` and (EPSS ≥ 0.05, or CVSS ≥ 9, or (exposure is internet and CVSS ≥ 7)) |
 | ⚪ `fyi` | other `affected` |
 | ⚫ `eol` | the version's cycle is past its end of life (one finding per item, not per CVE) |
 | ❔ `unknown` | an `unknown` verdict that would be `now` or `week` if confirmed; others only in `--verbose` |

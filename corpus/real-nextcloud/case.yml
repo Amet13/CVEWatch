@@ -1,4 +1,4 @@
-description: 'Nextcloud 29.0.3 on the internet: two advisories this week, and the 29 branch is past its end of life.'
+description: 'Nextcloud 29.0.3 on the internet: one advisory this week and one for later, and the 29 branch is past its end of life.'
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -82,10 +82,10 @@ expect:
   fixed_in: 29.0.4
   latest_in_cycle: 29.0.16
 - key: nextcloud/CVE-2024-37882
-  bucket: week
+  bucket: fyi
   verdict: affected
   rules:
-  - UNP-EXPOSED
+  - UNP-AFFECTED
   fixed_in: 29.0.6
   latest_in_cycle: 29.0.16
 - key: nextcloud/eol

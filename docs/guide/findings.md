@@ -34,7 +34,7 @@ The bucket is decided by evidence of exploitation first, not by severity.
 | Bucket | Label | When (for an `affected` finding) |
 | --- | --- | --- |
 | `now` | Fix today | In CISA KEV, or CISA SSVC says exploitation is active, or a public exploit exists (Exploit-DB or Metasploit) and the item is `exposure: internet`. |
-| `week` | Fix this week | EPSS at or above `epss_week` (default 0.05), or CVSS at or above `cvss_week` (default 9.0), or the item is `exposure: internet`. |
+| `week` | Fix this week | EPSS at or above `epss_week` (default 0.05), or CVSS at or above `cvss_week` (default 9.0), or the item is `exposure: internet` and CVSS is at or above `cvss_week_exposed` (default 7.0). Exposure alone is not enough, and an unknown CVSS score does not count. |
 | `fyi` | FYI | Any other affected finding. No issue is opened for it; it is listed in the status issue and the digest. |
 | `eol` | End of life | The release cycle of the item is past its end of life (endoflife.date). One finding per item, not one per CVE. |
 | `unknown` | Unknown | An `unknown` verdict that would have been `now` or `week` if confirmed, or a data problem (product not found, stale database). |
@@ -50,60 +50,47 @@ release in your release cycle from endoflife.date, shown when it is newer.
 
 ## Read a GitHub issue
 
-The title is the bucket, the product and version, the CVE, and `(exploited)` or
-`(public exploit)` when that is the reason. Labels: `unpatched` and one of
-`unpatched:now`, `unpatched:week`, `unpatched:eol`, `unpatched:unknown`. This is the body
-the renderer writes for a "fix today" finding (the renderer's own test fixture,
-so the CVE text and numbers differ from the sample database):
+There is one issue per stack item, not one per CVE. The title is the most urgent
+bucket's emoji, the product and version, how many findings are in that bucket and
+the one upgrade that helps most, like `🔴 FortiOS 7.2.5 (Office firewall): 14 to fix
+today — upgrade to 7.2.12`. Labels: `unpatched` and the label of the most urgent
+bucket (`unpatched:now`, `unpatched:week`, `unpatched:eol` or `unpatched:unknown`).
+This is the body the renderer writes for an item with a "fix today" finding (the
+renderer's own test fixture, so the CVE text and numbers differ from the sample
+database):
 
 <!-- generated:start example-issue -->
 
 ```markdown
-**Office firewall** runs `FortiOS 7.2.5`, which is affected by CVE-2024-21762.
+🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
 
-**CVE-2024-21762**: Out-of-bounds write in sslvpnd allows remote code execution
+This item is marked as internet-facing.
 
-**Why now:** In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing
+### 🔴 Fix today (1)
 
-**Do:** Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
-
-**Evidence**
-
-- CVE.org: affected 7.2.0 to 7.2.6 (CNA Fortinet) (affected)
-- NVD: cpe:2.3:o:fortinet:fortios up to (excluding) 7.2.7 (affected)
-
-**Rules**
-
-- `UNP-KEV` Known to be exploited. CISA lists this vulnerability in its Known Exploited Vulnerabilities catalog, so attackers are using it now. Fix it today.
-- `UNP-EXPOSED` Affected and reachable from the internet
-- Verdict: affected · bucket: Fix today
-
-**References**
-
-- https://fortiguard.fortinet.com/psirt/FG-IR-24-015
+- **CVE-2024-21762** Out-of-bounds write in sslvpnd allows remote code execution — In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing — Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
 
 ---
 
-Close this issue when it is fixed; unpatched closes it on its own once unpatched.yml shows a fixed version.
+unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
 
-<!-- unpatched:finding=office-firewall/CVE-2024-21762 -->
+<!-- unpatched:item=office-firewall -->
 ```
 
 <!-- generated:end -->
 
-- The first line says which of your items is affected and by what.
-- **Why now** is the list of signals: KEV (with the date and whether ransomware
-  groups use it), the CISA due date, SSVC, EPSS, public exploits, CVSS,
-  internet exposure.
-- **Do** says what to do: upgrade to the fixed version, or to a supported release.
-- **Evidence** is one line per source, with its own verdict.
-- **Rules** are the ids that put the finding in its bucket.
-- The hidden comment at the end (`<!-- unpatched:finding=... -->`) is how
-  unpatched finds the issue again. Do not remove it.
+- The first line is the recommendation for the item: counts per bucket and the
+  smallest version that fixes the most findings (`fixes 48 of 50`).
+- Then one section per bucket lists its findings: id, a one-sentence title, why
+  it is in that bucket, and what to do. A long list stops after about 60 entries
+  with "...and N more (run `unpatched check` for all)".
+- The hidden comment at the end (`<!-- unpatched:item=... -->`) is how unpatched
+  finds the issue again. Do not remove it.
 
-When a finding disappears (you upgraded, the advisory was withdrawn, or an ignore
-entry covers it), unpatched comments on the issue and closes it. If a finding
-comes back, an issue that unpatched closed is reopened. An issue that *you* closed
+When an item has no `now`, `week`, `eol` or `unknown` finding left (you upgraded,
+the advisories were withdrawn, or ignore entries cover them), unpatched comments on
+the issue and closes it. If findings come back, an issue that unpatched closed is
+reopened. An issue that *you* closed
 is left closed, and is listed under "Closed but still affected" in the status
 issue.
 
@@ -177,8 +164,8 @@ second finding):
           "product": "FortiOS"
         },
         "epss": {
-          "score": 0.84589,
-          "percentile": 0.99711,
+          "score": 0.8458899855613708,
+          "percentile": 0.9971100091934204,
           "date": "2026-11-23"
         },
         "ssvc_exploitation": "active",
@@ -194,9 +181,13 @@ second finding):
     ...
   ],
   "ignored": [],
+  "items": [
+    ...
+    ...
+  ],
   "notes": [
-    "stack[2]: unknown product \"postgresql\". Run `unpatched catalog list` to see the ids.",
-    "stack[3]: unknown product \"home-assistant\". Run `unpatched catalog list` to see the ids."
+    "stack[2]: the database has no data for product \"postgresql\" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.",
+    "stack[3]: the database has no data for product \"home-assistant\" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids."
   ]
 }
 ```
@@ -236,12 +227,12 @@ renaming one would be a breaking change.
 | `UNP-EXPLOIT-EXPOSED` | Public exploit and reachable from the internet | A public exploit exists (Exploit-DB or Metasploit) and this item is marked as internet-facing. Anyone can try it against you, so fix it today. | This rule puts an affected finding in: Fix today (now). |
 | `UNP-EPSS` | Likely to be exploited soon | The EPSS score is at or above your threshold (default 0.05), which means exploitation in the next 30 days is more likely than for most vulnerabilities. Fix it this week. | This rule puts an affected finding in: This week (week), unless a Fix today rule applies. |
 | `UNP-CVSS` | Critical severity | The CVSS base score is at or above your threshold (default 9.0). Severity alone does not mean it is being exploited, but it is serious enough to fix this week. | This rule puts an affected finding in: This week (week), unless a Fix today rule applies. |
-| `UNP-EXPOSED` | Affected and reachable from the internet | This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week. | This rule puts an affected finding in: This week (week), unless a Fix today rule applies. |
-| `UNP-AFFECTED` | Affected, no sign of exploitation | This version is affected, but nothing says it is exploited, it is not internet-facing and the scores are below your thresholds. Fix it with your normal updates. | This rule puts an affected finding in: FYI (fyi). |
+| `UNP-EXPOSED` | Affected, reachable from the internet and severe | This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week. | This rule puts an affected, internet-facing finding with CVSS at or above cvss_week_exposed in: This week (week), unless a Fix today rule applies. |
+| `UNP-AFFECTED` | Affected, no sign of exploitation | This version is affected, but nothing says it is exploited, it is not both internet-facing and severe, and the scores are below your thresholds. Fix it with your normal updates. | This rule puts an affected finding in: FYI (fyi). |
 | `UNP-EOL` | End of life | This release cycle no longer gets security fixes (endoflife.date). New vulnerabilities will not be patched, so plan an upgrade to a supported cycle. | This rule makes the finding: End of life (eol), one per stack item. |
 | `UNP-UNKNOWN-NO-RANGES` | No usable version data yet | No source says which versions are affected (new CVEs often wait for NVD analysis). It could matter, so check the advisory yourself. The finding goes away when data arrives. | This rule makes the verdict unknown; shown when the signals would make it Fix today or This week. |
 | `UNP-UNKNOWN-VERSION` | Version cannot be compared | Either your configured version or a version in the data does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml. | This rule makes the verdict unknown; shown when the signals would make it Fix today or This week. |
-| `UNP-CONFLICT` | Sources disagree | At least one source says this version is affected and another says it is not. When in doubt unpatched reports it. Read the evidence to see which source to trust. | This rule is added when sources disagree. |
+| `UNP-CONFLICT` | Sources disagree | One source says this version is affected and another says it is not. A source that only says "all versions" does not outweigh one with exact ranges, so the verdict is unknown. Read the evidence to see which source to trust. | This rule is added when sources disagree; it makes the verdict unknown when the only "affected" comes from a source that says all versions. |
 | `UNP-UNVERIFIED-PRODUCT` | Product not found in the data | The catalog's names for this product match no record in the database, so an empty result would not mean you are safe. Check the catalog entry or report it. | This rule makes a finding in: Unknown, so an empty result is never read as safe. |
 | `UNP-IGNORED` | Ignored on purpose | An ignore entry in unpatched.yml accepts this risk until its date. The finding is listed separately and comes back when the entry expires. | This rule moves the finding to the ignored list. |
 | `UNP-IGNORE-EXPIRED` | Ignore entry has expired | An ignore entry matched this finding but its date has passed, so the finding is back. Fix the issue or write a new entry with a new date. | This rule is added when an ignore entry ran out. |

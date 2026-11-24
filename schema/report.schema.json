@@ -36,6 +36,14 @@
         "$ref": "#/$defs/Finding"
       }
     },
+    "items": {
+      "description": "One recommendation per stack item, in stack order.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ItemSummary"
+      }
+    },
     "notes": {
       "description": "Problems with the run itself (stale data, unknown product ids, …).",
       "type": "array",
@@ -86,12 +94,50 @@
         }
       ]
     },
+    "BucketCounts": {
+      "description": "Findings per bucket.",
+      "type": "object",
+      "properties": {
+        "eol": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "fyi": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "now": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "unknown": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "week": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "now",
+        "week",
+        "eol",
+        "unknown",
+        "fyi"
+      ]
+    },
     "Cvss": {
       "type": "object",
       "properties": {
         "score": {
           "type": "number",
-          "format": "float"
+          "format": "double"
         },
         "vector": {
           "type": [
@@ -143,11 +189,11 @@
         },
         "percentile": {
           "type": "number",
-          "format": "float"
+          "format": "double"
         },
         "score": {
           "type": "number",
-          "format": "float"
+          "format": "double"
         }
       },
       "required": [
@@ -236,6 +282,13 @@
         },
         "exposure": {
           "$ref": "#/$defs/Exposure"
+        },
+        "fixed_after": {
+          "description": "Set when `fixed_in` is unknown and a source says every version up to\nand including this one is affected: the fix is a later release.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "fixed_in": {
           "description": "Smallest version that fixes it, when known.",
@@ -341,6 +394,77 @@
         "until"
       ]
     },
+    "ItemSummary": {
+      "description": "What to do about one stack item: the one upgrade that fixes the most.",
+      "type": "object",
+      "properties": {
+        "counts": {
+          "$ref": "#/$defs/BucketCounts"
+        },
+        "eol": {
+          "description": "The item's release cycle is past end of life.",
+          "type": "boolean"
+        },
+        "exposure": {
+          "$ref": "#/$defs/Exposure"
+        },
+        "fixes": {
+          "description": "Affected findings that `upgrade_to` fixes.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "item": {
+          "description": "The stack item's `name`, else product id or purl.",
+          "type": "string"
+        },
+        "key": {
+          "description": "The stack item's key (the part of a finding key before `/`).",
+          "type": "string"
+        },
+        "of": {
+          "description": "Affected findings (vulnerabilities, not EOL or data findings).",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "product": {
+          "type": "string"
+        },
+        "product_name": {
+          "type": "string"
+        },
+        "unfixed": {
+          "description": "Affected findings with no known fixed version.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "upgrade_to": {
+          "description": "The smallest version that fixes every finding with a known fix in this\nrelease cycle; the largest known fix when none is in the cycle.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "item",
+        "product",
+        "product_name",
+        "version",
+        "exposure",
+        "counts",
+        "fixes",
+        "of",
+        "eol",
+        "unfixed"
+      ]
+    },
     "KevEntry": {
       "type": "object",
       "properties": {
@@ -404,7 +528,7 @@
           "const": "UNP-CVSS"
         },
         {
-          "description": "Affected and internet-facing.",
+          "description": "Affected, internet-facing and CVSS at or above the exposed threshold.",
           "type": "string",
           "const": "UNP-EXPOSED"
         },

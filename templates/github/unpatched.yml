@@ -57,5 +57,6 @@ digest: monday
 # thresholds:
 #   epss_week: 0.05 # EPSS at or above this: fix this week
 #   cvss_week: 9.0 # CVSS at or above this: fix this week
+#   cvss_week_exposed: 7.0 # CVSS at or above this on an internet-facing item: fix this week
 #   stale_warn_days: 3 # warn when the database is older than this
 #   stale_fail_days: 7 # fail when the database is older than this

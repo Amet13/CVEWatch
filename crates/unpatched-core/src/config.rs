@@ -10,9 +10,12 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     /// File format version. Only `1` exists.
     pub version: u32,
+    /// The software you run, one entry per instance.
     pub stack: Vec<StackItem>,
+    /// Risks you accept on purpose, each with a reason and an end date.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ignore: Vec<Ignore>,
+    /// When a finding gets more urgent.
     #[serde(default)]
     pub thresholds: Thresholds,
     #[serde(default)]
@@ -49,6 +52,7 @@ pub struct StackItem {
     /// Required with `product`; taken from the purl otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    /// Whether the item is reachable from the internet. It can move a finding up a bucket.
     #[serde(default)]
     pub exposure: Exposure,
     /// Your label, e.g. "Office firewall". Tells instances apart.
@@ -60,11 +64,14 @@ pub struct StackItem {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Ignore {
+    /// The CVE (or advisory) id to ignore.
     pub cve: String,
     /// Only for this product id (or stack item `name`); all items when empty.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub product: Option<String>,
+    /// Why you accept the risk. Shown in the report.
     pub reason: String,
+    /// The last day the entry applies. After it the finding comes back.
     pub until: NaiveDate,
 }
 
@@ -73,10 +80,13 @@ pub struct Ignore {
 pub struct Thresholds {
     /// EPSS score at or above which an affected finding is at least `week`.
     #[serde(default = "default_epss")]
-    pub epss_week: f32,
+    pub epss_week: f64,
     /// CVSS base score at or above which an affected finding is at least `week`.
     #[serde(default = "default_cvss")]
-    pub cvss_week: f32,
+    pub cvss_week: f64,
+    /// CVSS base score at or above which an affected, internet-facing finding is at least `week`.
+    #[serde(default = "default_cvss_exposed")]
+    pub cvss_week_exposed: f64,
     /// Days after which the database counts as stale (warning).
     #[serde(default = "default_stale_warn")]
     pub stale_warn_days: u32,
@@ -85,11 +95,14 @@ pub struct Thresholds {
     pub stale_fail_days: u32,
 }
 
-fn default_epss() -> f32 {
+fn default_epss() -> f64 {
     0.05
 }
-fn default_cvss() -> f32 {
+fn default_cvss() -> f64 {
     9.0
+}
+fn default_cvss_exposed() -> f64 {
+    7.0
 }
 fn default_stale_warn() -> u32 {
     3
@@ -103,6 +116,7 @@ impl Default for Thresholds {
         Self {
             epss_week: default_epss(),
             cvss_week: default_cvss(),
+            cvss_week_exposed: default_cvss_exposed(),
             stale_warn_days: default_stale_warn(),
             stale_fail_days: default_stale_fail(),
         }
@@ -117,6 +131,7 @@ pub struct Notify {
     /// GitHub Issues in the repository the Action runs in.
     #[serde(default = "yes")]
     pub issues: bool,
+    /// Send messages to a Telegram chat.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub telegram: Option<Telegram>,
     /// Slack incoming webhook (URL in `UNPATCHED_SLACK_WEBHOOK`).
@@ -125,6 +140,7 @@ pub struct Notify {
     /// Discord webhook (URL in `UNPATCHED_DISCORD_WEBHOOK`).
     #[serde(default)]
     pub discord: bool,
+    /// Send messages to an ntfy topic.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ntfy: Option<Ntfy>,
     /// Generic JSON webhook (URL in `UNPATCHED_WEBHOOK_URL`).
@@ -159,7 +175,9 @@ pub struct Telegram {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Ntfy {
+    /// The ntfy topic to publish to.
     pub topic: String,
+    /// The ntfy server.
     #[serde(default = "default_ntfy_server")]
     pub server: String,
 }

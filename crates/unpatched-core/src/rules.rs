@@ -22,7 +22,7 @@ pub enum RuleId {
     /// CVSS at or above the threshold.
     #[serde(rename = "UNP-CVSS")]
     Cvss,
-    /// Affected and internet-facing.
+    /// Affected, internet-facing and CVSS at or above the exposed threshold.
     #[serde(rename = "UNP-EXPOSED")]
     Exposed,
     /// Affected, no other signal.
@@ -139,12 +139,12 @@ fn text(id: RuleId) -> (&'static str, &'static str) {
             "The CVSS base score is at or above your threshold (default 9.0). Severity alone does not mean it is being exploited, but it is serious enough to fix this week.",
         ),
         RuleId::Exposed => (
-            "Affected and reachable from the internet",
-            "This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.",
+            "Affected, reachable from the internet and severe",
+            "This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week.",
         ),
         RuleId::Affected => (
             "Affected, no sign of exploitation",
-            "This version is affected, but nothing says it is exploited, it is not internet-facing and the scores are below your thresholds. Fix it with your normal updates.",
+            "This version is affected, but nothing says it is exploited, it is not both internet-facing and severe, and the scores are below your thresholds. Fix it with your normal updates.",
         ),
         RuleId::Eol => (
             "End of life",
@@ -160,7 +160,7 @@ fn text(id: RuleId) -> (&'static str, &'static str) {
         ),
         RuleId::Conflict => (
             "Sources disagree",
-            "At least one source says this version is affected and another says it is not. When in doubt unpatched reports it. Read the evidence to see which source to trust.",
+            "One source says this version is affected and another says it is not. A source that only says \"all versions\" does not outweigh one with exact ranges, so the verdict is unknown. Read the evidence to see which source to trust.",
         ),
         RuleId::UnverifiedProduct => (
             "Product not found in the data",

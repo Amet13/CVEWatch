@@ -1,4 +1,4 @@
-description: The same finding is fyi when internal and week when internet-facing.
+description: The same finding is fyi when internal and week when internet-facing and CVSS is 7.0 or more.
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -26,6 +26,9 @@ data:
   - id: CVE-2026-0001
     summary: FortiOS flaw CVE-2026-0001
     published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.0
     ranges:
     - source: nvd
       product: fortios

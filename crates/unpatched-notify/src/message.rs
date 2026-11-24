@@ -3,11 +3,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use chrono::{DateTime, Datelike, Utc};
-use unpatched_core::{Bucket, Finding, Report, Summary};
+use unpatched_core::{Bucket, Finding, ItemSummary, Report, Summary};
 
 use crate::render::{
     BUCKETS, bucket_emoji, bucket_label, db_line, escape_discord, escape_slack, escape_telegram,
-    heartbeat, subject,
+    heartbeat, item_advice, item_counts, item_emoji, item_subject, loose_cmp, short_title, subject,
 };
 use crate::state::DeliveryState;
 
@@ -56,6 +56,8 @@ pub struct Message {
     pub summary: Summary,
     /// The findings this message is about.
     pub findings: Vec<Finding>,
+    /// The stack items with findings, most urgent first (a digest lists these).
+    pub items: Vec<ItemSummary>,
     /// Keys that were not in the state at the last digest (shown as "new").
     pub new_keys: BTreeSet<String>,
     /// Keys of findings that are gone (for `Event::Resolved`).
@@ -72,6 +74,7 @@ impl Message {
             generated_at: report.generated_at,
             summary: report.summary.clone(),
             findings,
+            items: Vec::new(),
             new_keys: BTreeSet::new(),
             resolved: Vec::new(),
             footer: vec![heartbeat(report), db_line(report)],
@@ -89,6 +92,10 @@ impl Message {
     /// Everything that is open; findings not in `since` are marked new.
     pub fn digest(report: &Report, since: Option<&DeliveryState>) -> Self {
         let mut m = Self::base(Event::Digest, report, report.findings.clone());
+        m.items = crate::render::items_to_show(report)
+            .into_iter()
+            .cloned()
+            .collect();
         if let Some(s) = since {
             m.new_keys = m
                 .findings
@@ -131,9 +138,38 @@ impl Message {
         }
     }
 
+    /// A digest line per stack item: counts and the one upgrade that helps most.
+    fn item_lines(&self) -> Vec<(String, String)> {
+        self.items
+            .iter()
+            .map(|i| {
+                let mut text = format!("{}: {}", item_subject(i), item_counts(i));
+                if let Some(a) = item_advice(i) {
+                    text.push_str(" → ");
+                    text.push_str(&a);
+                }
+                if self
+                    .new_keys
+                    .iter()
+                    .any(|k| k.split_once('/').map_or(k.as_str(), |(item, _)| item) == i.key)
+                {
+                    text.push_str(" (new)");
+                }
+                (item_emoji(i).to_owned(), text)
+            })
+            .collect()
+    }
+
     /// The finding lines: one per stack item and bucket.
     fn lines(&self) -> Vec<(String, String)> {
         let mut out = Vec::new();
+        if self.event == Event::Digest {
+            out.extend(self.item_lines());
+            for key in &self.resolved {
+                out.push(("✅ Resolved".into(), key.clone()));
+            }
+            return out;
+        }
         for bucket in BUCKETS {
             let mut groups: BTreeMap<(String, String, String), Vec<&Finding>> = BTreeMap::new();
             for f in self.findings.iter().filter(|f| f.bucket == bucket) {
@@ -238,7 +274,10 @@ fn group_detail(bucket: Bucket, group: &[&Finding]) -> String {
         ),
         Bucket::Now | Bucket::Week | Bucket::Fyi => {
             let what = if n == 1 {
-                let id = first.vuln.clone().unwrap_or_else(|| first.title.clone());
+                let id = first
+                    .vuln
+                    .clone()
+                    .unwrap_or_else(|| short_title(&first.title));
                 if first.signals.kev.is_some() {
                     format!("{id}, exploited")
                 } else {
@@ -247,9 +286,10 @@ fn group_detail(bucket: Bucket, group: &[&Finding]) -> String {
             } else {
                 plural(n, "advisory", "advisories")
             };
-            match best_fix(group) {
-                Some(v) => format!("{what}, upgrade to {v}+"),
-                None => format!("{what}, no fixed version known yet"),
+            match (best_fix(group), best_after(group)) {
+                (Some(v), _) => format!("{what}, upgrade to {v}+"),
+                (None, Some(a)) => format!("{what}, upgrade to a release after {a}"),
+                (None, None) => format!("{what}, no fixed version known yet"),
             }
         }
     };
@@ -273,14 +313,13 @@ fn best_fix(group: &[&Finding]) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn loose_cmp(a: &str, b: &str) -> std::cmp::Ordering {
-    let parts = |s: &str| -> Vec<u64> {
-        s.split(|c: char| !c.is_ascii_digit())
-            .filter(|p| !p.is_empty())
-            .map(|p| p.parse().unwrap_or(0))
-            .collect()
-    };
-    parts(a).cmp(&parts(b))
+/// The highest `fixed_after` of the group, when no finding has a fix.
+fn best_after(group: &[&Finding]) -> Option<String> {
+    group
+        .iter()
+        .filter_map(|f| f.fixed_after.as_deref())
+        .max_by(|a, b| loose_cmp(a, b))
+        .map(str::to_owned)
 }
 
 #[cfg(test)]

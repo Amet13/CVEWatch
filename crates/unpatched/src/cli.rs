@@ -53,6 +53,10 @@ pub struct Cli {
     #[arg(long, global = true, value_enum, default_value_t = ColorArg::Auto, value_name = "WHEN")]
     pub color: ColorArg,
 
+    /// Pretend it is this time (RFC 3339). For tests and docs.
+    #[arg(long, global = true, hide = true, value_name = "TIME")]
+    pub now: Option<String>,
+
     #[command(subcommand)]
     pub command: Command,
 }
@@ -140,10 +144,6 @@ pub struct CheckArgs {
     /// Do not fail when the database is older than `stale_fail_days`.
     #[arg(long)]
     pub allow_stale: bool,
-
-    /// Pretend it is this time (RFC 3339). For tests.
-    #[arg(long, hide = true, value_name = "TIME")]
-    pub now: Option<String>,
 }
 
 #[derive(Debug, Args)]
@@ -166,7 +166,10 @@ pub enum CatalogCommand {
         kind: Option<KindArg>,
     },
     /// Show one product (id or alias).
-    Show { id: String },
+    Show {
+        /// A product id or alias, like `fortios` or `fortigate`.
+        id: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -219,4 +222,36 @@ pub enum DbCommand {
     },
     /// Ask every source for one known item; fails when any source fails.
     SourcesHealth,
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::CommandFactory;
+
+    use super::Cli;
+
+    fn walk(cmd: &clap::Command, path: &str, problems: &mut Vec<String>) {
+        let name = format!("{path} {}", cmd.get_name());
+        if cmd.get_about().is_none() && !path.is_empty() {
+            problems.push(format!("{name}: no description"));
+        }
+        for a in cmd.get_arguments() {
+            if a.is_hide_set() || matches!(a.get_id().as_str(), "help" | "version") {
+                continue;
+            }
+            if a.get_help().is_none() {
+                problems.push(format!("{name}: --{} has no help line", a.get_id()));
+            }
+        }
+        for sub in cmd.get_subcommands() {
+            walk(sub, name.trim(), problems);
+        }
+    }
+
+    #[test]
+    fn every_command_and_argument_has_a_help_line() {
+        let mut problems = Vec::new();
+        walk(&Cli::command(), "", &mut problems);
+        assert!(problems.is_empty(), "{}", problems.join("\n"));
+    }
 }

@@ -30,6 +30,9 @@ $ unpatched check --format markdown
 
 2 findings to look at. 🟢 1 checked, nothing else affects you
 
+- 🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
+- ⚫ Nextcloud 29.0.3  1 eol  →  upgrade to a supported release
+
 | Bucket | Findings |
 | --- | ---: |
 | 🔴 Fix today | 1 |
@@ -56,8 +59,8 @@ Database: built 2026-11-23 12:00 UTC, 0 days old
 
 ### Notes
 
-- stack[2]: unknown product "postgresql". Run `unpatched catalog list` to see the ids.
-- stack[3]: unknown product "home-assistant". Run `unpatched catalog list` to see the ids.
+- stack[2]: the database has no data for product "postgresql" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
+- stack[3]: the database has no data for product "home-assistant" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
 ```
 
 <!-- generated:end -->

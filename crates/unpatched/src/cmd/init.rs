@@ -49,7 +49,7 @@ pub fn run(ctx: &Ctx, args: &InitArgs) -> Res<u8> {
 fn workflow_path(config: &Path) -> PathBuf {
     let dir = match config.parent() {
         Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
-        _ => PathBuf::from("."),
+        _ => PathBuf::new(),
     };
     dir.join(".github").join("workflows").join("unpatched.yml")
 }

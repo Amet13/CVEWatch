@@ -35,8 +35,17 @@ expect:                          # every finding that must be reported, and no o
     rules: [UNP-KEV]             # optional: the exact rule ids, in order
     fixed_in: 7.2.7              # optional: a version, or `none`
     latest_in_cycle: 7.2.11      # optional: a version, or `none`
+    fixed_after: 9.8             # optional: a version, or `none` (an inclusive upper bound with no fix named)
     title_contains: (disputed)   # optional
 expect_ignored: []               # findings an `ignore` entry covers (same fields as expect)
+expect_items:                    # the per-item recommendation (only the items and fields listed are checked)
+  - key: fortios                 # the stack item's key
+    upgrade_to: 7.2.9            # a version, or `none`
+    fixes: 2                     # affected findings that version fixes
+    of: 4                        # affected findings
+    unfixed: 1                   # affected findings with no known fix
+    eol: false
+    now: 1                       # findings in the now bucket (also: week)
 absent: []                       # keys that must not be reported at all (also not as ignored)
 notes_contain: []                # pieces of text that must appear in the report's notes
 ```

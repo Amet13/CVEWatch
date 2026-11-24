@@ -14,10 +14,17 @@ error is a missed vulnerability.
 Every source is evaluated on its own, then the verdicts are combined:
 
 - `affected` if any source with a parseable range says the version is inside it.
+  An affected verdict is *weak* when it came only from an `all versions`
+  constraint (no specific range or exact version matched), and *specific*
+  otherwise. A specific affected verdict from any source wins.
 - `not-affected` only if at least one source has data and every source with
   data says the version is outside its ranges. This is the evidence rule: no
   data is never "not affected".
 - `fixed` if the version was inside a range and is at or above the fix.
+- `unknown` with rule `UNP-CONFLICT` when every affected verdict is weak and a
+  source with specific ranges or exact versions says the version is outside
+  them. A record that says "affected, except these exact versions" must not
+  outweigh real ranges that exclude the version.
 - Otherwise `unknown`, with the reason (no ranges yet, unparseable version, conflict).
 
 Conflicts between sources are listed by `unpatched explain`. When in doubt,

@@ -1,5 +1,5 @@
-//! GitHub Issues: one issue per finding, plus one pinned status issue that also
-//! holds the delivery state. Needs only `issues: write`.
+//! GitHub Issues: one issue per stack item (not per finding, which would be
+//! spam), plus one pinned status issue that also holds the delivery state. Needs only `issues: write`.
 //!
 //! Environment: `GITHUB_TOKEN`, `GITHUB_REPOSITORY` (`owner/name`) and
 //! `GITHUB_API_URL` (default `https://api.github.com`).
@@ -11,11 +11,14 @@ use std::time::Duration;
 use reqwest::Method;
 use reqwest::blocking::Client;
 use serde_json::{Value, json};
-use unpatched_core::{Bucket, Finding, Report};
+use unpatched_core::{Bucket, ItemSummary, Report};
 
 use crate::error::{Error, Result};
 use crate::http::{Secret, check, client, http_err};
-use crate::render::{markdown_issue, markdown_status, parse_finding_marker, parse_state_block};
+use crate::render::{
+    issue_bucket, issue_count, markdown_item_issue, markdown_status, parse_item_marker,
+    parse_state_block,
+};
 use crate::state::{DeliveryState, StateStore};
 
 pub const DEFAULT_API_URL: &str = "https://api.github.com";
@@ -67,7 +70,7 @@ pub struct IssueInfo {
     pub title: String,
     pub body: String,
     pub labels: Vec<String>,
-    /// The finding key from the hidden marker.
+    /// The stack item key from the hidden marker.
     pub key: Option<String>,
 }
 
@@ -81,14 +84,14 @@ impl IssueInfo {
     }
 }
 
-/// What a sync did, by finding key and issue number.
+/// What a sync did, by stack item key and issue number.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct IssueSync {
     pub created: Vec<(String, u64)>,
     pub updated: Vec<(String, u64)>,
     pub closed: Vec<(String, u64)>,
     pub reopened: Vec<(String, u64)>,
-    /// A person closed the issue and the finding is still there.
+    /// A person closed the issue and the item still has findings.
     pub closed_but_affected: Vec<(String, u64)>,
     pub unchanged: Vec<(String, u64)>,
     /// Problems with single issues; the sync went on.
@@ -96,7 +99,7 @@ pub struct IssueSync {
 }
 
 impl IssueSync {
-    /// The issue number for every finding that has one now.
+    /// The issue number for every stack item that has one now.
     pub fn issue_numbers(&self) -> BTreeMap<String, u64> {
         self.created
             .iter()
@@ -310,8 +313,9 @@ impl GitHub {
 
     /// Make the issues match the report: create, update, close, reopen.
     ///
-    /// Only `now`, `week`, `eol` and `unknown` findings get new issues; `fyi`
-    /// findings live in the status issue (and keep an issue they already had).
+    /// One issue per stack item that has a `now`, `week`, `eol` or `unknown`
+    /// finding. `fyi` findings live in the status issue only. An item with
+    /// none of those left has its issue closed.
     pub fn sync_issues(&self, report: &Report) -> Result<IssueSync> {
         let issues = self.list_issues()?;
         let mut by_key: HashMap<&str, &IssueInfo> = HashMap::new();
@@ -329,22 +333,23 @@ impl GitHub {
         }
 
         let mut sync = IssueSync::default();
-        let current: BTreeSet<&str> = report.findings.iter().map(|f| f.key.as_str()).collect();
-        for f in &report.findings {
-            let result = match by_key.get(f.key.as_str()) {
-                None if f.bucket == Bucket::Fyi => continue,
-                None => self.create_issue(f, report, &mut sync),
-                Some(issue) => self.refresh_issue(f, issue, report, &mut sync),
+        let wanted: Vec<&ItemSummary> =
+            report.items.iter().filter(|i| issue_count(i) > 0).collect();
+        let current: BTreeSet<&str> = wanted.iter().map(|i| i.key.as_str()).collect();
+        for item in wanted {
+            let result = match by_key.get(item.key.as_str()) {
+                None => self.create_issue(item, report, &mut sync),
+                Some(issue) => self.refresh_issue(item, issue, report, &mut sync),
             };
             if let Err(e) = result {
-                sync.errors.push(format!("{}: {e}", f.key));
+                sync.errors.push(format!("{}: {e}", item.key));
             }
         }
         for (key, issue) in &by_key {
             if !issue.open || current.contains(key) {
                 continue;
             }
-            match self.close_issue(key, issue, report) {
+            match self.close_issue(issue) {
                 Ok(()) => sync.closed.push(((*key).to_owned(), issue.number)),
                 Err(e) => sync.errors.push(format!("{key}: {e}")),
             }
@@ -354,12 +359,18 @@ impl GitHub {
         Ok(sync)
     }
 
-    fn create_issue(&self, f: &Finding, report: &Report, sync: &mut IssueSync) -> Result<()> {
-        let (title, body) = markdown_issue(f, report);
+    fn create_issue(
+        &self,
+        item: &ItemSummary,
+        report: &Report,
+        sync: &mut IssueSync,
+    ) -> Result<()> {
+        let (title, body) = markdown_item_issue(item, report);
+        let bucket = issue_bucket(item).unwrap_or(Bucket::Unknown);
         let payload = json!({
             "title": title,
             "body": body,
-            "labels": [LABEL_BASE, bucket_label_name(f.bucket)],
+            "labels": [LABEL_BASE, bucket_label_name(bucket)],
         });
         let v = self.write(
             &Method::POST,
@@ -368,30 +379,31 @@ impl GitHub {
             &format!("create issue {title:?}"),
         )?;
         sync.created
-            .push((f.key.clone(), v["number"].as_u64().unwrap_or(0)));
+            .push((item.key.clone(), v["number"].as_u64().unwrap_or(0)));
         Ok(())
     }
 
     fn refresh_issue(
         &self,
-        f: &Finding,
+        item: &ItemSummary,
         issue: &IssueInfo,
         report: &Report,
         sync: &mut IssueSync,
     ) -> Result<()> {
-        let (title, body) = markdown_issue(f, report);
+        let (title, body) = markdown_item_issue(item, report);
+        let bucket = issue_bucket(item).unwrap_or(Bucket::Unknown);
         let mut labels: Vec<String> = issue
             .labels
             .iter()
             .filter(|l| !is_bucket_label(l))
             .cloned()
             .collect();
-        for want in [LABEL_BASE, bucket_label_name(f.bucket)] {
+        for want in [LABEL_BASE, bucket_label_name(bucket)] {
             if !labels.iter().any(|l| l == want) {
                 labels.push(want.to_owned());
             }
         }
-        let key = f.key.clone();
+        let key = item.key.clone();
         let n = issue.number;
         if !issue.open {
             if !issue.closed_by_unpatched() {
@@ -410,7 +422,7 @@ impl GitHub {
             )?;
             self.comment(
                 n,
-                "unpatched: this finding is back, so the issue is open again.",
+                "unpatched: this item has findings again, so the issue is open again.",
             )?;
             sync.reopened.push((key, n));
             return Ok(());
@@ -434,22 +446,12 @@ impl GitHub {
         Ok(())
     }
 
-    fn close_issue(&self, key: &str, issue: &IssueInfo, report: &Report) -> Result<()> {
+    fn close_issue(&self, issue: &IssueInfo) -> Result<()> {
         let n = issue.number;
-        let note = match report.ignored.iter().find(|f| f.key == key) {
-            Some(f) => {
-                let why = f.ignored.as_ref().map_or(String::new(), |i| {
-                    format!(" ({} until {})", i.reason, i.until)
-                });
-                format!(
-                    "unpatched: this finding is now ignored in unpatched.yml{why}. Closing the issue."
-                )
-            }
-            None => "unpatched: this finding is gone. Either unpatched.yml now shows a version \
-                     that is not affected, or the advisory was withdrawn. Closing the issue."
-                .to_owned(),
-        };
-        self.comment(n, &note)?;
+        let note = "unpatched: this stack item has nothing left to fix. Either unpatched.yml now \
+                    shows a fixed version, an ignore entry covers what is left, or the item was \
+                    removed from the stack. Closing the issue.";
+        self.comment(n, note)?;
         let body = format!("{}\n\n{CLOSED_MARKER}\n", issue.body.trim_end());
         self.write(
             &Method::PATCH,
@@ -546,7 +548,7 @@ fn parse_issue(v: &Value) -> Option<IssueInfo> {
         node_id: v["node_id"].as_str().unwrap_or_default().to_owned(),
         open: v["state"].as_str() == Some("open"),
         title: v["title"].as_str().unwrap_or_default().to_owned(),
-        key: parse_finding_marker(&body),
+        key: parse_item_marker(&body),
         body,
         labels: v["labels"]
             .as_array()
@@ -588,6 +590,8 @@ impl StateStore for IssuesStore {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+
+    use unpatched_core::Finding;
 
     use super::*;
     use crate::fixture::{fortios, report, sample_report};
@@ -684,8 +688,9 @@ mod tests {
             .with_write_delay(Duration::ZERO)
     }
 
-    fn existing(r: &Report, f: &Finding, number: u64, open: bool, by_unpatched: bool) -> Value {
-        let (title, mut body) = markdown_issue(f, r);
+    fn existing(r: &Report, key: &str, number: u64, open: bool, by_unpatched: bool) -> Value {
+        let item = r.items.iter().find(|i| i.key == key).unwrap();
+        let (title, mut body) = markdown_item_issue(item, r);
         if by_unpatched {
             body = format!("{body}\n{CLOSED_MARKER}\n");
         }
@@ -693,7 +698,10 @@ mod tests {
             "number": number, "node_id": format!("NODE{number}"),
             "state": if open { "open" } else { "closed" },
             "title": title, "body": body,
-            "labels": [{"name": LABEL_BASE}, {"name": bucket_label_name(f.bucket)}],
+            "labels": [
+                {"name": LABEL_BASE},
+                {"name": bucket_label_name(issue_bucket(item).unwrap())},
+            ],
         })
     }
 
@@ -726,26 +734,53 @@ mod tests {
     }
 
     #[test]
-    fn creates_issues_for_new_findings_except_fyi() {
+    fn creates_one_issue_per_item_except_fyi_only_items() {
         let r = sample_report();
         let (srv, st) = fake(vec![], &[]);
         let sync = gh(&srv).sync_issues(&r).unwrap();
-        assert_eq!(sync.created.len(), 5, "fyi gets no issue");
+        // 5 stack items; redis only has an fyi finding, so it gets no issue.
+        assert_eq!(sync.created.len(), 4, "{:?}", sync.created);
         assert!(sync.errors.is_empty());
         let f = st.lock().unwrap();
         let first = &f.issues[0];
-        assert!(first["title"].as_str().unwrap().starts_with("🔴 Fix today"));
+        assert!(
+            first["title"]
+                .as_str()
+                .unwrap()
+                .starts_with("🔴 FortiOS 7.2.5")
+        );
         assert!(
             first["body"]
                 .as_str()
                 .unwrap()
-                .contains("<!-- unpatched:finding=office-firewall/CVE-2024-21762 -->")
+                .contains("<!-- unpatched:item=office-firewall -->")
         );
         let auth = srv.requests()[0]
             .header("authorization")
             .unwrap()
             .to_owned();
         assert_eq!(auth, "Bearer ghs_SECRET");
+    }
+
+    #[test]
+    fn many_findings_make_one_issue() {
+        let findings: Vec<Finding> = (0..220)
+            .map(|i| {
+                let mut f = fortios();
+                f.key = format!("office-firewall/CVE-2026-{i:04}");
+                f.vuln = Some(format!("CVE-2026-{i:04}"));
+                f.bucket = Bucket::Week;
+                f
+            })
+            .collect();
+        let r = report(findings);
+        let (srv, st) = fake(vec![], &[]);
+        let sync = gh(&srv).sync_issues(&r).unwrap();
+        assert_eq!(sync.created.len(), 1);
+        let f = st.lock().unwrap();
+        assert_eq!(f.issues.len(), 1);
+        let body = f.issues[0]["body"].as_str().unwrap();
+        assert!(body.contains("…and 160 more (run `unpatched check` for all)."));
     }
 
     #[test]
@@ -756,31 +791,26 @@ mod tests {
         let before = writes(&srv).len();
         let sync = gh(&srv).sync_issues(&r).unwrap();
         assert_eq!(writes(&srv).len(), before, "no writes");
-        assert_eq!(sync.unchanged.len(), 5);
+        assert_eq!(sync.unchanged.len(), 4);
         assert!(sync.created.is_empty() && sync.updated.is_empty() && sync.closed.is_empty());
     }
 
     #[test]
-    fn bucket_change_updates_title_and_labels() {
+    fn new_finding_updates_the_item_issue_and_labels() {
         let mut r = sample_report();
-        let f = r
-            .findings
-            .iter()
-            .find(|f| f.bucket == Bucket::Week)
-            .unwrap()
-            .clone();
-        let old = existing(&r, &f, 7, true, false);
-        let mut moved = f.clone();
-        moved.bucket = Bucket::Now;
-        r.findings = vec![moved];
+        let old = existing(&r, "nextcloud", 7, true, false);
+        // Only the nextcloud item remains, and one finding became `now`.
+        r.findings.retain(|f| f.item_key() == "nextcloud");
+        r.findings[0].bucket = Bucket::Now;
+        r.items = report(r.findings.clone()).items;
         let mut issue = old;
         issue["labels"] =
             json!([{"name": "unpatched"}, {"name": "unpatched:week"}, {"name": "customer-x"}]);
         let (srv, st) = fake(vec![issue], &[]);
         let sync = gh(&srv).sync_issues(&r).unwrap();
-        assert_eq!(sync.updated, vec![(f.key.clone(), 7)]);
+        assert_eq!(sync.updated, vec![("nextcloud".to_owned(), 7)]);
         let got = st.lock().unwrap().issues[0].clone();
-        assert!(got["title"].as_str().unwrap().starts_with("🔴 Fix today"));
+        assert!(got["title"].as_str().unwrap().starts_with("🔴 Nextcloud"));
         let labels: Vec<&str> = got["labels"]
             .as_array()
             .unwrap()
@@ -792,20 +822,19 @@ mod tests {
     }
 
     #[test]
-    fn resolved_findings_are_closed_with_a_comment() {
+    fn items_with_nothing_left_are_closed_with_a_comment() {
         let r = sample_report();
-        let gone = fortios();
-        let (srv, st) = fake(vec![existing(&r, &gone, 3, true, false)], &[]);
+        let (srv, st) = fake(vec![existing(&r, "office-firewall", 3, true, false)], &[]);
         let quiet = report(vec![]);
         let sync = gh(&srv).sync_issues(&quiet).unwrap();
-        assert_eq!(sync.closed, vec![(gone.key.clone(), 3)]);
+        assert_eq!(sync.closed, vec![("office-firewall".to_owned(), 3)]);
         let reqs = srv.requests();
         let comment = reqs.iter().find(|q| q.path.ends_with("/comments")).unwrap();
         assert!(
             comment.json()["body"]
                 .as_str()
                 .unwrap()
-                .contains("not affected")
+                .contains("nothing left to fix")
         );
         let issue = st.lock().unwrap().issues[0].clone();
         assert_eq!(issue["state"], "closed");
@@ -813,42 +842,26 @@ mod tests {
     }
 
     #[test]
-    fn ignored_findings_say_so_when_closed() {
-        let mut r = sample_report();
-        let ign = r.ignored[0].clone();
-        let (srv, _st) = fake(vec![existing(&r, &ign, 4, true, false)], &[]);
-        r.findings.clear();
-        gh(&srv).sync_issues(&r).unwrap();
-        let reqs = srv.requests();
-        let comment = reqs.iter().find(|q| q.path.ends_with("/comments")).unwrap();
-        assert!(
-            comment.json()["body"]
-                .as_str()
-                .unwrap()
-                .contains("app disabled")
-        );
+    fn an_item_that_only_has_fyi_left_is_closed() {
+        let r = sample_report();
+        let (srv, _st) = fake(vec![existing(&r, "office-firewall", 3, true, false)], &[]);
+        let mut now_fyi = fortios();
+        now_fyi.bucket = Bucket::Fyi;
+        let sync = gh(&srv).sync_issues(&report(vec![now_fyi])).unwrap();
+        assert_eq!(sync.closed.len(), 1);
     }
 
     #[test]
     fn reopens_only_what_unpatched_closed() {
         let r = sample_report();
-        let a = fortios();
-        let b = r
-            .findings
-            .iter()
-            .find(|f| f.bucket == Bucket::Eol)
-            .unwrap()
-            .clone();
         let issues = vec![
-            existing(&r, &a, 1, false, true),
-            existing(&r, &b, 2, false, false),
+            existing(&r, "office-firewall", 1, false, true),
+            existing(&r, "postgresql", 2, false, false),
         ];
         let (srv, st) = fake(issues, &[]);
-        let mut only = r.clone();
-        only.findings = vec![a.clone(), b.clone()];
-        let sync = gh(&srv).sync_issues(&only).unwrap();
-        assert_eq!(sync.reopened, vec![(a.key, 1)]);
-        assert_eq!(sync.closed_but_affected, vec![(b.key, 2)]);
+        let sync = gh(&srv).sync_issues(&r).unwrap();
+        assert_eq!(sync.reopened, vec![("office-firewall".to_owned(), 1)]);
+        assert_eq!(sync.closed_but_affected, vec![("postgresql".to_owned(), 2)]);
         let f = st.lock().unwrap();
         assert_eq!(f.issues[0]["state"], "open");
         assert_eq!(f.issues[1]["state"], "closed", "a human's decision stands");
@@ -862,15 +875,16 @@ mod tests {
 
     #[test]
     fn pagination_finds_issues_on_later_pages() {
-        let r = report(vec![]);
+        let r = sample_report();
         let mut issues = Vec::new();
         for n in 1..=150u64 {
-            let mut f = fortios();
-            f.key = format!("host{n}/CVE-1");
-            issues.push(existing(&r, &f, n, true, false));
+            let mut v = existing(&r, "office-firewall", n, true, false);
+            let body = format!("body\n\n<!-- unpatched:item=host{n} -->\n");
+            v["body"] = json!(body);
+            issues.push(v);
         }
         let (srv, _st) = fake(issues, &[]);
-        let sync = gh(&srv).sync_issues(&r).unwrap();
+        let sync = gh(&srv).sync_issues(&report(vec![])).unwrap();
         assert_eq!(sync.closed.len(), 150);
     }
 
@@ -882,7 +896,7 @@ mod tests {
         g.ensure_labels().unwrap();
         let sync = g.sync_issues(&r).unwrap();
         g.update_status(&r, &DeliveryState::default()).unwrap();
-        assert_eq!(sync.created.len(), 5);
+        assert_eq!(sync.created.len(), 4);
         assert!(writes(&srv).is_empty());
         let plan = g.planned_actions();
         assert!(plan.iter().any(|a| a.starts_with("create issue")));

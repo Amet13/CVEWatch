@@ -80,7 +80,6 @@ expect:
   verdict: affected
   rules:
   - UNP-KEV
-  - UNP-EXPOSED
   fixed_in: 7.2.7
 - key: nextcloud/CVE-2026-0200
   bucket: fyi

@@ -59,11 +59,11 @@ thresholds:
 | Key | Type | Required | Default | What it does |
 | --- | --- | --- | --- | --- |
 | `version` | integer | yes | none | File format version. Only `1` exists. |
-| `stack` | list of `stack[]` | yes | none | The software you run, one entry per instance. See [The stack](#the-stack). |
-| `ignore` | list of `ignore[]` | no | none | Risks you accept on purpose. See [Ignore entries](#ignore-entries). |
+| `stack` | list of `stack[]` | yes | none | The software you run, one entry per instance. |
+| `ignore` | list of `ignore[]` | no | none | Risks you accept on purpose, each with a reason and an end date. |
 | `notify` | object (see `notify`) | no | none | Channels. Secrets (tokens, webhook URLs) never go here: they come from environment variables named in the docs (`UNPATCHED_TELEGRAM_TOKEN`, …). |
 | `digest` | string | no | `monday` | Day of the weekly digest (`monday` … `sunday`), or `daily`. |
-| `thresholds` | object (see `thresholds`) | no | none | When a finding gets more urgent. See [Thresholds](#thresholds). |
+| `thresholds` | object (see `thresholds`) | no | none | When a finding gets more urgent. |
 
 ### `stack[]`
 
@@ -122,6 +122,7 @@ Channels. Secrets (tokens, webhook URLs) never go here: they come from environme
 | `cvss_week` | number | no | `9.0` | CVSS base score at or above which an affected finding is at least `week`. |
 | `stale_warn_days` | integer | no | `3` | Days after which the database counts as stale (warning). |
 | `stale_fail_days` | integer | no | `7` | Days after which a run fails because the data is too old. |
+| `cvss_week_exposed` | number | no | `7.0` | CVSS base score at or above which an affected, internet-facing finding is at least `week`. |
 
 Unknown keys are an error: `additionalProperties` is `false` everywhere, so a typo is caught instead of ignored. The same schema is in `schema/unpatched.schema.json` and is printed by `unpatched schema config`.
 
@@ -188,6 +189,7 @@ Every number has a default; set only what you want to change.
 thresholds:
   epss_week: 0.05
   cvss_week: 9.0
+  cvss_week_exposed: 7.0
   stale_warn_days: 3
   stale_fail_days: 7
 ```
@@ -196,6 +198,7 @@ thresholds:
   least "this week" (rule `UNP-EPSS`). EPSS is the estimated probability of
   exploitation in the next 30 days, from 0 to 1.
 - `cvss_week`: the same for the CVSS base score (rule `UNP-CVSS`).
+- `cvss_week_exposed`: the CVSS base score at or above which an internet-facing item's finding is `week` (rule `UNP-EXPOSED`, default 7.0).
 - `stale_warn_days`: when the database is older than this, the report has a
   finding that says so (rule `UNP-STALE-DATA`).
 - `stale_fail_days`: when it is older than this, the run stops with exit code 3.

@@ -72,13 +72,13 @@ pub fn parse_epss(bytes: &[u8]) -> Result<EpssFile> {
         let cve = normalize_cve(&rec[0]).ok_or_else(|| {
             SourceError::parse("the EPSS file", format!("bad CVE id {:?}", &rec[0]))
         })?;
-        let score: f32 = rec[1].parse().map_err(|_| {
+        let score: f64 = rec[1].parse().map_err(|_| {
             SourceError::parse(
                 "the EPSS file",
                 format!("bad score for {cve}: {:?}", &rec[1]),
             )
         })?;
-        let percentile: f32 = rec[2].parse().map_err(|_| {
+        let percentile: f64 = rec[2].parse().map_err(|_| {
             SourceError::parse(
                 "the EPSS file",
                 format!("bad percentile for {cve}: {:?}", &rec[2]),

@@ -70,6 +70,13 @@ fn main() -> ExitCode {
     }));
 
     let db = cli.db.clone().unwrap_or_else(unpatched_db::default_db_path);
+    let now = match ctx::parse_now(cli.now.as_deref()) {
+        Ok(n) => n,
+        Err(f) => {
+            eprintln!("{:?}", f.report);
+            return ExitCode::from(f.code);
+        }
+    };
     let ctx = Ctx {
         config: cli.config.clone(),
         db,
@@ -77,6 +84,7 @@ fn main() -> ExitCode {
         verbose: cli.verbose,
         quiet: cli.quiet,
         color: out_color,
+        now,
     };
     match cmd::run(&ctx, cli.command) {
         Ok(code) => ExitCode::from(code),

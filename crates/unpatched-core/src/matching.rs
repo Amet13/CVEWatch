@@ -4,10 +4,14 @@
 //!
 //! 1. Each source is judged on its own (`affected`, `not-affected` or
 //!    `unknown`) from the ranges it gave.
-//! 2. The verdicts are combined: `affected` if any source says so;
-//!    `not-affected` only if every source that has data says so and at least
-//!    one has data; otherwise `unknown`. Disagreement adds `UNP-CONFLICT`.
-//! 3. An affected finding goes to `now`, `week` or `fyi` by its signals. An
+//! 2. The verdicts are combined (ADR-0006): `affected` if any source says so
+//!    from a specific range or version; `not-affected` only if every source
+//!    that has data says so and at least one has data; otherwise `unknown`.
+//!    An affected verdict that came only from an `all versions` constraint is
+//!    weak: when a source with specific ranges says the version is outside
+//!    them and every affected verdict is weak, the result is `unknown` with
+//!    `UNP-CONFLICT`. Disagreement adds `UNP-CONFLICT`.
+//! 3. An affected finding goes to `now`, `week` or `fyi` by its signals (ADR-0008). An
 //!    `unknown` finding is kept (bucket `unknown`) only when the signals
 //!    would have made it `now` or `week` if confirmed. The others are dropped
 //!    and not counted anywhere: the data cannot say whether they matter, and
@@ -26,7 +30,8 @@ use crate::model::{
     VulnStatus, Vulnerability,
 };
 use crate::report::{
-    Bucket, Evidence, Finding, IgnoredBecause, REPORT_FORMAT, Report, Summary, Verdict,
+    Bucket, BucketCounts, Evidence, Finding, IgnoredBecause, ItemSummary, REPORT_FORMAT, Report,
+    Summary, Verdict,
 };
 use crate::rules::RuleId;
 use crate::version::{Scheme, VersionError, constraint_matches};
@@ -85,6 +90,7 @@ pub fn evaluate(
         notes: Vec::new(),
         not_affected: 0,
         keys_used: HashMap::new(),
+        items: Vec::new(),
     };
     let info = data.info();
     run.check_freshness(info.as_ref(), now);
@@ -103,6 +109,20 @@ struct Run<'a> {
     notes: Vec<String>,
     not_affected: usize,
     keys_used: HashMap<String, usize>,
+    items: Vec<ItemInfo>,
+}
+
+/// A stack item that was checked, kept to build its [`ItemSummary`].
+struct ItemInfo {
+    key: String,
+    item: String,
+    product: String,
+    product_name: String,
+    version: String,
+    exposure: Exposure,
+    scheme: Scheme,
+    /// The release cycle (endoflife.date) of the version, when known.
+    cycle: Option<String>,
 }
 
 impl Run<'_> {
@@ -135,6 +155,7 @@ impl Run<'_> {
             bucket: Bucket::Unknown,
             rules: vec![RuleId::StaleData],
             fixed_in: None,
+            fixed_after: None,
             latest_in_cycle: None,
             cvss: None,
             signals: Signals::default(),
@@ -167,7 +188,7 @@ impl Run<'_> {
             (Some(id), None) => {
                 let Some(entry) = self.data.product(id) else {
                     self.notes.push(format!(
-                        "{at}: unknown product {id:?}. Run `unpatched catalog list` to see the ids."
+                        "{at}: the database has no data for product {id:?} yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids."
                     ));
                     return;
                 };
@@ -272,6 +293,7 @@ impl Run<'_> {
                 bucket: Bucket::Unknown,
                 rules: vec![RuleId::UnverifiedProduct],
                 fixed_in: None,
+                fixed_after: None,
                 latest_in_cycle: None,
                 cvss: None,
                 signals: Signals::default(),
@@ -282,6 +304,16 @@ impl Run<'_> {
         }
 
         let cycle = find_cycle(&cycles, &target.version);
+        self.items.push(ItemInfo {
+            key: target.key.clone(),
+            item: target.display.clone(),
+            product: target.product.clone(),
+            product_name: target.product_name.clone(),
+            version: target.version.clone(),
+            exposure: target.exposure,
+            scheme: target.scheme.clone(),
+            cycle: cycle.map(|c| c.cycle.clone()),
+        });
         if let Some(c) = cycle {
             self.eol_finding(&target, c);
         }
@@ -325,6 +357,7 @@ impl Run<'_> {
             bucket: Bucket::Eol,
             rules: vec![RuleId::Eol],
             fixed_in: None,
+            fixed_after: None,
             latest_in_cycle: None,
             cvss: None,
             signals: Signals::default(),
@@ -373,8 +406,16 @@ impl Run<'_> {
             .collect();
 
         let any_affected = results.iter().any(|r| r.verdict == Verdict::Affected);
+        let strong_affected = results
+            .iter()
+            .any(|r| r.verdict == Verdict::Affected && !r.weak);
+        let any_not_affected = results.iter().any(|r| r.verdict == Verdict::NotAffected);
         let with_data: Vec<&SourceResult> = results.iter().filter(|r| r.has_data).collect();
-        let verdict = if any_affected {
+        // Weak "all versions" evidence does not beat a source with specific ranges.
+        let weak_conflict = any_affected && !strong_affected && any_not_affected;
+        let verdict = if weak_conflict {
+            Verdict::Unknown
+        } else if any_affected {
             Verdict::Affected
         } else if !with_data.is_empty()
             && with_data.iter().all(|r| r.verdict == Verdict::NotAffected)
@@ -387,7 +428,7 @@ impl Run<'_> {
             self.not_affected += 1;
             return;
         }
-        let conflict = any_affected && results.iter().any(|r| r.verdict == Verdict::NotAffected);
+        let conflict = any_affected && any_not_affected;
 
         let signals = self.signals_for(vuln);
         let th = &self.config.thresholds;
@@ -416,28 +457,35 @@ impl Run<'_> {
                 // Unknown and not urgent if confirmed: dropped (see module docs).
                 return;
             }
-            rules.push(
-                if version_err.is_some() || results.iter().any(|r| r.errored) {
-                    RuleId::UnknownVersion
-                } else {
-                    RuleId::UnknownNoRanges
-                },
-            );
+            if weak_conflict {
+                rules.push(RuleId::Conflict);
+            } else {
+                rules.push(
+                    if version_err.is_some() || results.iter().any(|r| r.errored) {
+                        RuleId::UnknownVersion
+                    } else {
+                        RuleId::UnknownNoRanges
+                    },
+                );
+            }
             rules.extend(&now_rules);
             rules.extend(&week_rules);
             Bucket::Unknown
         };
-        if conflict {
+        if conflict && !weak_conflict {
             rules.push(RuleId::Conflict);
         }
 
-        let (fixed_in, latest) = if verdict == Verdict::Affected {
-            (
-                smallest_fix(&target.scheme, &results),
-                latest_in_cycle.map(str::to_string),
-            )
+        let (fixed_in, fixed_after, latest) = if verdict == Verdict::Affected {
+            let fixed_in = smallest_fix(&target.scheme, &results);
+            let fixed_after = if fixed_in.is_none() {
+                largest_inclusive_end(&target.scheme, &results)
+            } else {
+                None
+            };
+            (fixed_in, fixed_after, latest_in_cycle.map(str::to_string))
         } else {
-            (None, None)
+            (None, None, None)
         };
 
         let mut title = if vuln.summary.trim().is_empty() {
@@ -462,6 +510,7 @@ impl Run<'_> {
             bucket,
             rules,
             fixed_in,
+            fixed_after,
             latest_in_cycle: latest,
             cvss: vuln.cvss.clone(),
             signals,
@@ -526,6 +575,11 @@ impl Run<'_> {
                 Bucket::Fyi => summary.fyi += 1,
             }
         }
+        let items = self
+            .items
+            .iter()
+            .map(|i| item_summary(i, &self.findings))
+            .collect();
         Report {
             format: REPORT_FORMAT,
             generated_at: now,
@@ -533,15 +587,128 @@ impl Run<'_> {
             summary,
             findings: self.findings,
             ignored: self.ignored,
+            items,
             notes: self.notes,
         }
+    }
+}
+
+fn release_parts(version: &str) -> Vec<&str> {
+    let v = version.trim();
+    let v = match v.strip_prefix(['v', 'V']) {
+        Some(rest) if rest.starts_with(|c: char| c.is_ascii_digit()) => rest,
+        _ => v,
+    };
+    v.split(['.', '-', '_', '+']).collect()
+}
+
+/// True when `version` starts with the components of `prefix`.
+fn has_release_prefix(version: &str, prefix: &[&str]) -> bool {
+    let parts = release_parts(version);
+    prefix.len() <= parts.len()
+        && prefix.iter().zip(&parts).all(|(a, b)| {
+            if !a.is_empty() && a.bytes().all(|c| c.is_ascii_digit()) {
+                // "9.6" matches "9.6p1": compare the leading number.
+                same_part(a, leading_number(b))
+            } else {
+                same_part(a, b)
+            }
+        })
+}
+
+fn leading_number(s: &str) -> &str {
+    let end = s
+        .bytes()
+        .position(|c| !c.is_ascii_digit())
+        .unwrap_or(s.len());
+    &s[..end]
+}
+
+/// The recommendation for one stack item (see [`ItemSummary`]).
+fn item_summary(info: &ItemInfo, findings: &[Finding]) -> ItemSummary {
+    let mine: Vec<&Finding> = findings
+        .iter()
+        .filter(|f| f.item_key() == info.key && f.key != "data/stale")
+        .collect();
+    let mut counts = BucketCounts::default();
+    for f in &mine {
+        match f.bucket {
+            Bucket::Now => counts.now += 1,
+            Bucket::Week => counts.week += 1,
+            Bucket::Eol => counts.eol += 1,
+            Bucket::Unknown => counts.unknown += 1,
+            Bucket::Fyi => counts.fyi += 1,
+        }
+    }
+    let affected: Vec<&Finding> = mine
+        .iter()
+        .copied()
+        .filter(|f| f.vuln.is_some() && f.verdict == Verdict::Affected)
+        .collect();
+    let fixes: Vec<&str> = affected
+        .iter()
+        .filter_map(|f| f.fixed_in.as_deref())
+        .collect();
+    let prefix_owned: Vec<String> = match &info.cycle {
+        Some(c) => c.trim().split('.').map(str::to_string).collect(),
+        None => release_parts(&info.version)
+            .into_iter()
+            .take(2)
+            .map(|p| leading_number(p).to_string())
+            .filter(|p| !p.is_empty())
+            .collect(),
+    };
+    let prefix: Vec<&str> = prefix_owned.iter().map(String::as_str).collect();
+    let largest = |list: &[&str]| -> Option<String> {
+        let mut best: Option<&str> = None;
+        for v in list {
+            best = match best {
+                Some(b) if info.scheme.compare(v, b) != Ok(std::cmp::Ordering::Greater) => Some(b),
+                None | Some(_) if info.scheme.validate(v).is_ok() => Some(v),
+                other => other,
+            };
+        }
+        best.map(str::to_string)
+    };
+    let in_cycle: Vec<&str> = fixes
+        .iter()
+        .copied()
+        .filter(|v| has_release_prefix(v, &prefix))
+        .collect();
+    let upgrade_to = largest(&in_cycle).or_else(|| largest(&fixes));
+    let fixed_count = upgrade_to.as_deref().map_or(0, |u| {
+        fixes
+            .iter()
+            .filter(|v| {
+                info.scheme
+                    .compare(v, u)
+                    .is_ok_and(|o| o != std::cmp::Ordering::Greater)
+            })
+            .count()
+    });
+    ItemSummary {
+        key: info.key.clone(),
+        item: info.item.clone(),
+        product: info.product.clone(),
+        product_name: info.product_name.clone(),
+        version: info.version.clone(),
+        exposure: info.exposure,
+        counts,
+        upgrade_to,
+        fixes: fixed_count,
+        of: affected.len(),
+        eol: mine.iter().any(|f| f.bucket == Bucket::Eol),
+        unfixed: affected
+            .iter()
+            .filter(|f| f.fixed_in.is_none() && f.fixed_after.is_none())
+            .count(),
     }
 }
 
 /// Rules that would put an affected finding in `now`, and in `week`.
 fn signal_rules(
     signals: &Signals,
-    cvss: Option<f32>,
+    cvss: Option<f64>,
     exposure: Exposure,
     th: &Thresholds,
 ) -> (Vec<RuleId>, Vec<RuleId>) {
@@ -563,7 +730,7 @@ fn signal_rules(
     if cvss.is_some_and(|s| s >= th.cvss_week) {
         week.push(RuleId::Cvss);
     }
-    if internet {
+    if internet && cvss.is_some_and(|s| s >= th.cvss_week_exposed) {
         week.push(RuleId::Exposed);
     }
     (now, week)
@@ -580,10 +747,19 @@ struct SourceResult {
     detail: String,
     /// Exclusive end bounds of the constraints that matched.
     fixes: Vec<String>,
+    /// Inclusive end bounds of the constraints that matched.
+    inclusive_ends: Vec<String>,
+    /// The affected verdict came only from an `all versions` constraint.
+    weak: bool,
 }
 
 enum RangeOutcome {
-    Affected { detail: String, fixes: Vec<String> },
+    Affected {
+        detail: String,
+        fixes: Vec<String>,
+        inclusive_ends: Vec<String>,
+        weak: bool,
+    },
     NotAffected(String),
     NoData,
     Error(String),
@@ -603,15 +779,24 @@ fn judge_source(
     let has_data = ranges.iter().any(|r| !r.constraints.is_empty());
     let errored = outcomes.iter().any(|o| matches!(o, RangeOutcome::Error(_)));
     let mut fixes = Vec::new();
+    let mut inclusive_ends = Vec::new();
+    let mut weak = true;
     let mut details = Vec::new();
     let mut any_affected = false;
     let mut all_not_affected = true;
     for o in &outcomes {
         match o {
-            RangeOutcome::Affected { detail, fixes: f } => {
+            RangeOutcome::Affected {
+                detail,
+                fixes: f,
+                inclusive_ends: ends,
+                weak: w,
+            } => {
                 any_affected = true;
                 all_not_affected = false;
+                weak &= *w;
                 fixes.extend(f.iter().cloned());
+                inclusive_ends.extend(ends.iter().cloned());
                 details.push(detail.clone());
             }
             RangeOutcome::NotAffected(d) => details.push(d.clone()),
@@ -645,6 +830,8 @@ fn judge_source(
         errored,
         detail: format!("{verdict_text}: {}", details.join("; ")),
         fixes,
+        inclusive_ends,
+        weak: verdict == Verdict::Affected && weak,
     }
 }
 
@@ -714,14 +901,53 @@ fn judge_range(
             }
         }
     }
+    let weak = matched.iter().all(|c| is_all(c));
     let mut detail = format!("{version} is inside {}{raw}", describe_all_of(&matched));
+    if weak {
+        detail.push_str(
+            "; weak evidence: this source only says all versions are affected and names no range",
+        );
+    }
     if fixes.is_empty() && !inclusive_ends.is_empty() {
         detail = format!(
             "{detail}; affected up to and including {}, so the fix is a later version this source does not name",
             inclusive_ends.join(", ")
         );
     }
-    RangeOutcome::Affected { detail, fixes }
+    RangeOutcome::Affected {
+        detail,
+        fixes,
+        inclusive_ends,
+        weak,
+    }
+}
+
+/// A constraint that names no version: `all`, or a range with no bounds.
+fn is_all(c: &Constraint) -> bool {
+    matches!(
+        c,
+        Constraint::All
+            | Constraint::Range {
+                start: None,
+                end: None
+            }
+    )
+}
+
+/// The largest inclusive end among the affected sources' matching constraints.
+fn largest_inclusive_end(scheme: &Scheme, results: &[SourceResult]) -> Option<String> {
+    let mut best: Option<&String> = None;
+    for v in results
+        .iter()
+        .filter(|r| r.verdict == Verdict::Affected)
+        .flat_map(|r| &r.inclusive_ends)
+    {
+        best = match best {
+            Some(b) if scheme.compare(v, b) != Ok(std::cmp::Ordering::Greater) => Some(b),
+            _ => Some(v),
+        };
+    }
+    best.cloned()
 }
 
 fn smallest_fix(scheme: &Scheme, results: &[SourceResult]) -> Option<String> {

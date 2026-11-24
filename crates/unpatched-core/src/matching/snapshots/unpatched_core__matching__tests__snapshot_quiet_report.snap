@@ -66,5 +66,47 @@ expression: "run(&cfg, &rich_dataset())"
     }
   ],
   "ignored": [],
+  "items": [
+    {
+      "key": "fortios",
+      "item": "fortios",
+      "product": "fortios",
+      "product_name": "FORTIOS",
+      "version": "7.4.3",
+      "exposure": "internal",
+      "counts": {
+        "now": 0,
+        "week": 0,
+        "eol": 0,
+        "unknown": 1,
+        "fyi": 0
+      },
+      "upgrade_to": null,
+      "fixes": 0,
+      "of": 0,
+      "eol": false,
+      "unfixed": 0
+    },
+    {
+      "key": "nextcloud",
+      "item": "nextcloud",
+      "product": "nextcloud",
+      "product_name": "NEXTCLOUD",
+      "version": "29.0.9",
+      "exposure": "internal",
+      "counts": {
+        "now": 0,
+        "week": 0,
+        "eol": 0,
+        "unknown": 0,
+        "fyi": 0
+      },
+      "upgrade_to": null,
+      "fixes": 0,
+      "of": 0,
+      "eol": false,
+      "unfixed": 0
+    }
+  ],
   "notes": []
 }

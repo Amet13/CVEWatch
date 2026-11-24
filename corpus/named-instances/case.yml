@@ -26,6 +26,9 @@ data:
   - id: CVE-2026-0001
     summary: FortiOS flaw CVE-2026-0001
     published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.0
     ranges:
     - source: nvd
       product: fortios

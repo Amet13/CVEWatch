@@ -70,7 +70,7 @@ fn info(ctx: &Ctx) -> Res<u8> {
         )
     })?;
     let info = db.info();
-    let age = (chrono::Utc::now() - info.built_at).num_days().max(0);
+    let age = (ctx.now - info.built_at).num_days().max(0);
     let products = db.products();
     let verified = products.iter().filter(|(_, v)| *v).count();
     let mut s = String::new();

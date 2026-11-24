@@ -56,15 +56,20 @@ fn effect(id: RuleId) -> &'static str {
         RuleId::Kev | RuleId::SsvcActive | RuleId::ExploitExposed => {
             "puts an affected finding in: Fix today (now)"
         }
-        RuleId::Epss | RuleId::Cvss | RuleId::Exposed => {
+        RuleId::Epss | RuleId::Cvss => {
             "puts an affected finding in: This week (week), unless a Fix today rule applies"
+        }
+        RuleId::Exposed => {
+            "puts an affected, internet-facing finding with CVSS at or above cvss_week_exposed in: This week (week), unless a Fix today rule applies"
         }
         RuleId::Affected => "puts an affected finding in: FYI (fyi)",
         RuleId::Eol => "makes the finding: End of life (eol), one per stack item",
         RuleId::UnknownNoRanges | RuleId::UnknownVersion => {
             "makes the verdict unknown; shown when the signals would make it Fix today or This week"
         }
-        RuleId::Conflict => "is added when sources disagree",
+        RuleId::Conflict => {
+            "is added when sources disagree; it makes the verdict unknown when the only \"affected\" comes from a source that says all versions"
+        }
         RuleId::UnverifiedProduct => {
             "makes a finding in: Unknown, so an empty result is never read as safe"
         }
@@ -289,6 +294,15 @@ impl Dataset for One<'_> {
     }
 }
 
+/// False when the vulnerability has no record about this item's product at
+/// all, so a verdict ("not affected") would claim more than the data says.
+fn is_concerned(db: &Db, item: &StackItem, v: &Vulnerability) -> bool {
+    let Some(entry) = item.product.as_deref().and_then(|p| db.product(p)) else {
+        return true;
+    };
+    v.ranges.iter().any(|r| r.product == entry.id)
+}
+
 fn item_label(item: &StackItem) -> String {
     item.name
         .clone()
@@ -297,13 +311,19 @@ fn item_label(item: &StackItem) -> String {
         .unwrap_or_default()
 }
 
-fn judge(db: &Db, config: &Config, item: &StackItem, v: &Vulnerability) -> String {
+fn judge(
+    db: &Db,
+    config: &Config,
+    item: &StackItem,
+    v: &Vulnerability,
+    ctx_now: chrono::DateTime<Utc>,
+) -> String {
     let mut s = String::new();
     let one = Config {
         stack: vec![item.clone()],
         ..config.clone()
     };
-    let now = Utc::now();
+    let now = ctx_now;
     let run = |force: bool| -> Report {
         evaluate(&one, &One { db, vuln: v, force }, &HashMap::new(), now)
     };
@@ -346,8 +366,12 @@ fn judge(db: &Db, config: &Config, item: &StackItem, v: &Vulnerability) -> Strin
     };
     let ranges: Vec<_> = v.ranges.iter().filter(|r| r.product == entry.id).collect();
     if ranges.is_empty() {
+        s.push_str("    Verdict: not about this product (no source has a record for it).\n");
+        return s;
+    }
+    if ranges.iter().all(|r| r.constraints.is_empty()) {
         s.push_str(
-            "    Verdict: not affected. This vulnerability has no version data for this product.\n",
+            "    Verdict: unknown. No source has usable version data for this product yet.\n",
         );
         return s;
     }
@@ -434,8 +458,13 @@ fn explain_vuln(ctx: &Ctx, id: &str, only_item: Option<&str>) -> Res<u8> {
         let config = load_config(&ctx.config)?;
         s.push_str("\nYour stack\n");
         let mut shown = false;
+        let mut not_concerned: Vec<String> = Vec::new();
         for item in &config.stack {
             if only_item.is_some_and(|o| o != item_label(item)) {
+                continue;
+            }
+            if !is_concerned(&db, item, &v) {
+                not_concerned.push(item_label(item));
                 continue;
             }
             shown = true;
@@ -453,9 +482,22 @@ fn explain_vuln(ctx: &Ctx, id: &str, only_item: Option<&str>) -> Res<u8> {
                 item_label(item),
                 item.version.as_deref().unwrap_or_default()
             );
-            s.push_str(&judge(&db, &config, item, &v));
+            s.push_str(&judge(&db, &config, item, &v, ctx.now));
         }
-        if !shown {
+        if !not_concerned.is_empty() {
+            let n = not_concerned.len();
+            let _ = writeln!(
+                s,
+                "  {n} other stack item{} not concerned: this vulnerability is not about {} ({}).",
+                if n == 1 { " is" } else { "s are" },
+                if n == 1 {
+                    "its product"
+                } else {
+                    "their products"
+                },
+                not_concerned.join(", ")
+            );
+        } else if !shown {
             s.push_str("  (no stack item to judge)\n");
         }
     } else {
@@ -474,7 +516,7 @@ fn explain_vuln(ctx: &Ctx, id: &str, only_item: Option<&str>) -> Res<u8> {
 fn explain_key(ctx: &Ctx, key: &str) -> Res<u8> {
     read_config_text(&ctx.config)?;
     let config = load_config(&ctx.config)?;
-    let report = super::check::evaluate(ctx, &config, Utc::now(), true)?;
+    let report = super::check::evaluate(ctx, &config, ctx.now, true)?;
     let found = report
         .findings
         .iter()
@@ -503,6 +545,8 @@ fn explain_key(ctx: &Ctx, key: &str) -> Res<u8> {
     s.push_str(&finding_lines(f, ignored));
     if let Some(fix) = &f.fixed_in {
         let _ = writeln!(s, "    Fixed in: {fix}");
+    } else if let Some(after) = &f.fixed_after {
+        let _ = writeln!(s, "    Fixed in: a release after {after}");
     }
     for r in &f.rules {
         let info = all_rules()

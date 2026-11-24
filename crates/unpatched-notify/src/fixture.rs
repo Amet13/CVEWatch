@@ -5,8 +5,8 @@ use unpatched_core::config::Exposure;
 use unpatched_core::report::{Evidence, IgnoredBecause};
 use unpatched_core::rules::RuleId;
 use unpatched_core::{
-    Bucket, Cvss, DbInfo, Epss, ExploitRef, Finding, KevEntry, Report, Signals, SourceId,
-    SourceStatus, SsvcExploitation, Summary, Verdict,
+    Bucket, BucketCounts, Cvss, DbInfo, Epss, ExploitRef, Finding, ItemSummary, KevEntry, Report,
+    Signals, SourceId, SourceStatus, SsvcExploitation, Summary, Verdict,
 };
 
 pub fn date(y: i32, m: u32, d: u32) -> NaiveDate {
@@ -40,6 +40,7 @@ pub fn base(key: &str, item: &str, product: &str, version: &str, bucket: Bucket)
         bucket,
         rules: vec![],
         fixed_in: None,
+        fixed_after: None,
         latest_in_cycle: None,
         cvss: None,
         signals: Signals::default(),
@@ -236,6 +237,67 @@ fn summarize(findings: &[Finding], ignored: usize, not_affected: usize) -> Summa
     }
 }
 
+/// The per-item recommendations, built the simple way: the largest `fixed_in`.
+fn items_for(findings: &[Finding]) -> Vec<ItemSummary> {
+    let mut keys: Vec<&str> = Vec::new();
+    for f in findings {
+        if !keys.contains(&f.item_key()) {
+            keys.push(f.item_key());
+        }
+    }
+    keys.into_iter()
+        .map(|key| {
+            let mine: Vec<&Finding> = findings.iter().filter(|f| f.item_key() == key).collect();
+            let mut counts = BucketCounts::default();
+            for f in &mine {
+                match f.bucket {
+                    Bucket::Now => counts.now += 1,
+                    Bucket::Week => counts.week += 1,
+                    Bucket::Eol => counts.eol += 1,
+                    Bucket::Unknown => counts.unknown += 1,
+                    Bucket::Fyi => counts.fyi += 1,
+                }
+            }
+            let affected: Vec<&&Finding> = mine
+                .iter()
+                .filter(|f| f.vuln.is_some() && f.verdict == Verdict::Affected)
+                .collect();
+            let upgrade_to = affected
+                .iter()
+                .filter_map(|f| f.fixed_in.clone())
+                .max_by(|a, b| crate::render::loose_cmp(a, b));
+            let fixes = upgrade_to.as_ref().map_or(0, |u| {
+                affected
+                    .iter()
+                    .filter(|f| {
+                        f.fixed_in.as_ref().is_some_and(|v| {
+                            crate::render::loose_cmp(v, u) != std::cmp::Ordering::Greater
+                        })
+                    })
+                    .count()
+            });
+            let first = mine[0];
+            ItemSummary {
+                key: key.into(),
+                item: first.item.clone(),
+                product: first.product.clone(),
+                product_name: first.product_name.clone(),
+                version: first.version.clone(),
+                exposure: first.exposure,
+                counts,
+                upgrade_to,
+                fixes,
+                of: affected.len(),
+                eol: mine.iter().any(|f| f.bucket == Bucket::Eol),
+                unfixed: affected
+                    .iter()
+                    .filter(|f| f.fixed_in.is_none() && f.fixed_after.is_none())
+                    .count(),
+            }
+        })
+        .collect()
+}
+
 pub fn report(findings: Vec<Finding>) -> Report {
     let built = Utc.with_ymd_and_hms(2026, 11, 22, 2, 41, 0).unwrap();
     Report {
@@ -253,6 +315,7 @@ pub fn report(findings: Vec<Finding>) -> Report {
             }],
         }),
         summary: summarize(&findings, 0, 1412),
+        items: items_for(&findings),
         findings,
         ignored: vec![],
         notes: vec![],

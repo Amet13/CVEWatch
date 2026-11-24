@@ -288,7 +288,13 @@ fn explain_a_cve_with_the_stack() {
         .stdout(predicate::str::contains("CISA KEV: added 2024-02-09"))
         .stdout(predicate::str::contains("Office firewall 7.2.5"))
         .stdout(predicate::str::contains("Verdict: affected"))
-        .stdout(predicate::str::contains("nextcloud 29.0.3"));
+        // The vulnerability is not about Nextcloud: say so in one line, and do
+        // not claim "not affected" without a source that had ranges for it.
+        .stdout(predicate::str::contains(
+            "1 other stack item is not concerned",
+        ))
+        .stdout(predicate::str::contains("nextcloud"))
+        .stdout(predicate::str::contains("no version data for this product").not());
 }
 
 #[test]
@@ -462,4 +468,39 @@ fn the_copies_of_the_templates_agree() {
         .unwrap();
         assert_eq!(a, b, "{file}");
     }
+}
+
+#[test]
+fn help_pages_have_no_trailing_spaces() {
+    let dir = tempfile::tempdir().unwrap();
+    let paths: [&[&str]; 12] = [
+        &[],
+        &["check"],
+        &["init"],
+        &["explain"],
+        &["search"],
+        &["catalog"],
+        &["catalog", "list"],
+        &["catalog", "show"],
+        &["db"],
+        &["db", "build"],
+        &["mcp"],
+        &["schema"],
+    ];
+    for args in paths {
+        let out = stdout_of({
+            let mut c = unpatched(dir.path());
+            c.args(args).arg("--help");
+            c
+        });
+        for (n, line) in out.lines().enumerate() {
+            assert!(!line.ends_with(' '), "{args:?} line {}: {line:?}", n + 1);
+        }
+    }
+    let out = stdout_of({
+        let mut c = unpatched(dir.path());
+        c.args(["catalog", "show", "--help"]);
+        c
+    });
+    assert!(out.contains("A product id or alias"), "{out}");
 }

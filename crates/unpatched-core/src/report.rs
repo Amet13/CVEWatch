@@ -69,6 +69,10 @@ pub struct Finding {
     pub rules: Vec<RuleId>,
     /// Smallest version that fixes it, when known.
     pub fixed_in: Option<String>,
+    /// Set when `fixed_in` is unknown and a source says every version up to
+    /// and including this one is affected: the fix is a later release.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fixed_after: Option<String>,
     /// Latest release in the same cycle (endoflife.date), when newer than `fixed_in`.
     pub latest_in_cycle: Option<String>,
     pub cvss: Option<Cvss>,
@@ -79,6 +83,13 @@ pub struct Finding {
     /// Set when an ignore entry matched (the finding is then in `Report::ignored`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ignored: Option<IgnoredBecause>,
+}
+
+impl Finding {
+    /// The stack item's key: the part of `key` before the first `/`.
+    pub fn item_key(&self) -> &str {
+        self.key.split_once('/').map_or(&self.key, |(k, _)| k)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -99,6 +110,70 @@ pub struct Summary {
     pub not_affected: usize,
 }
 
+/// Findings per bucket.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, JsonSchema)]
+pub struct BucketCounts {
+    pub now: usize,
+    pub week: usize,
+    pub eol: usize,
+    pub unknown: usize,
+    pub fyi: usize,
+}
+
+impl BucketCounts {
+    pub fn get(&self, b: Bucket) -> usize {
+        match b {
+            Bucket::Now => self.now,
+            Bucket::Week => self.week,
+            Bucket::Eol => self.eol,
+            Bucket::Unknown => self.unknown,
+            Bucket::Fyi => self.fyi,
+        }
+    }
+
+    pub fn total(&self) -> usize {
+        self.now + self.week + self.eol + self.unknown + self.fyi
+    }
+
+    /// The most urgent bucket that has a finding.
+    pub fn most_urgent(&self) -> Option<Bucket> {
+        [
+            Bucket::Now,
+            Bucket::Week,
+            Bucket::Eol,
+            Bucket::Unknown,
+            Bucket::Fyi,
+        ]
+        .into_iter()
+        .find(|b| self.get(*b) > 0)
+    }
+}
+
+/// What to do about one stack item: the one upgrade that fixes the most.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ItemSummary {
+    /// The stack item's key (the part of a finding key before `/`).
+    pub key: String,
+    /// The stack item's `name`, else product id or purl.
+    pub item: String,
+    pub product: String,
+    pub product_name: String,
+    pub version: String,
+    pub exposure: Exposure,
+    pub counts: BucketCounts,
+    /// The smallest version that fixes every finding with a known fix in this
+    /// release cycle; the largest known fix when none is in the cycle.
+    pub upgrade_to: Option<String>,
+    /// Affected findings that `upgrade_to` fixes.
+    pub fixes: usize,
+    /// Affected findings (vulnerabilities, not EOL or data findings).
+    pub of: usize,
+    /// The item's release cycle is past end of life.
+    pub eol: bool,
+    /// Affected findings with no known fixed version.
+    pub unfixed: usize,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Report {
     /// Report format version.
@@ -109,6 +184,9 @@ pub struct Report {
     /// Sorted by bucket, then item, then vuln id.
     pub findings: Vec<Finding>,
     pub ignored: Vec<Finding>,
+    /// One recommendation per stack item, in stack order.
+    #[serde(default)]
+    pub items: Vec<ItemSummary>,
     /// Problems with the run itself (stale data, unknown product ids, …).
     pub notes: Vec<String>,
 }

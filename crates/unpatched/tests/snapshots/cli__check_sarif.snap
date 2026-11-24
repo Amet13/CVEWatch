@@ -26,13 +26,14 @@ expression: out
             }
           ],
           "message": {
-            "text": "FortiOS 7.2.5 (Office firewall): A out-of-bounds write vulnerability in Fortinet FortiOS 7.4.0 through 7.4.2, FortiOS 7.2.0 through 7.2.6, FortiOS 7.0.0 through 7.0.13, FortiOS 6.4.0 through 6.4.14, FortiOS 6.2.0 through 6.2.15, FortiOS 6.0 all versions, FortiProxy 7.4.0 through 7.4.2, FortiProxy 7.2.0 through 7.2.8, FortiProxy 7.0.0 through 7.0.14, FortiProxy 2.0.0 through 2.0.13, FortiProxy 01.02 all versions, FortiProxy 1.2 all versions, FortiProxy 01.01 all versions, FortiProxy 1.1 all versions, FortiProxy 01.00 all versions allows attacker to execute unauthorized code or commands via specifically crafted requests Why: In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 84.6% (percentile 100) · CVSS 9.6 · internet-facing Do: Upgrade to 7.2.7 or later."
+            "text": "FortiOS 7.2.5 (Office firewall): A out-of-bounds write vulnerability in Fortinet FortiOS 7.4.0 through 7.4.2, FortiOS 7.2.0 through 7.2.6, FortiOS 7.0.0 through 7.0.13, For… Why: In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 84.6% (percentile 100) · CVSS 9.6 · internet-facing Do: Upgrade to 7.2.7 or later."
           },
           "partialFingerprints": {
             "unpatched/finding": "office-firewall/CVE-2024-21762"
           },
           "properties": {
             "bucket": "now",
+            "fixedAfter": null,
             "fixedIn": "7.2.7",
             "rules": [
               "UNP-KEV",
@@ -72,6 +73,7 @@ expression: out
           },
           "properties": {
             "bucket": "eol",
+            "fixedAfter": null,
             "fixedIn": null,
             "rules": [
               "UNP-EOL"
@@ -139,17 +141,17 @@ expression: out
             },
             {
               "fullDescription": {
-                "text": "This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week."
+                "text": "This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week."
               },
               "id": "UNP-EXPOSED",
               "name": "UNP-EXPOSED",
               "shortDescription": {
-                "text": "Affected and reachable from the internet"
+                "text": "Affected, reachable from the internet and severe"
               }
             },
             {
               "fullDescription": {
-                "text": "This version is affected, but nothing says it is exploited, it is not internet-facing and the scores are below your thresholds. Fix it with your normal updates."
+                "text": "This version is affected, but nothing says it is exploited, it is not both internet-facing and severe, and the scores are below your thresholds. Fix it with your normal updates."
               },
               "id": "UNP-AFFECTED",
               "name": "UNP-AFFECTED",
@@ -189,7 +191,7 @@ expression: out
             },
             {
               "fullDescription": {
-                "text": "At least one source says this version is affected and another says it is not. When in doubt unpatched reports it. Read the evidence to see which source to trust."
+                "text": "One source says this version is affected and another says it is not. A source that only says \"all versions\" does not outweigh one with exact ranges, so the verdict is unknown. Read the evidence to see which source to trust."
               },
               "id": "UNP-CONFLICT",
               "name": "UNP-CONFLICT",

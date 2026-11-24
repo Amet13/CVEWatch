@@ -1,0 +1,49 @@
+description: 'Internet-facing with CVSS 6.9, just under the exposed threshold of 7.0, is fyi.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+      exposure: internet
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0001
+    summary: Flaw
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 6.9
+    ranges:
+    - source: nvd
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.2.0'
+          inclusive: true
+        end:
+          version: '7.2.7'
+          inclusive: false
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/CVE-2026-0001
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 7.2.7

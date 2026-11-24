@@ -80,6 +80,7 @@ digest: monday
 # thresholds:
 #   epss_week: 0.05 # EPSS at or above this: fix this week
 #   cvss_week: 9.0 # CVSS at or above this: fix this week
+#   cvss_week_exposed: 7.0 # CVSS at or above this on an internet-facing item: fix this week
 #   stale_warn_days: 3 # warn when the database is older than this
 #   stale_fail_days: 7 # fail when the database is older than this
 ```
@@ -175,7 +176,7 @@ The first run creates:
 
 - the labels `unpatched`, `unpatched:now`, `unpatched:week`, `unpatched:eol`,
   `unpatched:unknown`, `unpatched:fyi` and `unpatched:status`
-- one issue for each finding that is not FYI, labelled with its bucket
+- one issue for each stack item that has a finding that is not FYI, labelled with its most urgent bucket
 - one **unpatched status** issue (pinned when GitHub allows it) that lists
   everything open, the database date and the time of the last run
 
