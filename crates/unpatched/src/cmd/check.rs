@@ -9,7 +9,8 @@ use unpatched_notify::deliver::deliver_collect;
 use unpatched_notify::render::{self, TextOptions};
 use unpatched_notify::state::StateStore;
 use unpatched_notify::{
-    DeliverOptions, Error as NotifyError, FileStore, GitHub, IssuesStore, channels_from_config,
+    DeliverOptions, Error as NotifyError, FileStore, GitHub, IssuesStore, channels_for_dry_run,
+    channels_from_config,
 };
 
 use super::out;
@@ -64,7 +65,7 @@ pub fn run(ctx: &Ctx, args: &CheckArgs) -> Res<u8> {
             s.push('\n');
             s
         }
-        Format::Markdown => render::markdown_summary(&report),
+        Format::Markdown => render::markdown_summary_with(&report, ctx.verbose > 0),
         Format::Sarif => {
             let mut s = render::sarif(&report);
             s.push('\n');
@@ -82,6 +83,8 @@ pub fn run(ctx: &Ctx, args: &CheckArgs) -> Res<u8> {
                 );
             }
         }
+        // `--quiet`: nothing on stdout. Errors still go to stderr.
+        None if ctx.quiet => {}
         None => out(&rendered),
     }
 
@@ -98,10 +101,10 @@ pub fn run(ctx: &Ctx, args: &CheckArgs) -> Res<u8> {
 pub fn summary_line(r: &Report) -> String {
     let s = &r.summary;
     if r.findings.is_empty() {
-        return "nothing to fix".into();
+        return "nothing to act on".into();
     }
     format!(
-        "{} fix today, {} this week, {} end of life, {} unknown, {} fyi",
+        "{} today, {} this week, {} end of life, {} unknown, {} FYI",
         s.now, s.week, s.eol, s.unknown, s.fyi
     )
 }
@@ -150,7 +153,7 @@ fn notify(
     report: &Report,
     now: DateTime<Utc>,
 ) -> Res<()> {
-    let channels = channels_from_config(config).map_err(|e| match e {
+    let channel_error = |e: NotifyError| match e {
         NotifyError::MissingEnv { .. } | NotifyError::Config(_) => Failure::usage(
             e.to_string(),
             "Secrets come from environment variables, never from unpatched.yml.",
@@ -159,7 +162,21 @@ fn notify(
             other.to_string(),
             "Check the channel settings in unpatched.yml.",
         ),
-    })?;
+    };
+    let channels = if args.dry_run {
+        // A dry run sends nothing, so a missing secret is only a warning.
+        let (channels, missing) = channels_for_dry_run(config).map_err(channel_error)?;
+        if !ctx.quiet {
+            for var in missing {
+                eprintln!(
+                    "warning: {var} is not set. A real run needs it; this dry run goes on without it."
+                );
+            }
+        }
+        channels
+    } else {
+        channels_from_config(config).map_err(channel_error)?
+    };
     if GitHub::in_actions()
         && let Some(w) = std::env::var_os("GITHUB_EVENT_PATH")
             .and_then(|p| std::fs::read_to_string(p).ok())
@@ -225,12 +242,26 @@ fn notify(
             eprintln!("{prefix}status issue: #{n}");
         }
         for m in &outcome.sent {
-            eprintln!(
-                "{prefix}{}: {} ({} item(s))",
-                m.channel,
-                m.event.as_str(),
-                m.items
-            );
+            match &m.preview {
+                // A dry run shows each message once: the channel, then its text.
+                Some(text) => {
+                    eprintln!(
+                        "dry run: {} would get a {} ({} item(s)):",
+                        m.channel,
+                        m.event.as_str(),
+                        m.items
+                    );
+                    for line in text.lines() {
+                        eprintln!("    {line}");
+                    }
+                }
+                None => eprintln!(
+                    "{}: sent {} ({} item(s))",
+                    m.channel,
+                    m.event.as_str(),
+                    m.items
+                ),
+            }
         }
         for p in &outcome.planned {
             eprintln!("dry run: would {p}");

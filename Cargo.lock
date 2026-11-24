@@ -2316,6 +2316,7 @@ dependencies = [
  "unpatched-catalog",
  "unpatched-core",
  "unpatched-db",
+ "unpatched-notify",
  "unpatched-sources",
 ]
 

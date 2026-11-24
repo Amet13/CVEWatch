@@ -1,12 +1,13 @@
 //! What every command shares: the global options, the config file and the database.
 
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
 use miette::{Diagnostic, NamedSource, Report, SourceSpan};
 use unpatched_core::Config;
-use unpatched_core::config::ConfigError;
+use unpatched_core::config::edit_distance;
 use unpatched_db::Db;
 use unpatched_sources::Http;
 
@@ -145,6 +146,14 @@ struct ConfigProblem {
     at: Option<SourceSpan>,
 }
 
+/// Length of the line that holds byte `index`.
+fn line_len_at(text: &str, index: usize) -> usize {
+    let index = index.min(text.len());
+    let start = text[..index].rfind('\n').map_or(0, |i| i + 1);
+    let end = text[index..].find('\n').map_or(text.len(), |i| index + i);
+    text[start..end].chars().count()
+}
+
 pub fn read_config_text(path: &Path) -> Res<String> {
     std::fs::read_to_string(path).map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
@@ -165,15 +174,22 @@ pub fn read_config_text(path: &Path) -> Res<String> {
 pub fn load_config(path: &Path) -> Res<Config> {
     let text = read_config_text(path)?;
     let cfg = Config::from_yaml(&text).map_err(|e| {
-        let span = match &e {
-            ConfigError::Parse(y) => y.location().map(|l| SourceSpan::from((l.index(), 1))),
-            ConfigError::Invalid(_) => None,
+        // A log or a binary file named by mistake must not flood the terminal:
+        // show the snippet only when the file and the offending line are small.
+        let span = e
+            .index()
+            .filter(|i| text.len() <= 64 * 1024 && line_len_at(&text, *i) <= 300)
+            .map(|i| SourceSpan::from((i, 1)));
+        let shown = if span.is_some() {
+            text.clone()
+        } else {
+            String::new()
         };
         Failure::with_report(
             EXIT_USAGE,
             Report::new(ConfigProblem {
-                message: e.to_string(),
-                src: NamedSource::new(path.display().to_string(), text.clone()),
+                message: e.short_message(),
+                src: NamedSource::new(path.display().to_string(), shown),
                 at: span,
             }),
         )
@@ -182,35 +198,62 @@ pub fn load_config(path: &Path) -> Res<Config> {
     Ok(cfg)
 }
 
-/// Up to three catalog entries close to `text`.
+/// Words of a catalog entry's id, name, vendor and aliases, lowercase.
+fn entry_words(e: &unpatched_core::CatalogEntry) -> Vec<String> {
+    std::iter::once(&e.id)
+        .chain(std::iter::once(&e.name))
+        .chain(std::iter::once(&e.vendor))
+        .chain(&e.aliases)
+        .flat_map(|n| {
+            n.to_lowercase()
+                .split(|c: char| !c.is_alphanumeric())
+                .filter(|w| !w.is_empty())
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+/// Up to three catalog entries close to `text`: the words match, or the
+/// spelling is a typo away. Nothing is returned when nothing is close.
 pub fn suggest(text: &str) -> Vec<&'static unpatched_core::CatalogEntry> {
     let mut found = unpatched_catalog::search(text);
     if found.is_empty() {
+        // Token overlap: a whole word of the query is a whole word of the entry.
         for token in text
             .split(|c: char| !c.is_alphanumeric())
             .filter(|t| t.len() >= 3)
         {
-            for e in unpatched_catalog::search(token) {
-                if !found.iter().any(|f| f.id == e.id) {
+            let token = token.to_lowercase();
+            for e in unpatched_catalog::all() {
+                if entry_words(e).contains(&token) && !found.iter().any(|f| f.id == e.id) {
                     found.push(e);
                 }
             }
         }
     }
     if found.is_empty() {
-        let lowered = text.to_lowercase();
+        // A typo: a small edit distance to an id, alias or name.
+        let lowered = text.trim().to_lowercase();
+        let allowed = match lowered.chars().count() {
+            0..=3 => 0,
+            4..=5 => 1,
+            6..=9 => 2,
+            _ => 3,
+        };
         let mut scored: Vec<(usize, &'static unpatched_core::CatalogEntry)> =
             unpatched_catalog::all()
                 .iter()
                 .map(|e| {
                     let d = std::iter::once(&e.id)
+                        .chain(std::iter::once(&e.name))
                         .chain(&e.aliases)
                         .map(|n| edit_distance(&lowered, &n.to_lowercase()))
                         .min()
                         .unwrap_or(usize::MAX);
                     (d, e)
                 })
-                .filter(|(d, _)| *d <= 3.max(lowered.len() / 3))
+                .filter(|(d, _)| *d <= allowed)
                 .collect();
         scored.sort_by_key(|(d, e)| (*d, e.id.clone()));
         found = scored.into_iter().map(|(_, e)| e).collect();
@@ -219,35 +262,27 @@ pub fn suggest(text: &str) -> Vec<&'static unpatched_core::CatalogEntry> {
     found
 }
 
-fn edit_distance(a: &str, b: &str) -> usize {
-    let a: Vec<char> = a.chars().collect();
-    let b: Vec<char> = b.chars().collect();
-    let mut prev: Vec<usize> = (0..=b.len()).collect();
-    for (i, ca) in a.iter().enumerate() {
-        let mut cur = vec![i + 1];
-        for (j, cb) in b.iter().enumerate() {
-            cur.push(
-                (prev[j] + usize::from(ca != cb))
-                    .min(prev[j + 1] + 1)
-                    .min(cur[j] + 1),
-            );
-        }
-        prev = cur;
-    }
-    prev[b.len()]
-}
+/// A package URL that works, for messages.
+pub const PURL_EXAMPLE: &str = unpatched_core::config::PURL_EXAMPLE;
 
+/// Where to ask for a product.
+pub const NEW_PRODUCT_URL: &str = "https://github.com/Amet13/unpatched/issues/new/choose";
+
+/// What to say when a name is not in the catalog: close matches (only when
+/// they are close), the purl route and where to ask.
 pub fn suggestion_text(id: &str) -> String {
     let s = suggest(id);
-    if s.is_empty() {
-        "Run `unpatched catalog list` to see every product.".into()
-    } else {
+    let mut text = String::from("Not in the catalog. ");
+    if !s.is_empty() {
         let list: Vec<String> = s.iter().map(|e| format!("{} ({})", e.id, e.name)).collect();
-        format!(
-            "Did you mean: {}? `unpatched search <name>` finds more.",
-            list.join(", ")
-        )
+        let _ = write!(text, "Did you mean: {}? ", list.join(", "));
     }
+    let _ = write!(
+        text,
+        "For OS packages use a purl, e.g. `{PURL_EXAMPLE}`. \
+         To ask for a product: {NEW_PRODUCT_URL}"
+    );
+    text
 }
 
 fn check_products(cfg: &Config) -> Res<()> {

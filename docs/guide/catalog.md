@@ -20,6 +20,19 @@ Find an id with `unpatched search <words>` (it matches the id, name, vendor and
 aliases such as `fortigate`) or `unpatched catalog list`. `unpatched catalog show <id>`
 prints the whole entry.
 
+## What is not covered
+
+The catalog covers named products: appliances, servers, apps and the like.
+It does **not** cover:
+
+- **WordPress plugins and themes.** `wordpress` is the core only.
+- **Operating-system packages**, other than ones you name with a `purl`. There
+  is no `debian`, `ubuntu` or `windows` product. Write the package as a purl,
+  for example `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`; it is
+  looked up in OSV. unpatched does not discover packages for you.
+- Libraries and anything else that is not listed below, unless you give it as a
+  `purl`.
+
 ## Supported products
 
 <!-- generated:start catalog-table -->
@@ -152,5 +165,7 @@ are in [CONTRIBUTING.md](https://github.com/Amet13/unpatched/blob/main/CONTRIBUT
 A person checks every new entry before it is merged.
 
 For a library or an operating system package that is not a catalog product, use a
-`purl` in your stack instead: those are looked up in OSV and need no catalog entry.
+`purl` in your stack instead: those are looked up in OSV and need no catalog entry
+(for example `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`). WordPress
+plugins and themes are not covered either way.
 See the [config reference](config.md#the-stack).

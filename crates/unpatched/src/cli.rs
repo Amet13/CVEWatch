@@ -41,11 +41,11 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub offline: bool,
 
-    /// More detail (evidence in reports, `-v` info logs, `-vv` debug logs).
+    /// More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs).
     #[arg(short, long, global = true, action = clap::ArgAction::Count)]
     pub verbose: u8,
 
-    /// Print only what was asked for, and errors.
+    /// Print nothing on stdout except errors. A report still goes to --output.
     #[arg(long, global = true, conflicts_with = "verbose")]
     pub quiet: bool,
 
@@ -77,7 +77,12 @@ pub enum Command {
     /// Show the evidence: a rule id, a CVE, or a finding key.
     Explain {
         /// `UNP-KEV`, `CVE-2024-21762` or a finding key such as `office-firewall/CVE-2024-21762`.
-        target: String,
+        #[arg(required_unless_present = "rules")]
+        target: Option<String>,
+
+        /// List every rule id with its title, and stop.
+        #[arg(long, conflicts_with = "target")]
+        rules: bool,
     },
     /// Find a product in the catalog.
     Search {
@@ -133,7 +138,7 @@ pub struct CheckArgs {
     #[arg(long)]
     pub notify: bool,
 
-    /// With --notify: send and write nothing; print what would happen.
+    /// With --notify: send and write nothing; print each message and what would be written.
     #[arg(long, requires = "notify")]
     pub dry_run: bool,
 

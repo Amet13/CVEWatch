@@ -155,8 +155,9 @@ versions that YAML could read as numbers (`"15.4"`).
 
 **`exposure`** is `internet` (reachable from the internet: VPN portals, web
 apps, mail servers) or `internal`, the default. It changes the bucket: an
-affected, internet-facing item is at least "fix this week", and with a public
-exploit it is "fix today". Mark only what really is reachable.
+affected internet-facing finding with CVSS ≥ 7.0 (`cvss_week_exposed`) is at
+least this week; with a public exploit it is fix today, whatever the score.
+Mark only what really is reachable.
 
 ## Ignore entries
 
@@ -180,6 +181,9 @@ ignore:
   note.
 - When the date has passed, the finding is back in its bucket with the rule
   `UNP-IGNORE-EXPIRED`, and the issue is reopened.
+- The report has a note for an entry that does nothing: `ignore[2]: CVE-2099-1
+  matches no finding. Check the id or remove it.` (the number counts from 0), or
+  `ignore[1] expired on 2020-01-01; the finding is back.`
 
 ## Thresholds
 
@@ -198,7 +202,7 @@ thresholds:
   least "this week" (rule `UNP-EPSS`). EPSS is the estimated probability of
   exploitation in the next 30 days, from 0 to 1.
 - `cvss_week`: the same for the CVSS base score (rule `UNP-CVSS`).
-- `cvss_week_exposed`: the CVSS base score at or above which an internet-facing item's finding is `week` (rule `UNP-EXPOSED`, default 7.0).
+- `cvss_week_exposed`: the CVSS base score at or above which an affected internet-facing finding is at least `week` (rule `UNP-EXPOSED`, default 7.0). With a public exploit it is `now`, whatever the score.
 - `stale_warn_days`: when the database is older than this, the report has a
   finding that says so (rule `UNP-STALE-DATA`).
 - `stale_fail_days`: when it is older than this, the run stops with exit code 3.

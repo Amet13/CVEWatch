@@ -30,10 +30,7 @@ const SMOKE_DB: &str = "fixtures/smoke/unpatched-db.sqlite";
 const TEMPLATE_DIR: &str = "templates/github";
 
 fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("xtask lives one level below the workspace root")
-        .to_path_buf()
+    crate::repo_root()
 }
 
 fn read(rel: &str) -> Result<String> {

@@ -90,8 +90,10 @@ compare. Your output uses live data. The stack is the template from above.
 
 ```text
 $ unpatched check
-🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
-⚫ Nextcloud 29.0.3  1 eol  →  upgrade to a supported release
+2 to act on (1 today, 1 end of life)
+
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+⚫ Nextcloud 29.0.3  1 end of life  →  upgrade to a supported release
 
 🔴 Fix today (1)
 
@@ -109,7 +111,7 @@ $ unpatched check
     Do    Upgrade to a supported release.
     Rule  UNP-EOL · verdict affected
 
-🟢 1 checked, nothing else affects you
+🟢 1 vulnerability checked against your versions: not affected
 Database: built 2026-11-23 12:00 UTC, 0 days old
 Note: stack[2]: the database has no data for product "postgresql" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
 Note: stack[3]: the database has no data for product "home-assistant" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
@@ -131,8 +133,19 @@ the text. `sarif` is for code-scanning tools; uploading it to GitHub's Security
 tab needs GitHub Advanced Security on private repositories, so unpatched does not
 do it for you.
 
-With `--verbose` (or `-v`) the text and Markdown reports include the evidence of
-each source.
+The text and Markdown reports start with the counts
+(`87 to act on (14 today, 69 this week, ...), 228 FYI`) and show FYI findings
+only as a count per item, plus a line `228 FYI not shown: run with -v or --format
+json`. With `--verbose` (or `-v`) they list the FYI findings too and include the
+evidence of each source. The JSON always has everything.
+
+`--quiet` prints nothing on stdout, so a script or cron job stays silent; errors
+still go to stderr and the exit code is the same. If you give `--output FILE`, the
+report is still written there:
+
+```sh
+unpatched check --quiet --format json --output report.json
+```
 
 The same report as `--format json`. Parts are cut out for this page and marked
 with `...`: the database sources, the long `title` and `evidence`, and the second
@@ -251,8 +264,10 @@ finding that says the data is old.
 ## Send messages from the command line
 
 `--notify` sends the findings to the channels in `unpatched.yml`. Outside GitHub
-Actions it uses the local state file to avoid repeats. `--dry-run` prints what
-would be sent and sends nothing. Secrets come from environment variables. See
+Actions it uses the local state file to avoid repeats. `--dry-run` prints each
+message that would be sent (the channel, then its text) and what would be
+written, and sends and writes nothing. A missing secret is only a warning in a
+dry run. Secrets come from environment variables. See
 [Notifications](notifications.md).
 
 ```sh
@@ -260,10 +275,17 @@ export UNPATCHED_NTFY_TOKEN=...   # only if your ntfy topic needs one
 unpatched check --notify
 ```
 
-A cron entry that runs it every morning:
+A cron entry that runs it every morning (`--quiet` keeps cron from mailing you
+the report on stdout; errors still reach you):
 
 ```text
 17 6 * * *  cd /home/me/stack && unpatched check --notify --quiet
+```
+
+To keep a copy of the report as well:
+
+```text
+17 6 * * *  cd /home/me/stack && unpatched check --notify --quiet --format json --output report.json
 ```
 
 `--github` makes the command keep issues and state in a GitHub repository (it
@@ -307,7 +329,9 @@ This rule puts an affected finding in: Fix today (now).
 
 With a stack file, `explain CVE-...` also shows what the CVE means for your
 items, and `explain <item>/<CVE>` explains one finding by its key (the key is in
-the JSON report and in the hidden marker of each issue).
+the JSON report and in the hidden marker of each issue). It ends with the lines
+to add to `unpatched.yml` to accept the risk. `unpatched explain --rules` lists
+every rule id.
 
 Show a catalog entry, the names it matches in each source:
 

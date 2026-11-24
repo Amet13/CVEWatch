@@ -25,12 +25,25 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 - `--now` is a hidden global option, used by `check`, `explain` and `db info`.
 - `unpatched db build --strict` (fails, and writes nothing, when any source failed) and `unpatched db info --json` (counts and sources, for scripts). The daily database build uses both, and refuses to replace the published database when it has more than 20% fewer vulnerabilities or KEV entries.
 - `unpatched db update` tries again (after 20 s, then 60 s) when the release is being replaced and the checksum does not match yet, or the file is not there.
+- Notes for `ignore` entries that do nothing: `ignore[2]: CVE-2099-1 matches no finding. Check the id or remove it.` and `ignore[1] expired on 2020-01-01; the finding is back.` Issue footers and `explain <finding key>` show how to accept a risk (`ignore:` with `cve`, `reason`, `until`).
+- `unpatched explain --rules` lists every rule id. `explain` lists each reference once and names stack items like the report does.
 - Repository automation: CI on three operating systems, the daily database build, releases with `dist`, a Docker image, and weekly and monthly upkeep (see MAINTAINING.md).
+
+### Security
+
+- MCP `check_stack` only reads the server's own config file, or a file named `unpatched*.yml` or `unpatched*.yaml` under the server's working directory (links are resolved first). Before, any readable file could be named, and a YAML error could echo its content. Errors about a config file now give only the line and column.
 
 ### Changed
 
+- Reports are shorter and use one vocabulary (today, this week, end of life, unknown, FYI; JSON keeps `now`, `week`, `eol`, `unknown`, `fyi`). The text and Markdown reports and the status issue start with `87 to act on (14 today, 69 this week, ...), 228 FYI` and show FYI findings only as a count per item, with a line `228 FYI not shown: run with -v or --format json`. Issue bodies count FYI findings and no longer list them. The item headline says whether the upgrade clears everything (`fixes all 11`) or not (`fixes 61 of 110; 49 have no fix on 7.2`). "Checked" now reads `990 vulnerabilities checked against your versions: not affected`.
+- `--quiet` prints nothing on stdout except errors. The report still goes to `--output`, and exit codes are the same.
+- MCP `check_stack` returns a small answer: `summary` and `items` always, and `findings` for the buckets in `bucket` (default now, week, eol, unknown), at most `limit` (default 50), with evidence only when `include_evidence` is true. Every tool refuses arguments it does not declare. The text of a source (`source says`) is cut to about 200 characters in `is_affected` and `explain` unless `include_raw` is true. MCP `explain` accepts finding keys (judged with the server's config).
+- `--notify --dry-run` prints each message once (the channel, then its text); a missing secret is a warning in a dry run. Log lines read `warning: ...` instead of `WARN ...`.
+- Error messages say what to do: a missing version points to `unpatched catalog show <id>`, a bad purl shows an example, a config file that is YAML but not the `unpatched.yml` format says so and suggests the closest field (`Did you mean `exposure`?`), and long parser messages are cut. `init` asks again when a version has spaces or cannot be read, and shows an example. Using an alias (`product: fortigate`) adds one note.
+- `search` and unknown-product errors say what to do when a product is not in the catalog (use a purl for OS packages, or ask for it), and only suggest names that are close: `search yoast` no longer suggests `cisco-asa`.
+- `cargo xtask` finds the repository root at run time, and `cargo xtask corpus new` writes a case that fails until you edit it.
 - `week` needs more than exposure: an affected finding is `week` when EPSS is at or above `epss_week`, or CVSS is at or above `cvss_week`, or the item is internet-facing and CVSS is at or above `cvss_week_exposed`. An unknown CVSS score does not count. `UNP-EXPOSED` now means that. A first real run put 220 findings in `week` because of exposure alone.
-- A source that only says "all versions" (with a few unaffected versions) no longer beats a source with specific ranges that exclude your version: the verdict is `unknown` with `UNP-CONFLICT` (ADR-0006).
+- A source that only says "all versions" (with a few unaffected versions) no longer beats a source with specific ranges that exclude your version: the verdict is `unknown` with `UNP-CONFLICT`.
 - GitHub issues are per stack item, not per CVE: one issue lists the item's findings by bucket, is updated as they change, and is closed when none of `now`, `week`, `eol` or `unknown` are left. The hidden marker is now `<!-- unpatched:item=... -->` and the delivery state tracks items for issues and findings for chat alerts.
 - Finding titles in text, Markdown and issue output are the first sentence, at most 140 characters, unless `--verbose`. JSON keeps the full text.
 - `unpatched explain <CVE>` no longer says "not affected" for stack items the vulnerability is not about; it prints one line saying how many are not concerned.

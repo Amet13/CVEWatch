@@ -24,7 +24,7 @@ mod fixture;
 #[cfg(test)]
 mod testutil;
 
-pub use channels::{Channel, channels_from_config};
+pub use channels::{Channel, channels_for_dry_run, channels_from_config};
 pub use deliver::{DeliverOptions, DeliveryOutcome, deliver};
 pub use error::{Error, Result};
 pub use github::{GitHub, IssuesStore};

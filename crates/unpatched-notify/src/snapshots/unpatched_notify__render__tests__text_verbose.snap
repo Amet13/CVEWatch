@@ -2,11 +2,13 @@
 source: crates/unpatched-notify/src/render.rs
 expression: "text(&r, &opts)"
 ---
-🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
-🟡 Nextcloud 29.0.3  2 week  →  upgrade to 29.0.8 (fixes 2 of 2)
-⚫ PostgreSQL 13.12  1 eol  →  upgrade to a supported release
+5 to act on (1 today, 2 this week, 1 end of life, 1 unknown), 1 FYI
+
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+🟡 Nextcloud 29.0.3  2 this week  →  upgrade to 29.0.8 (fixes all 2)
+⚫ PostgreSQL 13.12  1 end of life  →  upgrade to a supported release
 ❔ Home Assistant 2024.10.1  1 unknown
-⚪ Redis 7.2.1  1 fyi  →  upgrade to 7.2.4 (fixes 1 of 1)
+⚪ Redis 7.2.1  1 FYI  →  upgrade to 7.2.4 (fixes it)
 
 🔴 Fix today (1)
 
@@ -71,7 +73,7 @@ expression: "text(&r, &opts)"
     Rule UNP-AFFECTED  This version is affected, but nothing says it is exploited, it is not both internet-facing and severe, and the scores are below your thresholds. Fix it with your normal updates.
     See   https://example.com/redis-advisory
 
-🟢 1,412 checked, nothing else affects you
+🟢 1,412 vulnerabilities checked against your versions: not affected
 1 ignored on purpose (see unpatched.yml)
 Database: built 2026-11-22 02:41 UTC, 1 day old
 Note: The catalog entry for home-assistant has not been verified for 40 days.

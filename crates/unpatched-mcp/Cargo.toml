@@ -17,6 +17,7 @@ include = ["src/**/*", "README.md", "LICENSE"]
 unpatched-core.workspace = true
 unpatched-catalog.workspace = true
 unpatched-db.workspace = true
+unpatched-notify.workspace = true
 unpatched-sources.workspace = true
 anyhow.workspace = true
 chrono.workspace = true

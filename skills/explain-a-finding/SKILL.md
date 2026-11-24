@@ -11,8 +11,12 @@ description: Explain why unpatched reports a finding or a verdict (affected, fix
    Do not guess it. Find the product id with `unpatched search "<name>"`.
 2. If the `unpatched` MCP server is available, call `is_affected` with
    `product`, `version`, `cve` and `exposure`. Otherwise put the item in a
-   scratch `unpatched.yml` and run `unpatched check --offline --format json`,
-   then look for the CVE in `findings`.
+   scratch `unpatched.yml` and run `unpatched check --offline --format json`
+   (`--offline` needs a database that is already downloaded: run
+   `unpatched db update` first), then look for the CVE in `findings`.
+   `findings` only holds `affected` and `unknown` results. A CVE that is not
+   there is not affected, or is not in the data: run `unpatched explain <CVE>`
+   to see which, and never report "not affected" from an empty list alone.
 3. Answer with the verdict, then the evidence:
    - `affected`: say the fixed version (`fixed_in`) and the bucket.
    - `not-affected`: only because every source with data says the version is

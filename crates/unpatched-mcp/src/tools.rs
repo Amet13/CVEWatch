@@ -3,16 +3,20 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt::Write as _;
+use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use unpatched_core::config::{Exposure, Notify, StackItem, Thresholds};
+use unpatched_core::config::{ConfigError, Exposure, Notify, StackItem, Thresholds};
 use unpatched_core::{
-    AffectedRange, CatalogEntry, Config, Dataset, DbInfo, EolCycle, Finding, Report, Signals,
-    Verdict, Vulnerability, evaluate, rules,
+    AffectedRange, Bucket, CatalogEntry, Config, Dataset, DbInfo, EolCycle, Finding, Report,
+    Signals, Verdict, Vulnerability, evaluate, rules,
 };
 use unpatched_db::Db;
+use unpatched_notify::render::{
+    action, bucket_word, counts_line, heartbeat, ignore_snippet, item_line, items_to_show, why,
+};
 use unpatched_sources::Http;
 
 use crate::ServerContext;
@@ -25,6 +29,12 @@ pub struct Output {
 }
 
 type ToolResult = Result<Output, String>;
+
+/// `check_stack` lists this many findings unless told otherwise.
+const DEFAULT_LIMIT: usize = 50;
+const MAX_LIMIT: usize = 1000;
+/// A source's own text is cut to this many characters in messages.
+const RAW_MAX: usize = 200;
 
 const NAMES: [&str; 5] = [
     "check_stack",
@@ -53,13 +63,28 @@ pub fn definitions() -> Value {
         {
             "name": "check_stack",
             "title": "Check the stack",
-            "description": "Check every item in unpatched.yml against the vulnerability database and return the report: findings sorted by urgency (now, week, eol, unknown, fyi) with verdict, rules, evidence and fixed_in. Package (purl) items are looked up in OSV unless the server runs offline.",
+            "description": "Check every item in unpatched.yml against the vulnerability database. Always returns `summary` (counts per bucket) and `items` (one per stack item, with the upgrade that fixes the most), plus `findings` sorted by urgency (now, week, eol, unknown, fyi) with verdict, rules and fixed_in. By default only now, week, eol and unknown findings come back, at most 50, without evidence: ask for more with `bucket`, `limit` and `include_evidence`. Package (purl) items are looked up in OSV unless the server runs offline.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "config_path": {
                         "type": "string",
-                        "description": "Path to unpatched.yml. Defaults to the server's configured file."
+                        "description": "Path to unpatched.yml. Only the server's configured file, or a file named unpatched*.yml or unpatched*.yaml under the server's working directory, is allowed. Defaults to the server's configured file."
+                    },
+                    "bucket": {
+                        "type": "array",
+                        "items": { "type": "string", "enum": ["now", "week", "eol", "unknown", "fyi"] },
+                        "description": "Which buckets to list findings from. Default: now, week, eol, unknown (not fyi)."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "description": "At most this many findings (default 50). `summary` always has the full counts."
+                    },
+                    "include_evidence": {
+                        "type": "boolean",
+                        "description": "Add the evidence and reference links to each finding (large). Default false."
                     }
                 },
                 "additionalProperties": false
@@ -89,6 +114,10 @@ pub fn definitions() -> Value {
                         "type": "string",
                         "enum": ["internet", "internal"],
                         "description": "Whether the item is reachable from the internet. Default internal."
+                    },
+                    "include_raw": {
+                        "type": "boolean",
+                        "description": "Give each source's full text in the structured result. Default false: it is cut to about 200 characters."
                     }
                 },
                 "required": ["product", "version"],
@@ -98,20 +127,24 @@ pub fn definitions() -> Value {
         },
         {
             "name": "explain",
-            "title": "Explain a CVE or a rule",
-            "description": "Explain a vulnerability id (CVE or advisory id: summary, CVSS, affected ranges per source, exploitation signals) or a rule id such as UNP-KEV (what it means and why it puts a finding in a bucket).",
+            "title": "Explain a CVE, a rule or a finding",
+            "description": "Explain a vulnerability id (CVE or advisory id: summary, CVSS, affected ranges per source, exploitation signals), a rule id such as UNP-KEV (what it means and why it puts a finding in a bucket), or a finding key from `check_stack` such as office-firewall/CVE-2024-21762 (judged with the server's configured unpatched.yml).",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "A CVE or advisory id (CVE-2024-21762) or a rule id (UNP-KEV)."
+                        "description": "A CVE or advisory id (CVE-2024-21762), a rule id (UNP-KEV) or a finding key (office-firewall/CVE-2024-21762)."
+                    },
+                    "include_raw": {
+                        "type": "boolean",
+                        "description": "Give each source's full text in the structured result. Default false: it is cut to about 200 characters."
                     }
                 },
                 "required": ["id"],
                 "additionalProperties": false
             },
-            "annotations": read_only("Explain a CVE or a rule", false)
+            "annotations": read_only("Explain a CVE, a rule or a finding", true)
         },
         {
             "name": "search_catalog",
@@ -168,6 +201,7 @@ impl Tools {
     }
 
     pub fn call(&mut self, name: &str, args: &Value) -> ToolResult {
+        reject_unknown_arguments(name, args)?;
         match name {
             "check_stack" => self.check_stack(args),
             "is_affected" => self.is_affected(args),
@@ -200,24 +234,55 @@ impl Tools {
         Ok(self.db.as_ref().expect("opened above"))
     }
 
-    fn check_stack(&mut self, args: &Value) -> ToolResult {
-        #[derive(Deserialize)]
-        struct Args {
-            config_path: Option<String>,
+    /// Which config file a call may read: the server's own, or an
+    /// `unpatched*.yml` under the server's working directory. Symbolic links
+    /// are resolved first, so a link cannot point outside.
+    fn resolve_config_path(&self, requested: Option<&str>) -> Result<PathBuf, String> {
+        let Some(requested) = requested.map(str::trim).filter(|p| !p.is_empty()) else {
+            return Ok(self.ctx.config_path.clone());
+        };
+        let own = std::fs::canonicalize(&self.ctx.config_path).ok();
+        let Ok(wanted) = std::fs::canonicalize(requested) else {
+            return Err(format!(
+                "Cannot read {requested}: no such file. Leave out `config_path` to use the server's file ({}), or create it first.",
+                self.ctx.config_path.display()
+            ));
+        };
+        if own.as_ref() == Some(&wanted) {
+            return Ok(wanted);
         }
-        let a: Args = parse_args(args)?;
-        let path = a
-            .config_path
-            .filter(|p| !p.trim().is_empty())
-            .map_or_else(|| self.ctx.config_path.clone(), Into::into);
+        let cwd = std::env::current_dir()
+            .and_then(std::fs::canonicalize)
+            .map_err(|e| format!("Cannot find the server's working directory: {e}"))?;
+        let name = wanted
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        let named_right = name.starts_with("unpatched")
+            && Path::new(&name)
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("yml") || e.eq_ignore_ascii_case("yaml"));
+        if named_right && wanted.starts_with(&cwd) {
+            return Ok(wanted);
+        }
+        Err(format!(
+            "`config_path` is not allowed. Use the server's configured file ({}), or a file named unpatched*.yml or unpatched*.yaml under {}. Leave out `config_path` to use the server's file.",
+            self.ctx.config_path.display(),
+            cwd.display()
+        ))
+    }
+
+    /// Read the config, check the stack, and give back the report.
+    fn run_report(&mut self, config_path: Option<&str>) -> Result<(Report, PathBuf), String> {
+        let path = self.resolve_config_path(config_path)?;
         let text = std::fs::read_to_string(&path).map_err(|e| {
             format!(
                 "Cannot read {}: {e}. Pass `config_path`, or create unpatched.yml first.",
                 path.display()
             )
         })?;
-        let config = Config::from_yaml(&text)
-            .map_err(|e| format!("{}: {e}. Fix the file and try again.", path.display()))?;
+        let config = Config::from_yaml(&text).map_err(|e| config_error(&path, &e))?;
         let has_packages = config.stack.iter().any(|i| i.purl.is_some());
         let offline = self.ctx.offline;
         if has_packages && !offline && self.http.is_none() {
@@ -228,12 +293,55 @@ impl Tools {
         let db = self.db()?;
         let report = unpatched_db::run_check(&config, db, http.as_ref(), Utc::now())
             .map_err(|e| format!("The check failed: {e}. Retry, or run the server offline."))?;
-        let mut text = report_summary(&report);
+        Ok((report, path))
+    }
+
+    fn check_stack(&mut self, args: &Value) -> ToolResult {
+        #[derive(Deserialize)]
+        struct Args {
+            config_path: Option<String>,
+            bucket: Option<Vec<Bucket>>,
+            limit: Option<usize>,
+            include_evidence: Option<bool>,
+        }
+        let a: Args = parse_args(args)?;
+        let buckets = a
+            .bucket
+            .filter(|b| !b.is_empty())
+            .unwrap_or_else(|| vec![Bucket::Now, Bucket::Week, Bucket::Eol, Bucket::Unknown]);
+        let limit = a.limit.unwrap_or(DEFAULT_LIMIT);
+        if !(1..=MAX_LIMIT).contains(&limit) {
+            return Err(format!("`limit` must be between 1 and {MAX_LIMIT}."));
+        }
+        let evidence = a.include_evidence.unwrap_or(false);
+        let (report, path) = self.run_report(a.config_path.as_deref())?;
+
+        let matching: Vec<&Finding> = report
+            .findings
+            .iter()
+            .filter(|f| buckets.contains(&f.bucket))
+            .collect();
+        let shown: Vec<&Finding> = matching.iter().take(limit).copied().collect();
+        let mut text = report_summary(&report, &shown, matching.len());
         let _ = write!(text, "\nConfig: {}", path.display());
-        Ok(Output {
-            text,
-            data: to_value(&report)?,
-        })
+        let findings: Vec<Value> = shown
+            .iter()
+            .map(|f| finding_json(f, evidence))
+            .collect::<Result<_, _>>()?;
+        let data = json!({
+            "format": report.format,
+            "generated_at": report.generated_at,
+            "db": report.db,
+            "summary": report.summary,
+            "items": report.items,
+            "findings": findings,
+            "findings_matching": matching.len(),
+            "findings_returned": shown.len(),
+            "truncated": matching.len() > shown.len(),
+            "buckets": buckets,
+            "notes": report.notes,
+        });
+        Ok(Output { text, data })
     }
 
     fn is_affected(&mut self, args: &Value) -> ToolResult {
@@ -243,8 +351,10 @@ impl Tools {
             version: String,
             cve: Option<String>,
             exposure: Option<Exposure>,
+            include_raw: Option<bool>,
         }
         let a: Args = parse_args(args)?;
+        let raw = a.include_raw.unwrap_or(false);
         let product = a.product.trim().to_owned();
         let version = a.version.trim().to_owned();
         if product.is_empty() || version.is_empty() {
@@ -275,19 +385,36 @@ impl Tools {
                 let report = unpatched_db::run_check(&config, db, None, now)
                     .map_err(|e| format!("The check failed: {e}"))?;
                 let mut text = format!("{} {version} ({}).\n", entry.name, exposure_str(exposure));
-                text.push_str(&report_summary(&report));
+                let shown: Vec<&Finding> = report.findings.iter().take(30).collect();
+                text.push_str(&report_summary(&report, &shown, report.findings.len()));
+                let findings: Vec<Value> = report
+                    .findings
+                    .iter()
+                    .map(|f| finding_json(f, raw))
+                    .collect::<Result<_, _>>()?;
                 let data = json!({
                     "product": entry.id,
                     "version": version,
                     "exposure": exposure_str(exposure),
                     "summary": report.summary,
-                    "findings": report.findings,
+                    "items": report.items,
+                    "findings": findings,
                     "notes": report.notes,
                     "db": report.db,
                 });
                 Ok(Output { text, data })
             }
-            Some(cve) => answer_for_cve(db, &config, entry, &version, exposure, &cve, now),
+            Some(cve) => {
+                let ask = Ask {
+                    entry,
+                    version: &version,
+                    exposure,
+                    cve: &cve,
+                    now,
+                    raw,
+                };
+                answer_for_cve(db, &config, ask)
+            }
         }
     }
 
@@ -295,14 +422,19 @@ impl Tools {
         #[derive(Deserialize)]
         struct Args {
             id: String,
+            include_raw: Option<bool>,
         }
         let a: Args = parse_args(args)?;
+        let raw = a.include_raw.unwrap_or(false);
         let id = a.id.trim();
         if id.is_empty() {
             return Err("`id` must not be empty.".into());
         }
         if id.to_ascii_uppercase().starts_with("UNP-") {
             return explain_rule(id);
+        }
+        if id.contains('/') {
+            return self.explain_finding(id);
         }
         let db = self.db()?;
         let Some(vuln) = find_vuln(db, id) else {
@@ -321,19 +453,90 @@ impl Tools {
                 "- {} says for {}: {}",
                 source_name(r),
                 r.product,
-                r.raw
+                cut(&r.raw, RAW_MAX)
             );
         }
         text.push_str(&signals_line(&signals));
-        let mut by_source: BTreeMap<String, Vec<&AffectedRange>> = BTreeMap::new();
-        for r in &vuln.ranges {
-            by_source.entry(source_name(r)).or_default().push(r);
+        let mut by_source: BTreeMap<String, Vec<AffectedRange>> = BTreeMap::new();
+        let mut shown = vuln.clone();
+        if !raw {
+            for r in &mut shown.ranges {
+                r.raw = cut(&r.raw, RAW_MAX);
+            }
+        }
+        for r in &shown.ranges {
+            by_source.entry(source_name(r)).or_default().push(r.clone());
         }
         let data = json!({
             "kind": "vulnerability",
-            "vulnerability": vuln,
+            "vulnerability": shown,
             "ranges_by_source": by_source,
             "signals": signals,
+        });
+        Ok(Output { text, data })
+    }
+
+    /// A finding key from `check_stack`, judged with the server's config.
+    fn explain_finding(&mut self, key: &str) -> ToolResult {
+        let (report, _) = self.run_report(None)?;
+        let found = report
+            .findings
+            .iter()
+            .map(|f| (f, false))
+            .chain(report.ignored.iter().map(|f| (f, true)))
+            .find(|(f, _)| f.key == key);
+        let Some((f, ignored)) = found else {
+            let keys: Vec<&str> = report
+                .findings
+                .iter()
+                .take(5)
+                .map(|f| f.key.as_str())
+                .collect();
+            return Err(format!(
+                "There is no finding with the key {key:?} right now. {}",
+                if keys.is_empty() {
+                    "`check_stack` shows the current findings; there are none.".to_owned()
+                } else {
+                    format!("Current keys include: {}.", keys.join(", "))
+                }
+            ));
+        };
+        let rules: Vec<&str> = f.rules.iter().map(|r| r.code()).collect();
+        let mut text = format!(
+            "{} ({}): {}\nVerdict: {} · {}{}\nRules: {}\nWhy: {}\nDo: {}\n",
+            unpatched_notify::render::subject(f),
+            f.key,
+            cut(&f.title, RAW_MAX),
+            verdict_str(f.verdict),
+            bucket_word(f.bucket),
+            if ignored { " (ignored on purpose)" } else { "" },
+            rules.join(", "),
+            why(f),
+            action(f)
+        );
+        for e in &f.evidence {
+            let _ = writeln!(
+                text,
+                "- {}: {} ({})",
+                unpatched_notify::render::source_name(e.source),
+                cut(&e.detail, RAW_MAX),
+                verdict_str(e.verdict)
+            );
+        }
+        let mut hint = None;
+        if !ignored && let Some(cve) = &f.vuln {
+            let snippet = ignore_snippet(cve);
+            let _ = write!(
+                text,
+                "To accept this risk, add to unpatched.yml:\n{snippet}"
+            );
+            hint = Some(snippet);
+        }
+        let data = json!({
+            "kind": "finding",
+            "finding": finding_json(f, true)?,
+            "ignored": ignored,
+            "ignore_snippet": hint,
         });
         Ok(Output { text, data })
     }
@@ -476,15 +679,26 @@ impl Dataset for OneVuln<'_> {
     }
 }
 
-fn answer_for_cve(
-    db: &Db,
-    config: &Config,
-    entry: &CatalogEntry,
-    version: &str,
+/// One question to `is_affected` about one CVE.
+#[derive(Clone, Copy)]
+struct Ask<'a> {
+    entry: &'a CatalogEntry,
+    version: &'a str,
     exposure: Exposure,
-    cve: &str,
+    cve: &'a str,
     now: DateTime<Utc>,
-) -> ToolResult {
+    raw: bool,
+}
+
+fn answer_for_cve(db: &Db, config: &Config, ask: Ask<'_>) -> ToolResult {
+    let Ask {
+        entry,
+        version,
+        exposure,
+        cve,
+        now,
+        raw,
+    } = ask;
     let base = |verdict: &str, reason: &str| {
         json!({
             "product": entry.id,
@@ -517,7 +731,7 @@ fn answer_for_cve(
         Value::Array(
             ranges
                 .iter()
-                .map(|r| json!({ "source": r.source, "detail": r.raw }))
+                .map(|r| json!({ "source": r.source, "detail": if raw { r.raw.clone() } else { cut(&r.raw, RAW_MAX) } }))
                 .collect(),
         )
     };
@@ -592,7 +806,18 @@ fn answer_for_cve(
     data["vulnerability"] = json!(vuln.id);
     data["title"] = json!(vuln.summary);
     data["evidence"] = evidence;
-    data["ranges"] = json!(ranges);
+    data["ranges"] = if raw {
+        json!(ranges)
+    } else {
+        let cut_ranges: Vec<AffectedRange> = ranges
+            .iter()
+            .map(|r| AffectedRange {
+                raw: cut(&r.raw, RAW_MAX),
+                ..(*r).clone()
+            })
+            .collect();
+        json!(cut_ranges)
+    };
     data["notes"] = json!(report.notes);
     if let Some(f) = finding {
         data["bucket"] = json!(f.bucket);
@@ -607,7 +832,7 @@ fn answer_for_cve(
     }
     let mut text = format!("{verdict}. {reason}");
     for r in &ranges {
-        let _ = write!(text, "\n- {}: {}", source_name(r), r.raw);
+        let _ = write!(text, "\n- {}: {}", source_name(r), cut(&r.raw, RAW_MAX));
     }
     Ok(Output { text, data })
 }
@@ -636,24 +861,24 @@ fn unknown_product(product: &str) -> String {
     }
 }
 
-fn report_summary(report: &Report) -> String {
-    let s = &report.summary;
-    let mut text = format!(
-        "{} finding(s): now {}, week {}, eol {}, unknown {}, fyi {}; {} ignored; {} checked and not affected.",
-        report.findings.len(),
-        s.now,
-        s.week,
-        s.eol,
-        s.unknown,
-        s.fyi,
-        s.ignored,
-        s.not_affected
-    );
-    for f in report.findings.iter().take(30) {
+/// The text of a report: the counts, one line per stack item, then the findings shown.
+fn report_summary(report: &Report, shown: &[&Finding], matching: usize) -> String {
+    let mut text = format!("{}. {}", counts_line(report), heartbeat(report));
+    if report.summary.ignored > 0 {
+        let _ = write!(text, " {} ignored on purpose.", report.summary.ignored);
+    }
+    for i in items_to_show(report) {
+        let _ = write!(text, "\n{}", item_line(i));
+    }
+    for f in shown.iter().take(30) {
         let _ = write!(text, "\n- {}", finding_line(f));
     }
-    if report.findings.len() > 30 {
-        let _ = write!(text, "\n- ... and {} more", report.findings.len() - 30);
+    if matching > shown.len().min(30) {
+        let _ = write!(
+            text,
+            "\n- ... and {} more (see structuredContent, or raise `limit`)",
+            matching - shown.len().min(30)
+        );
     }
     for n in &report.notes {
         let _ = write!(text, "\nNote: {n}");
@@ -662,12 +887,9 @@ fn report_summary(report: &Report) -> String {
 }
 
 fn finding_line(f: &Finding) -> String {
-    let bucket = serde_json::to_value(f.bucket)
-        .ok()
-        .and_then(|v| v.as_str().map(str::to_owned))
-        .unwrap_or_default();
     let mut line = format!(
-        "[{bucket}] {} {}: {}",
+        "[{}] {} {}: {}",
+        bucket_word(f.bucket),
         f.item,
         f.version,
         f.vuln.as_deref().unwrap_or(&f.title)
@@ -679,6 +901,91 @@ fn finding_line(f: &Finding) -> String {
         let _ = write!(line, ", fixed in {fix}");
     }
     line
+}
+
+/// One finding as JSON. Without `evidence` the evidence and reference lists
+/// are left out and a long title is cut: they are what makes a report big.
+fn finding_json(f: &Finding, evidence: bool) -> Result<Value, String> {
+    let mut v = to_value(f)?;
+    if !evidence && let Some(o) = v.as_object_mut() {
+        o.remove("evidence");
+        o.remove("references");
+        if let Some(t) = f.title.chars().nth(300).map(|_| cut(&f.title, 300)) {
+            o.insert("title".into(), Value::String(t));
+        }
+    }
+    Ok(v)
+}
+
+/// `text` cut to `max` characters on one line, with an ellipsis when cut.
+fn cut(text: &str, max: usize) -> String {
+    let one: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if one.chars().count() <= max {
+        return one;
+    }
+    let head: String = one.chars().take(max.saturating_sub(1)).collect();
+    format!("{}…", head.trim_end())
+}
+
+/// A config problem, told without echoing what the file says: a parse error
+/// from the YAML library can quote the file's own text.
+fn config_error(path: &Path, e: &ConfigError) -> String {
+    let at = e
+        .location()
+        .map_or(String::new(), |(l, c)| format!(" at line {l} column {c}"));
+    let what = match e {
+        ConfigError::Parse(_) => "is not valid YAML".to_owned(),
+        ConfigError::Format(_) => format!(
+            "does not match the unpatched.yml format{}",
+            e.hint().map_or(String::new(), |h| format!(". {h}"))
+        ),
+        ConfigError::Invalid(m) => {
+            return format!(
+                "{}: {}. Fix the file and try again.",
+                path.display(),
+                cut(m, 160)
+            );
+        }
+    };
+    format!(
+        "{} {what}{at}. Fix the file and try again; the format is in the `unpatched.yml` JSON Schema (`unpatched schema config`).",
+        path.display()
+    )
+}
+
+/// Refuse arguments the tool does not declare (its schema says
+/// `additionalProperties: false`, and a typo should not pass quietly).
+fn reject_unknown_arguments(name: &str, args: &Value) -> Result<(), String> {
+    let Some(given) = args.as_object() else {
+        return Ok(());
+    };
+    let defs = definitions();
+    let Some(props) = defs
+        .as_array()
+        .and_then(|a| a.iter().find(|t| t["name"] == name))
+        .and_then(|t| t["inputSchema"]["properties"].as_object())
+    else {
+        return Ok(());
+    };
+    let unknown: Vec<&str> = given
+        .keys()
+        .map(String::as_str)
+        .filter(|k| !props.contains_key(*k))
+        .collect();
+    if unknown.is_empty() {
+        return Ok(());
+    }
+    let accepted: Vec<&str> = props.keys().map(String::as_str).collect();
+    Err(format!(
+        "Unknown argument{} for {name}: {}. It accepts: {}.",
+        if unknown.len() == 1 { "" } else { "s" },
+        unknown.join(", "),
+        if accepted.is_empty() {
+            "no arguments".to_owned()
+        } else {
+            accepted.join(", ")
+        }
+    ))
 }
 
 fn signals_line(s: &Signals) -> String {

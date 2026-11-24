@@ -128,7 +128,7 @@ fn check_markdown_to_a_file() {
         .assert()
         .success()
         .stdout("")
-        .stderr(predicate::str::contains("1 fix today"));
+        .stderr(predicate::str::contains("1 today"));
     let text = std::fs::read_to_string(&out).unwrap();
     assert!(text.starts_with("## unpatched"));
     assert!(text.contains("FortiOS 7.2.5 (Office firewall)"));
@@ -159,7 +159,7 @@ fn exit_code_flag() {
         .arg("--exit-code")
         .assert()
         .code(0)
-        .stdout(predicate::str::contains("Nothing to fix."));
+        .stdout(predicate::str::contains("Nothing to act on"));
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn missing_and_broken_config_are_usage_errors() {
     check(ws.path())
         .assert()
         .code(2)
-        .stderr(predicate::str::contains("needs a version"));
+        .stderr(predicate::str::contains("add version:"));
     let ws = workspace("version: 1\nstack: [\n");
     check(ws.path()).assert().code(2);
 }
@@ -230,6 +230,183 @@ fn notify_dry_run_writes_nothing() {
             "dry run: would save the delivery state",
         ));
     assert!(!ws.path().join(".unpatched").exists());
+}
+
+#[test]
+fn dry_run_shows_each_message_once_and_warns_about_missing_secrets() {
+    let ws = workspace(&format!("{STACK}notify:\n  slack: true\n"));
+    let out = check(ws.path())
+        .args(["--notify", "--dry-run"])
+        .env_remove("UNPATCHED_SLACK_WEBHOOK")
+        .assert()
+        .success()
+        .stderr(predicate::str::contains(
+            "warning: UNPATCHED_SLACK_WEBHOOK is not set",
+        ))
+        .stderr(predicate::str::contains("dry run: slack would get a"))
+        .get_output()
+        .stderr
+        .clone();
+    let err = String::from_utf8(out).unwrap();
+    assert_eq!(
+        err.matches("dry run: slack").count(),
+        err.matches("would get a").count()
+    );
+    assert!(!err.contains("would send"), "{err}");
+    let alerts = err.matches("would get a alert").count();
+    assert_eq!(alerts, 1, "{err}");
+    assert!(!ws.path().join(".unpatched").exists());
+}
+
+#[test]
+fn quiet_prints_nothing_on_stdout() {
+    let ws = workspace(STACK);
+    check(ws.path())
+        .arg("--quiet")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr("");
+    check(ws.path())
+        .args(["--quiet", "--exit-code"])
+        .assert()
+        .code(1)
+        .stdout("");
+    let out = ws.path().join("report.json");
+    check(ws.path())
+        .args(["--quiet", "--format", "json", "--output"])
+        .arg(&out)
+        .assert()
+        .success()
+        .stdout("")
+        .stderr("");
+    assert!(
+        std::fs::read_to_string(&out)
+            .unwrap()
+            .contains("\"findings\"")
+    );
+}
+
+#[test]
+fn search_without_a_match_says_what_to_do() {
+    let dir = tempfile::tempdir().unwrap();
+    unpatched(dir.path())
+        .args(["search", "debian"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm",
+        ))
+        .stdout(predicate::str::contains("issues/new/choose"));
+    // Nothing close: no made-up suggestion.
+    unpatched(dir.path())
+        .args(["search", "yoast"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Did you mean").not())
+        .stdout(predicate::str::contains("cisco").not());
+}
+
+#[test]
+fn usage_errors_do_not_list_global_options_as_required() {
+    let dir = tempfile::tempdir().unwrap();
+    unpatched(dir.path())
+        .args(["--db", "x.sqlite", "search"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains(
+            "Usage: unpatched search <TEXT>...",
+        ));
+}
+
+#[test]
+fn explain_lists_the_rules() {
+    let dir = tempfile::tempdir().unwrap();
+    unpatched(dir.path())
+        .args(["explain", "--rules"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("UNP-KEV"))
+        .stdout(predicate::str::contains("UNP-EOL"));
+}
+
+#[test]
+fn yaml_errors_are_short_and_helpful() {
+    let ws = workspace(
+        "version: 1\nstack:\n  - product: fortios\n    version: \"7.2.5\"\n    exposur: internet\n",
+    );
+    check(ws.path())
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains(
+            "does not match the unpatched.yml format",
+        ))
+        .stderr(predicate::str::contains("Did you mean `exposure`?"));
+    let ws = workspace("version: 1\nstack: [\n");
+    check(ws.path())
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("is not valid YAML"));
+    let ws = workspace(&format!("version: 1\nstack: {}\n", "x".repeat(5000)));
+    let err = check(ws.path())
+        .assert()
+        .code(2)
+        .get_output()
+        .stderr
+        .clone();
+    assert!(err.len() < 1500, "{}", err.len());
+    let ws = workspace("version: 1\nstack:\n  - purl: openssl\n");
+    check(ws.path())
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains(
+            "pkg:deb/debian/openssl@3.0.11-1~deb12u1",
+        ));
+}
+
+#[test]
+fn an_alias_and_ignores_get_one_note_each() {
+    let ws = workspace(
+        "version: 1\nstack:\n  - product: fortigate\n    version: 7.2.5\nignore:\n  - cve: CVE-2099-1\n    reason: x\n    until: 2030-01-01\n  - cve: CVE-2024-21762\n    reason: x\n    until: 2020-01-01\n",
+    );
+    let out = check(ws.path())
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let out = String::from_utf8(out).unwrap();
+    assert_eq!(
+        out.matches("fortigate is an alias of fortios").count(),
+        1,
+        "{out}"
+    );
+    assert!(
+        out.contains("ignore[0]: CVE-2099-1 matches no finding. Check the id or remove it."),
+        "{out}"
+    );
+    assert!(
+        out.contains("ignore[1] expired on 2020-01-01; the finding is back."),
+        "{out}"
+    );
+}
+
+#[test]
+fn explain_a_key_shows_the_ignore_hint() {
+    let ws = workspace(STACK);
+    let mut c = unpatched(ws.path());
+    c.args(["--offline", "--db"]).arg(smoke_db()).args([
+        "explain",
+        "office-firewall/CVE-2024-21762",
+        "--now",
+        NOW,
+    ]);
+    c.assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "To accept this risk, add to unpatched.yml",
+        ))
+        .stdout(predicate::str::contains("- cve: CVE-2024-21762"));
 }
 
 #[test]
@@ -286,7 +463,7 @@ fn explain_a_cve_with_the_stack() {
     c.assert()
         .success()
         .stdout(predicate::str::contains("CISA KEV: added 2024-02-09"))
-        .stdout(predicate::str::contains("Office firewall 7.2.5"))
+        .stdout(predicate::str::contains("FortiOS 7.2.5 (Office firewall)"))
         .stdout(predicate::str::contains("Verdict: affected"))
         // The vulnerability is not about Nextcloud: say so in one line, and do
         // not claim "not affected" without a source that had ranges for it.
@@ -337,7 +514,9 @@ fn search_and_catalog() {
         .args(["search", "zzzzzz"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("No product matches"));
+        .stdout(predicate::str::contains(
+            "Not in the catalog. For OS packages use a purl",
+        ));
     unpatched(dir.path())
         .args(["catalog", "list", "--kind", "database"])
         .assert()

@@ -19,8 +19,7 @@ problems with the data are findings too.
 Every source is judged on its own, then the verdicts are combined. One source
 saying `affected` is enough. `not-affected` needs evidence: having no data is
 never "not affected". When sources disagree the finding is reported and the rule
-`UNP-CONFLICT` is added, so you can read the evidence and decide. The reasoning is
-in the decision record ADR-0006.
+`UNP-CONFLICT` is added, so you can read the evidence and decide.
 
 An `unknown` is not shown for every vulnerability that lacks data: that would
 bury the report. It is shown only when the signals would have made it "fix today"
@@ -31,18 +30,36 @@ with no version range yet). The reason is given in the finding.
 
 The bucket is decided by evidence of exploitation first, not by severity.
 
+The report says the bucket in words, and the JSON keeps short ids. They mean
+the same:
+
+| JSON (`bucket`) | In the text report, issues and chat | Meaning |
+| --- | --- | --- |
+| `now` | today | Fix today |
+| `week` | this week | Fix this week |
+| `eol` | end of life | The release is past its end of life |
+| `unknown` | unknown | The data cannot say yet |
+| `fyi` | FYI | Affected, low urgency |
+
+The first line of a report counts what you can act on, then the FYI findings:
+`87 to act on (14 today, 69 this week, 3 end of life, 1 unknown), 228 FYI`.
+"To act on" is everything except FYI. The line "990 vulnerabilities checked
+against your versions: not affected" counts the vulnerabilities that were
+compared with your versions and found not to affect you; it does not count the
+findings above.
+
 | Bucket | Label | When (for an `affected` finding) |
 | --- | --- | --- |
 | `now` | Fix today | In CISA KEV, or CISA SSVC says exploitation is active, or a public exploit exists (Exploit-DB or Metasploit) and the item is `exposure: internet`. |
 | `week` | Fix this week | EPSS at or above `epss_week` (default 0.05), or CVSS at or above `cvss_week` (default 9.0), or the item is `exposure: internet` and CVSS is at or above `cvss_week_exposed` (default 7.0). Exposure alone is not enough, and an unknown CVSS score does not count. |
-| `fyi` | FYI | Any other affected finding. No issue is opened for it; it is listed in the status issue and the digest. |
+| `fyi` | FYI | Any other affected finding. No issue is opened for it. The text and Markdown reports and the status issue show only a count per item; `-v` and `--format json` list them. |
 | `eol` | End of life | The release cycle of the item is past its end of life (endoflife.date). One finding per item, not one per CVE. |
 | `unknown` | Unknown | An `unknown` verdict that would have been `now` or `week` if confirmed, or a data problem (product not found, stale database). |
 
 The first matching bucket wins, from the top. A `now` finding lists the `week`
 rules too, so you see every reason. Thresholds can be changed in
 [the config](config.md#thresholds); the other conditions cannot. The reasoning
-(why not CVSS) is in ADR-0008.
+(why not CVSS) is in the comments of `crates/unpatched-core/src/matching.rs`.
 
 For an affected finding, `fixed_in` is the lowest version that fixes it, taken
 from the upper bound of the affected range. `latest_in_cycle` is the newest
@@ -62,7 +79,7 @@ database):
 <!-- generated:start example-issue -->
 
 ```markdown
-🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
 
 This item is marked as internet-facing.
 
@@ -74,13 +91,24 @@ This item is marked as internet-facing.
 
 unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
 
+To accept this risk, add to unpatched.yml:
+
+```yaml
+ignore:
+  - cve: CVE-…
+    reason: …
+    until: YYYY-MM-DD
+```
+
 <!-- unpatched:item=office-firewall -->
 ```
 
 <!-- generated:end -->
 
 - The first line is the recommendation for the item: counts per bucket and the
-  smallest version that fixes the most findings (`fixes 48 of 50`).
+  smallest version that fixes the most findings. It says whether that upgrade
+  clears everything (`fixes all 11`) or not (`fixes 61 of 110; 49 have no fix
+  on 7.2`). FYI findings are only counted, not listed.
 - Then one section per bucket lists its findings: id, a one-sentence title, why
   it is in that bucket, and what to do. A long list stops after about 60 entries
   with "...and N more (run `unpatched check` for all)".
@@ -97,9 +125,9 @@ issue.
 ## The status issue
 
 One issue called **unpatched status** (label `unpatched:status`, pinned when
-GitHub allows it) is rewritten on every run. It has the count per bucket, the
-open findings with links to their issues, FYI findings, issues you closed that
-are still affected, notes, the date of the database and the time of the last run.
+GitHub allows it) is rewritten on every run. It has the count per bucket
+(FYI only as a count), the open findings with links to their issues, issues
+you closed that are still affected, notes, the date of the database and the time of the last run.
 It also holds a hidden block with what was already sent to chat channels, so
 messages are not repeated. Do not delete it: the next run would make a new one
 and may repeat messages once. More in [Notifications](notifications.md#how-state-works).
@@ -201,6 +229,23 @@ finding has its `key` (stable across runs), `verdict`, `bucket`, `rules`,
 itself: an unknown product id, a stale database, a version that cannot be
 compared.
 
+## Accept a risk
+
+Every issue, and `unpatched explain <finding key>`, ends with how to accept the
+risk on purpose. Add this to `unpatched.yml`:
+
+```yaml
+ignore:
+  - cve: CVE-2024-21762
+    reason: "The SSL VPN is switched off"
+    until: 2027-01-31
+```
+
+`until` is required. The report tells you when an entry does nothing:
+`ignore[2]: CVE-2099-1 matches no finding. Check the id or remove it.` and
+`ignore[1] expired on 2020-01-01; the finding is back.` More in
+[the config](config.md#ignore-entries).
+
 ## Explain a finding
 
 ```sh
@@ -210,8 +255,14 @@ unpatched explain office-firewall/CVE-2024-21762  # one finding of your stack, w
 ```
 
 The finding key is `<item>/<vulnerability>`, where the item is your `name`
-(lowercased, spaces become `-`) or the product id. Examples are on
+(lowercased, spaces become `-`) or the product id. `unpatched explain --rules`
+lists every rule id. Examples are on
 [Start with the command line](start-cli.md#look-closer).
+
+The examples on this page come from a small sample database
+(`fixtures/smoke/unpatched-db.sqlite`) and the date 2026-11-24. The issue
+example above comes from the renderer's own test fixture, so its CVE text and
+numbers differ from the other examples.
 
 ## Every rule
 

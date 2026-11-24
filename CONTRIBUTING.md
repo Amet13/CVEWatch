@@ -37,6 +37,13 @@ A product is one file in `catalog/`, named after its id.
    `debian`, `rpm`, `apk`, `pep440`, or a named custom scheme).
 3. Pick one CVE that affects it and check the names against the real CVE
    record and NVD entry. A wrong name silently means "no vulnerabilities".
+   `unpatched explain <CVE>` shows what each source says (`source says: ...`),
+   which has the CPE vendor and product, and the CNA vendor and product as the
+   record writes them. The CISA KEV names are in the
+   [KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+   (`vendorProject` and `product`). The endoflife.date slugs are listed at
+   <https://endoflife.date/api/all.json>. The `add-product` skill (in
+   `.agents/skills/`) walks through all of this.
 4. Add a corpus case (see below) for that CVE with one affected and one fixed version.
 5. Run `cargo xtask catalog build` (it regenerates the file that the code
    reads, never edit that file by hand), then `cargo xtask check`.

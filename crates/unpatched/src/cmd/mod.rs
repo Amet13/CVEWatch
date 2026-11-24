@@ -17,7 +17,13 @@ pub fn run(ctx: &Ctx, command: Command) -> Res<u8> {
     match command {
         Command::Check(args) => check::run(ctx, &args),
         Command::Init(args) => init::run(ctx, &args),
-        Command::Explain { target } => explain::run(ctx, &target),
+        Command::Explain { target, rules } => match target {
+            Some(t) if !rules => explain::run(ctx, &t),
+            _ => {
+                out(&explain::rules_list());
+                Ok(0)
+            }
+        },
         Command::Search { text } => Ok(catalog::search(&text.join(" "))),
         Command::Catalog(CatalogCommand::List { kind }) => Ok(catalog::list(kind.map(Into::into))),
         Command::Catalog(CatalogCommand::Show { id }) => catalog::show(&id),

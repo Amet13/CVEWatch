@@ -32,6 +32,19 @@ pub fn bucket_label(b: Bucket) -> &'static str {
     }
 }
 
+/// The bucket as a person says it in a sentence: "today", "this week",
+/// "end of life", "unknown", "FYI". JSON keeps `now`, `week`, `eol`,
+/// `unknown` and `fyi`.
+pub fn bucket_word(b: Bucket) -> &'static str {
+    match b {
+        Bucket::Now => "today",
+        Bucket::Week => "this week",
+        Bucket::Eol => "end of life",
+        Bucket::Unknown => "unknown",
+        Bucket::Fyi => "FYI",
+    }
+}
+
 /// All buckets, most urgent first.
 pub const BUCKETS: [Bucket; 5] = [
     Bucket::Now,
@@ -258,21 +271,13 @@ pub fn item_emoji(i: &ItemSummary) -> &'static str {
     i.counts.most_urgent().map_or("🟢", bucket_emoji)
 }
 
-/// "14 now · 36 week", only the buckets that have findings.
+/// "14 today · 36 this week · 228 FYI", only the buckets that have findings.
 pub fn item_counts(i: &ItemSummary) -> String {
-    let c = &i.counts;
-    let mut parts = Vec::new();
-    for (n, name) in [
-        (c.now, "now"),
-        (c.week, "week"),
-        (c.eol, "eol"),
-        (c.unknown, "unknown"),
-        (c.fyi, "fyi"),
-    ] {
-        if n > 0 {
-            parts.push(format!("{n} {name}"));
-        }
-    }
+    let parts: Vec<String> = BUCKETS
+        .into_iter()
+        .filter(|b| i.counts.get(*b) > 0)
+        .map(|b| format!("{} {}", i.counts.get(b), bucket_word(b)))
+        .collect();
     if parts.is_empty() {
         "nothing to fix".into()
     } else {
@@ -280,10 +285,39 @@ pub fn item_counts(i: &ItemSummary) -> String {
     }
 }
 
-/// "upgrade to 7.2.12 (fixes 48 of 50)", when there is advice.
+/// The release branch of a version: `7.2` for `7.2.12`.
+fn branch_of(version: &str) -> Option<String> {
+    let v = version.trim().trim_start_matches(['v', 'V']);
+    let mut parts = v.split('.');
+    let (major, minor) = (parts.next()?, parts.next()?);
+    let digits = |p: &str| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit());
+    (digits(major) && minor.chars().next().is_some_and(|c| c.is_ascii_digit())).then(|| {
+        format!(
+            "{major}.{}",
+            minor.trim_end_matches(|c: char| !c.is_ascii_digit())
+        )
+    })
+}
+
+/// "upgrade to 7.2.12 (fixes all 11)" or "upgrade to 7.2.12 (fixes 61 of 110;
+/// 49 have no fix on 7.2)", when there is advice.
 pub fn item_advice(i: &ItemSummary) -> Option<String> {
     match &i.upgrade_to {
-        Some(v) => Some(format!("upgrade to {v} (fixes {} of {})", i.fixes, i.of)),
+        Some(v) => {
+            let of = i.of.max(i.fixes);
+            let how = if i.fixes >= of {
+                match of {
+                    1 => "fixes it".to_owned(),
+                    n => format!("fixes all {n}"),
+                }
+            } else {
+                let rest = of - i.fixes;
+                let on = branch_of(v).unwrap_or_else(|| "this release".to_owned());
+                let have = if rest == 1 { "has" } else { "have" };
+                format!("fixes {} of {of}; {rest} {have} no fix on {on}", i.fixes)
+            };
+            Some(format!("upgrade to {v} ({how})"))
+        }
         None if i.eol => Some("upgrade to a supported release".into()),
         None if i.unfixed > 0 => Some("no fixed version known yet".into()),
         None => None,
@@ -362,14 +396,52 @@ impl Paint {
     }
 }
 
-/// "🟢 1,412 checked, nothing else affects you".
+/// "🟢 990 vulnerabilities checked against your versions: not affected".
 pub fn heartbeat(report: &Report) -> String {
-    let n = group_thousands(report.summary.not_affected);
-    if report.findings.is_empty() {
-        format!("🟢 {n} checked, nothing affects you")
+    let n = report.summary.not_affected;
+    let count = group_thousands(n);
+    let what = if n == 1 {
+        "vulnerability"
     } else {
-        format!("🟢 {n} checked, nothing else affects you")
+        "vulnerabilities"
+    };
+    format!("🟢 {count} {what} checked against your versions: not affected")
+}
+
+/// "87 to act on (14 today, 69 this week, 3 end of life, 1 unknown), 228 FYI".
+/// "To act on" is everything but FYI.
+pub fn counts_line(report: &Report) -> String {
+    let s = &report.summary;
+    let act = s.now + s.week + s.eol + s.unknown;
+    let mut line = if act == 0 {
+        "Nothing to act on".to_owned()
+    } else {
+        let parts: Vec<String> = [
+            (s.now, Bucket::Now),
+            (s.week, Bucket::Week),
+            (s.eol, Bucket::Eol),
+            (s.unknown, Bucket::Unknown),
+        ]
+        .into_iter()
+        .filter(|(n, _)| *n > 0)
+        .map(|(n, b)| format!("{n} {}", bucket_word(b)))
+        .collect();
+        format!("{act} to act on ({})", parts.join(", "))
+    };
+    if s.fyi > 0 {
+        let _ = write!(line, ", {} FYI", s.fyi);
     }
+    line
+}
+
+/// "228 FYI not shown: run with -v or --format json" when FYI findings are left out.
+pub fn fyi_hidden_line(report: &Report) -> Option<String> {
+    (report.summary.fyi > 0).then(|| {
+        format!(
+            "{} FYI not shown: run with -v or --format json",
+            report.summary.fyi
+        )
+    })
 }
 
 fn group_thousands(n: usize) -> String {
@@ -403,9 +475,7 @@ pub fn db_line(report: &Report) -> String {
 pub fn text(report: &Report, opts: &TextOptions) -> String {
     let paint = Paint(opts.color && !no_color());
     let mut out = String::new();
-    if report.findings.is_empty() {
-        out.push_str("Nothing to fix.\n\n");
-    }
+    let _ = writeln!(out, "{}\n", paint.bold(&counts_line(report)));
     let items = items_to_show(report);
     if !items.is_empty() {
         for i in items {
@@ -415,6 +485,9 @@ pub fn text(report: &Report, opts: &TextOptions) -> String {
         out.push('\n');
     }
     for bucket in BUCKETS {
+        if bucket == Bucket::Fyi && !opts.verbose {
+            continue;
+        }
         let group: Vec<&Finding> = report
             .findings
             .iter()
@@ -434,6 +507,11 @@ pub fn text(report: &Report, opts: &TextOptions) -> String {
             text_finding(&mut out, f, *opts, &paint);
             out.push('\n');
         }
+    }
+    if !opts.verbose
+        && let Some(line) = fyi_hidden_line(report)
+    {
+        let _ = writeln!(out, "{line}\n");
     }
     let _ = writeln!(out, "{}", heartbeat(report));
     if report.summary.ignored > 0 {
@@ -569,6 +647,11 @@ pub fn issue_title(i: &ItemSummary) -> String {
     crate::http::truncate(&title, 250)
 }
 
+/// The `ignore:` entry that accepts a risk, as YAML lines.
+pub fn ignore_snippet(cve: &str) -> String {
+    format!("ignore:\n  - cve: {cve}\n    reason: …\n    until: YYYY-MM-DD\n")
+}
+
 /// How many findings an issue lists before it says "and N more".
 pub const ISSUE_LIST_CAP: usize = 60;
 
@@ -617,15 +700,17 @@ pub fn markdown_item_issue(item: &ItemSummary, report: &Report) -> (String, Stri
     if item.counts.fyi > 0 {
         let _ = writeln!(
             b,
-            "{} more finding{} of low urgency are not listed here.\n",
-            item.counts.fyi,
-            if item.counts.fyi == 1 { " is" } else { "s are" }
+            "{} FYI not listed here: run `unpatched check -v` or `--format json`.\n",
+            item.counts.fyi
         );
     }
     b.push_str(
         "---\n\nunpatched keeps this issue up to date and closes it once the item has nothing \
-         left to fix (when the version in unpatched.yml is fixed).\n\n",
+         left to fix (when the version in unpatched.yml is fixed).\n\n\
+         To accept this risk, add to unpatched.yml:\n\n```yaml\n",
     );
+    b.push_str(&ignore_snippet("CVE-…"));
+    b.push_str("```\n\n");
     b.push_str(&item_marker(&item.key));
     b.push('\n');
     (issue_title(item), b)
@@ -676,16 +761,7 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
     let s = &report.summary;
     let mut b = String::new();
     let open = report.findings.len();
-    if open == 0 {
-        let _ = writeln!(b, "{}\n", heartbeat(report));
-    } else {
-        let _ = writeln!(
-            b,
-            "{open} open finding{}. {}\n",
-            if open == 1 { "" } else { "s" },
-            heartbeat(report)
-        );
-    }
+    let _ = writeln!(b, "{}. {}\n", counts_line(report), heartbeat(report));
     b.push_str("| Bucket | Findings |\n| --- | ---: |\n");
     for (bucket, n) in [
         (Bucket::Now, s.now),
@@ -719,7 +795,11 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
     }
 
     let mut listed = 0usize;
+    let listable = open - s.fyi;
     for bucket in BUCKETS {
+        if bucket == Bucket::Fyi {
+            continue;
+        }
         let group: Vec<&Finding> = report
             .findings
             .iter()
@@ -738,8 +818,11 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
         }
         b.push('\n');
     }
-    if listed < open {
-        let _ = writeln!(b, "…and {} more.\n", open - listed);
+    if listed < listable {
+        let _ = writeln!(b, "…and {} more.\n", listable - listed);
+    }
+    if let Some(line) = fyi_hidden_line(report) {
+        let _ = writeln!(b, "{line}\n");
     }
 
     let reopened: Vec<(&ItemSummary, Option<u64>)> = report
@@ -789,18 +872,17 @@ fn md_escape(s: &str) -> String {
 /// A summary of one run, for `$GITHUB_STEP_SUMMARY`: counts, the findings by
 /// bucket, the data age and the notes.
 pub fn markdown_summary(report: &Report) -> String {
+    markdown_summary_with(report, false)
+}
+
+/// Like [`markdown_summary`]; with `verbose` the FYI findings are listed too.
+pub fn markdown_summary_with(report: &Report, verbose: bool) -> String {
     let s = &report.summary;
     let mut b = String::from("## unpatched\n\n");
     if report.findings.is_empty() {
-        let _ = writeln!(b, "Nothing to fix. {}\n", heartbeat(report));
+        let _ = writeln!(b, "Nothing to act on. {}\n", heartbeat(report));
     } else {
-        let n = report.findings.len();
-        let _ = writeln!(
-            b,
-            "{n} finding{} to look at. {}\n",
-            if n == 1 { "" } else { "s" },
-            heartbeat(report)
-        );
+        let _ = writeln!(b, "{}. {}\n", counts_line(report), heartbeat(report));
         let items = items_to_show(report);
         if !items.is_empty() {
             for i in items {
@@ -826,6 +908,9 @@ pub fn markdown_summary(report: &Report) -> String {
         b.push('\n');
     }
     for bucket in BUCKETS {
+        if bucket == Bucket::Fyi && !verbose {
+            continue;
+        }
         let group: Vec<&Finding> = report
             .findings
             .iter()
@@ -848,6 +933,9 @@ pub fn markdown_summary(report: &Report) -> String {
             let _ = writeln!(b, "  - Rules: {}", rules.join(", "));
         }
         b.push('\n');
+    }
+    if !verbose && let Some(line) = fyi_hidden_line(report) {
+        let _ = writeln!(b, "{line}\n");
     }
     if s.ignored > 0 {
         let _ = writeln!(b, "{} ignored on purpose (see unpatched.yml).\n", s.ignored);
@@ -1159,11 +1247,11 @@ mod tests {
         let r = sample_report();
         assert_eq!(
             item_line(item(&r, "office-firewall")),
-            "🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)"
+            "🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)"
         );
         assert_eq!(
             item_line(item(&r, "postgresql")),
-            "⚫ PostgreSQL 13.12  1 eol  →  upgrade to a supported release"
+            "⚫ PostgreSQL 13.12  1 end of life  →  upgrade to a supported release"
         );
         let mut i = item(&r, "nextcloud").clone();
         i.counts.now = 14;
@@ -1173,8 +1261,51 @@ mod tests {
         i.of = 50;
         assert_eq!(
             item_line(&i),
-            "🔴 Nextcloud 29.0.3  14 now · 36 week  →  upgrade to 7.2.12 (fixes 48 of 50)"
+            "🔴 Nextcloud 29.0.3  14 today · 36 this week  →  upgrade to 7.2.12 (fixes 48 of 50; 2 have no fix on 7.2)"
         );
+        i.fixes = 50;
+        assert_eq!(item_advice(&i).unwrap(), "upgrade to 7.2.12 (fixes all 50)");
+        i.fixes = 49;
+        assert_eq!(
+            item_advice(&i).unwrap(),
+            "upgrade to 7.2.12 (fixes 49 of 50; 1 has no fix on 7.2)"
+        );
+    }
+
+    #[test]
+    fn counts_say_what_to_act_on_and_what_is_fyi() {
+        let r = sample_report();
+        assert_eq!(
+            counts_line(&r),
+            "5 to act on (1 today, 2 this week, 1 end of life, 1 unknown), 1 FYI"
+        );
+        assert_eq!(counts_line(&report(vec![])), "Nothing to act on");
+        let hidden = text(&r, &TextOptions::default());
+        assert!(!hidden.contains("CVE-2025-1111"), "{hidden}");
+        assert!(hidden.contains("1 FYI not shown: run with -v or --format json"));
+        let shown = text(
+            &r,
+            &TextOptions {
+                verbose: true,
+                color: false,
+            },
+        );
+        assert!(shown.contains("CVE-2025-1111"), "{shown}");
+        assert!(!shown.contains("FYI not shown"));
+        assert!(!markdown_summary(&r).contains("CVE-2025-1111"));
+        assert!(markdown_summary_with(&r, true).contains("CVE-2025-1111"));
+        assert!(!markdown_status(&r, &DeliveryState::default()).contains("CVE-2025-1111"));
+    }
+
+    #[test]
+    fn issues_carry_the_ignore_hint() {
+        let r = sample_report();
+        let (_, body) = markdown_item_issue(item(&r, "office-firewall"), &r);
+        assert!(
+            body.contains("To accept this risk, add to unpatched.yml"),
+            "{body}"
+        );
+        assert!(body.contains("until: YYYY-MM-DD"));
     }
 
     #[test]
@@ -1213,7 +1344,9 @@ mod tests {
     fn status_issue_quiet() {
         let r = report(vec![]);
         let body = markdown_status(&r, &DeliveryState::default());
-        assert!(body.contains("🟢 1,412 checked, nothing affects you"));
+        assert!(
+            body.contains("🟢 1,412 vulnerabilities checked against your versions: not affected")
+        );
         assert!(parse_state_block(&body).is_some());
     }
 

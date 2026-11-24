@@ -28,15 +28,21 @@ issue is opened.
 
 | Tool | Arguments | What it returns |
 | --- | --- | --- |
-| `check_stack` | `config_path` (optional) | The report for `unpatched.yml`: findings by urgency with verdict, rules, evidence and `fixed_in`. Packages are looked up in OSV unless the server runs with `--offline`. |
-| `is_affected` | `product`, `version`, `cve` (optional), `exposure` (optional) | An answer for one product at one version, without a config file. With `cve` it always gives a verdict (`affected`, `not-affected` or `unknown`) with evidence. |
-| `explain` | `id` | A CVE or advisory id (summary, CVSS, affected ranges per source, exploitation signals) or a rule id such as `UNP-KEV`. |
+| `check_stack` | `config_path`, `bucket`, `limit`, `include_evidence` (all optional) | The report for `unpatched.yml`. It always has `summary` (counts) and `items` (the upgrade that helps most, per stack item). `findings` lists, by default, only the `now`, `week`, `eol` and `unknown` buckets, at most 50, without evidence; ask for `fyi` with `bucket`, for more with `limit`, and for the evidence and references with `include_evidence`. Packages are looked up in OSV unless the server runs with `--offline`. |
+| `is_affected` | `product`, `version`, `cve` (optional), `exposure` (optional), `include_raw` (optional) | An answer for one product at one version, without a config file. With `cve` it always gives a verdict (`affected`, `not-affected` or `unknown`) with evidence. A source's own text is cut to about 200 characters unless `include_raw` is true. |
+| `explain` | `id`, `include_raw` (optional) | A CVE or advisory id (summary, CVSS, affected ranges per source, exploitation signals), a rule id such as `UNP-KEV`, or a finding key such as `office-firewall/CVE-2024-21762` (judged with the server's `unpatched.yml`). |
 | `search_catalog` | `text` | Catalog product ids by name, vendor or alias, with the version scheme and endoflife slug. |
 | `db_status` | none | When the database was built, its age, whether it is stale, and the state of each source. Run this before trusting an answer. |
 
-A tool that fails because of its input (an unknown product, a missing database)
-answers with an error that the model can read and fix; it is not a protocol
-error. `is_affected` needs an exact version: the instructions tell the agent to
+A tool that fails because of its input (an unknown product, an argument it does
+not have, a missing database) answers with an error that the model can read and
+fix; it is not a protocol error.
+
+`check_stack` reads only the server's own config file, or a file named
+`unpatched*.yml` or `unpatched*.yaml` under the folder the server runs in (links
+are followed first, so a link cannot point elsewhere). Any other `config_path` is
+refused, and an error about a config file never repeats what the file says, only
+the line and column. `is_affected` needs an exact version: the instructions tell the agent to
 ask you, not to guess.
 
 Options before `mcp` apply to the server: `unpatched --config path/to/unpatched.yml --db path/to/db.sqlite --offline mcp`.

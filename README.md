@@ -28,10 +28,10 @@ opens and the same report as JSON):
 $ unpatched check --format markdown
 ## unpatched
 
-2 findings to look at. 🟢 1 checked, nothing else affects you
+2 to act on (1 today, 1 end of life). 🟢 1 vulnerability checked against your versions: not affected
 
-- 🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
-- ⚫ Nextcloud 29.0.3  1 eol  →  upgrade to a supported release
+- 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+- ⚫ Nextcloud 29.0.3  1 end of life  →  upgrade to a supported release
 
 | Bucket | Findings |
 | --- | ---: |
@@ -106,7 +106,9 @@ jobs:
 ```
 
 Push, then run the workflow once from the Actions tab. Find product ids with
-`unpatched search <name>`. The full walk-through, including secrets for
+`unpatched search <name>`. To accept a risk you know about, add an `ignore:`
+entry (a `cve`, a `reason` and an `until` date) to `unpatched.yml`; every issue
+shows the lines to copy. The full walk-through, including secrets for
 Telegram, Slack and the others, is in
 [Start with GitHub](https://amet13.github.io/unpatched/start-github.html).
 `unpatched init --github` writes both files for you.
@@ -128,6 +130,11 @@ and [Start with Docker](https://amet13.github.io/unpatched/start-docker.html).
 
 ## What it is not
 
+- **Not a catalog of everything.** It knows named products (see the
+  [catalog](https://amet13.github.io/unpatched/catalog.html)). WordPress plugins
+  and themes are not covered, and neither are operating-system packages unless
+  you name them with a `purl`, like
+  `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`.
 - **Not a dependency or container scanner.** It does not read your code, lock
   files or images. For those use [OSV-Scanner](https://google.github.io/osv-scanner/)
   or [Trivy](https://trivy.dev/). unpatched can check a single package you name

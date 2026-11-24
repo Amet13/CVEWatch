@@ -240,14 +240,17 @@ fn check_stack_reads_the_config() {
     }));
     assert!(text(r).contains("CVE-2024-21762"));
 
-    // `config_path` overrides the server's file.
-    let other = dir.path().join("other.yml");
-    std::fs::write(&other, "version: 1\nstack: []\n").unwrap();
+    assert_eq!(s["summary"]["now"], 1);
+    assert!(s["items"].as_array().is_some_and(|i| !i.is_empty()));
+    // Evidence is left out unless asked for.
+    assert!(findings.iter().all(|f| f.get("evidence").is_none()));
+
+    // `config_path` may name the server's own file.
     let replies = run(
         ctx(&path),
         &[call(
             "check_stack",
-            &json!({"config_path": other.to_str().unwrap()}),
+            &json!({"config_path": path.to_str().unwrap(), "include_evidence": true}),
         )],
     );
     let s = &replies[0]["result"]["structuredContent"];
@@ -256,8 +259,202 @@ fn check_stack_reads_the_config() {
             .as_array()
             .unwrap()
             .iter()
-            .all(|f| f["vuln"].is_null())
+            .any(|f| f["evidence"].as_array().is_some_and(|e| !e.is_empty()))
     );
+}
+
+fn office_config(dir: &Path) -> PathBuf {
+    let path = dir.join("unpatched.yml");
+    std::fs::write(
+        &path,
+        "version: 1\nstack:\n  - product: fortios\n    version: 7.2.5\n    exposure: internet\n    name: Office firewall\n  - product: nextcloud\n    version: 29.0.3\n",
+    )
+    .unwrap();
+    path
+}
+
+#[test]
+fn check_stack_buckets_and_limit() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = office_config(dir.path());
+    let get = |args: Value| {
+        let replies = run(ctx(&path), &[call("check_stack", &args)]);
+        replies[0]["result"].clone()
+    };
+    let all = get(json!({"bucket": ["now", "week", "eol", "unknown", "fyi"]}));
+    let total = all["structuredContent"]["findings"]
+        .as_array()
+        .unwrap()
+        .len();
+    let default = get(json!({}));
+    let d = default["structuredContent"]["findings"].as_array().unwrap();
+    assert!(d.iter().all(|f| f["bucket"] != "fyi"), "{d:?}");
+    let fyi =
+        usize::try_from(all["structuredContent"]["summary"]["fyi"].as_u64().unwrap()).unwrap();
+    assert_eq!(d.len(), total - fyi);
+    // The summary is always the full count.
+    assert_eq!(
+        default["structuredContent"]["summary"],
+        all["structuredContent"]["summary"]
+    );
+    let one = get(json!({"limit": 1}));
+    assert_eq!(
+        one["structuredContent"]["findings"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(one["structuredContent"]["truncated"], d.len() > 1);
+    assert!(
+        text(&one).contains("today") || text(&one).contains("this week"),
+        "{}",
+        text(&one)
+    );
+    // Bad values are tool errors.
+    assert_eq!(get(json!({"limit": 0}))["isError"], true);
+    assert_eq!(get(json!({"bucket": ["soon"]}))["isError"], true);
+    let size = serde_json::to_string(&default["structuredContent"])
+        .unwrap()
+        .len();
+    assert!(size < 100_000, "{size}");
+}
+
+#[test]
+fn tools_reject_unknown_arguments() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = office_config(dir.path());
+    for (tool_name, args) in [
+        ("check_stack", json!({"bucket_name": ["now"]})),
+        (
+            "is_affected",
+            json!({"product":"fortios","version":"7.2.5","colour":"red"}),
+        ),
+        ("explain", json!({"id":"UNP-KEV","verbose":true})),
+        ("search_catalog", json!({"text":"fortios","fuzzy":true})),
+        ("db_status", json!({"x":1})),
+    ] {
+        let replies = run(ctx(&path), &[call(tool_name, &args)]);
+        let r = &replies[0]["result"];
+        assert_eq!(r["isError"], true, "{tool_name}: {r}");
+        assert!(
+            text(r).contains("Unknown argument"),
+            "{tool_name}: {}",
+            text(r)
+        );
+    }
+}
+
+#[test]
+fn check_stack_only_reads_allowed_files() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = office_config(dir.path());
+    let secret = dir.path().join("secret.txt");
+    std::fs::write(&secret, "root:x:0:0:SECRET-CONTENT:/root:/bin/bash\n").unwrap();
+    let evil = dir.path().join("unpatched-link.yml");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&secret, &evil).unwrap();
+    for target in [
+        "/etc/passwd",
+        secret.to_str().unwrap(),
+        evil.to_str().unwrap(),
+    ] {
+        let replies = run(
+            ctx(&path),
+            &[call("check_stack", &json!({"config_path": target}))],
+        );
+        let r = &replies[0]["result"];
+        if cfg!(not(unix)) && target == evil.to_str().unwrap() {
+            continue;
+        }
+        assert_eq!(r["isError"], true, "{target}: {r}");
+        let t = text(r);
+        assert!(
+            !t.contains("SECRET-CONTENT") && !t.contains("root:x"),
+            "{t}"
+        );
+        assert!(t.contains("not allowed"), "{t}");
+    }
+}
+
+#[test]
+fn check_stack_allows_unpatched_files_in_the_working_directory() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = office_config(dir.path());
+    let name = format!("unpatched-mcp-test-{}.yml", std::process::id());
+    let here = std::env::current_dir().unwrap().join(&name);
+    std::fs::write(&here, "version: 1\nstack: []\n").unwrap();
+    let replies = run(
+        ctx(&path),
+        &[call("check_stack", &json!({"config_path": name}))],
+    );
+    std::fs::remove_file(&here).unwrap();
+    let r = &replies[0]["result"];
+    assert_eq!(r["isError"], false, "{r}");
+    assert_eq!(r["structuredContent"]["summary"]["now"], 0);
+}
+
+#[test]
+fn yaml_errors_never_echo_the_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("unpatched.yml");
+    std::fs::write(&path, "version: \"TOP-SECRET-VALUE\"\nstack: []\n").unwrap();
+    let replies = run(ctx(&path), &[call("check_stack", &json!({}))]);
+    let r = &replies[0]["result"];
+    assert_eq!(r["isError"], true);
+    let t = text(r);
+    assert!(!t.contains("TOP-SECRET-VALUE"), "{t}");
+    assert!(t.contains("does not match the unpatched.yml format"), "{t}");
+    assert!(t.contains("line 1"), "{t}");
+}
+
+#[test]
+fn explain_takes_a_finding_key() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = office_config(dir.path());
+    let replies = run(
+        ctx(&path),
+        &[
+            call("explain", &json!({"id": "office-firewall/CVE-2024-21762"})),
+            call("explain", &json!({"id": "office-firewall/CVE-0000-0"})),
+        ],
+    );
+    let r = &replies[0]["result"];
+    assert_eq!(r["isError"], false, "{r}");
+    assert!(
+        text(r).contains("FortiOS 7.2.5 (Office firewall)"),
+        "{}",
+        text(r)
+    );
+    assert!(text(r).contains("To accept this risk"), "{}", text(r));
+    assert_eq!(r["structuredContent"]["kind"], "finding");
+    assert_eq!(replies[1]["result"]["isError"], true);
+    assert!(text(&replies[1]["result"]).contains("no finding with the key"));
+}
+
+#[test]
+fn source_text_is_cut_unless_asked_for() {
+    let short = tool("explain", &json!({"id": "CVE-2024-21762"}));
+    let full = tool(
+        "explain",
+        &json!({"id": "CVE-2024-21762", "include_raw": true}),
+    );
+    for r in [&short, &full] {
+        for line in text(r).lines().filter(|l| l.starts_with("- ")) {
+            assert!(line.chars().count() < 260, "{line}");
+        }
+    }
+    let longest = |v: &Value| {
+        v["structuredContent"]["vulnerability"]["ranges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["raw"].as_str().unwrap_or("").chars().count())
+            .max()
+            .unwrap_or(0)
+    };
+    assert!(longest(&short) <= 200, "{}", longest(&short));
+    assert!(longest(&full) >= longest(&short));
 }
 
 #[test]
