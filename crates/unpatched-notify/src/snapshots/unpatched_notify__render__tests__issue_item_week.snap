@@ -1,0 +1,18 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+🟡 Nextcloud 29.0.3  2 week  →  upgrade to 29.0.8 (fixes 2 of 2)
+
+This item is marked as internet-facing.
+
+### 🟡 This week (2)
+
+- **CVE-2026-1001** Improper access control in Nextcloud Server (CVE-2026-1001) — EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing — Upgrade to 29.0.8 or later.
+- **CVE-2026-1002** Improper access control in Nextcloud Server (CVE-2026-1002) — EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing — Upgrade to 29.0.6 or later.
+
+---
+
+unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
+
+<!-- unpatched:item=nextcloud -->

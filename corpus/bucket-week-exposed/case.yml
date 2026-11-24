@@ -1,4 +1,4 @@
-description: An affected internet-facing item is week even with no other signal.
+description: An affected internet-facing item with CVSS 7.0 or more is week, with no other signal.
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -21,6 +21,9 @@ data:
   - id: CVE-2026-0001
     summary: FortiOS flaw CVE-2026-0001
     published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 7.0
     ranges:
     - source: nvd
       product: fortios

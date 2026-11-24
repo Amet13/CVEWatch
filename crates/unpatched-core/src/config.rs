@@ -73,10 +73,13 @@ pub struct Ignore {
 pub struct Thresholds {
     /// EPSS score at or above which an affected finding is at least `week`.
     #[serde(default = "default_epss")]
-    pub epss_week: f32,
+    pub epss_week: f64,
     /// CVSS base score at or above which an affected finding is at least `week`.
     #[serde(default = "default_cvss")]
-    pub cvss_week: f32,
+    pub cvss_week: f64,
+    /// CVSS base score at or above which an affected, internet-facing finding is at least `week`.
+    #[serde(default = "default_cvss_exposed")]
+    pub cvss_week_exposed: f64,
     /// Days after which the database counts as stale (warning).
     #[serde(default = "default_stale_warn")]
     pub stale_warn_days: u32,
@@ -85,11 +88,14 @@ pub struct Thresholds {
     pub stale_fail_days: u32,
 }
 
-fn default_epss() -> f32 {
+fn default_epss() -> f64 {
     0.05
 }
-fn default_cvss() -> f32 {
+fn default_cvss() -> f64 {
     9.0
+}
+fn default_cvss_exposed() -> f64 {
+    7.0
 }
 fn default_stale_warn() -> u32 {
     3
@@ -103,6 +109,7 @@ impl Default for Thresholds {
         Self {
             epss_week: default_epss(),
             cvss_week: default_cvss(),
+            cvss_week_exposed: default_cvss_exposed(),
             stale_warn_days: default_stale_warn(),
             stale_fail_days: default_stale_fail(),
         }

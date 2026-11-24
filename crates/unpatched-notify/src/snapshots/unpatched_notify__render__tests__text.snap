@@ -2,6 +2,12 @@
 source: crates/unpatched-notify/src/render.rs
 expression: "text(&r, &TextOptions::default())"
 ---
+🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
+🟡 Nextcloud 29.0.3  2 week  →  upgrade to 29.0.8 (fixes 2 of 2)
+⚫ PostgreSQL 13.12  1 eol  →  upgrade to a supported release
+❔ Home Assistant 2024.10.1  1 unknown
+⚪ Redis 7.2.1  1 fyi  →  upgrade to 7.2.4 (fixes 1 of 1)
+
 🔴 Fix today (1)
 
   FortiOS 7.2.5 (Office firewall)

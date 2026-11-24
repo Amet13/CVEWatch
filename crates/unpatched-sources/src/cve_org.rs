@@ -628,8 +628,7 @@ fn pick_cvss(containers: &[&[Value]]) -> Option<Cvss> {
                     };
                     return Some(Cvss {
                         version: str_of(d, "version").unwrap_or(version).to_owned(),
-                        #[allow(clippy::cast_possible_truncation)]
-                        score: score as f32,
+                        score,
                         vector: str_of(d, "vectorString").map(str::to_owned),
                     });
                 }

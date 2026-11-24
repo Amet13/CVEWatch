@@ -288,7 +288,13 @@ fn explain_a_cve_with_the_stack() {
         .stdout(predicate::str::contains("CISA KEV: added 2024-02-09"))
         .stdout(predicate::str::contains("Office firewall 7.2.5"))
         .stdout(predicate::str::contains("Verdict: affected"))
-        .stdout(predicate::str::contains("nextcloud 29.0.3"));
+        // The vulnerability is not about Nextcloud: say so in one line, and do
+        // not claim "not affected" without a source that had ranges for it.
+        .stdout(predicate::str::contains(
+            "1 other stack item is not concerned",
+        ))
+        .stdout(predicate::str::contains("nextcloud"))
+        .stdout(predicate::str::contains("no version data for this product").not());
 }
 
 #[test]

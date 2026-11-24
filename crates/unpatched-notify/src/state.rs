@@ -28,12 +28,32 @@ pub struct SentRecord {
     /// Channels that were told about it in this bucket (`issues`, `telegram`, ...).
     #[serde(default)]
     pub channels: Vec<String>,
-    /// The finding's GitHub issue, when there is one.
+}
+
+/// What we know about one stack item's GitHub issue. Issues are per stack
+/// item, not per finding.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ItemRecord {
+    pub first_seen: DateTime<Utc>,
+    /// The item's most urgent bucket at the last run.
+    pub bucket: Bucket,
+    /// The item's GitHub issue, when there is one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub issue: Option<u64>,
-    /// Someone closed the issue but the finding is still there.
+    /// Someone closed the issue but the item still has findings.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub closed_by_human: bool,
+}
+
+impl ItemRecord {
+    pub fn new(first_seen: DateTime<Utc>, bucket: Bucket) -> Self {
+        Self {
+            first_seen,
+            bucket,
+            issue: None,
+            closed_by_human: false,
+        }
+    }
 }
 
 impl SentRecord {
@@ -43,8 +63,6 @@ impl SentRecord {
             last_sent: None,
             bucket,
             channels: Vec::new(),
-            issue: None,
-            closed_by_human: false,
         }
     }
 
@@ -68,9 +86,12 @@ pub struct DeliveryState {
     pub last_run: Option<DateTime<Utc>>,
     #[serde(default)]
     pub last_digest: Option<NaiveDate>,
-    /// Keyed by finding key.
+    /// Findings seen, for chat alerts and digests. Keyed by finding key.
     #[serde(default)]
     pub sent: BTreeMap<String, SentRecord>,
+    /// Stack items with a GitHub issue. Keyed by item key.
+    #[serde(default)]
+    pub items: BTreeMap<String, ItemRecord>,
 }
 
 impl Default for DeliveryState {
@@ -80,6 +101,7 @@ impl Default for DeliveryState {
             last_run: None,
             last_digest: None,
             sent: BTreeMap::new(),
+            items: BTreeMap::new(),
         }
     }
 }

@@ -707,12 +707,7 @@ fn write_db(
             "INSERT OR REPLACE INTO epss (cve, score, percentile, date) VALUES (?1, ?2, ?3, ?4)",
         )?;
         for (cve, e) in &data.epss {
-            s.execute(params![
-                cve,
-                f64::from(e.score),
-                f64::from(e.percentile),
-                e.date.to_string()
-            ])?;
+            s.execute(params![cve, e.score, e.percentile, e.date.to_string()])?;
             counts.epss += 1;
         }
     }

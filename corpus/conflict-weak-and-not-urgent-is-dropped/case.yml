@@ -1,0 +1,62 @@
+description: 'A weak-versus-specific conflict with no urgent signal is dropped, like any unknown that would not be urgent.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: ivanti-connect-secure
+      version: "22.7R2"
+data:
+  products:
+  - id: ivanti-connect-secure
+    name: Ivanti Connect Secure
+    vendor: Ivanti
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - ivanti:ivanti-connect-secure
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-104935
+    summary: Ivanti flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: ivanti-connect-secure
+      constraints:
+      - kind: all
+      raw: 'defaultStatus affected'
+      unaffected:
+      - kind: exact
+        version: '25.1.3.0'
+      - kind: exact
+        version: '25.1.3.1'
+      - kind: exact
+        version: '22.8R2.5'
+      - kind: exact
+        version: '22.7R2.14'
+    - source: nvd
+      product: ivanti-connect-secure
+      constraints:
+      - kind: range
+        start:
+          version: '25.1.0.0'
+          inclusive: true
+        end:
+          version: '25.1.1.2'
+          inclusive: false
+      - kind: range
+        start:
+          version: '25.1.2.0'
+          inclusive: true
+        end:
+          version: '25.1.3.0'
+          inclusive: false
+      raw: 'cpe'
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect: []
+absent:
+- ivanti-connect-secure/CVE-2026-104935

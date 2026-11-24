@@ -42,7 +42,7 @@ pub enum VulnStatus {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Cvss {
     pub version: String,
-    pub score: f32,
+    pub score: f64,
     pub vector: Option<String>,
 }
 
@@ -122,8 +122,8 @@ pub struct KevEntry {
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Epss {
-    pub score: f32,
-    pub percentile: f32,
+    pub score: f64,
+    pub percentile: f64,
     pub date: NaiveDate,
 }
 

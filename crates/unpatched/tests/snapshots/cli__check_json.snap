@@ -105,8 +105,8 @@ expression: out
           "product": "FortiOS"
         },
         "epss": {
-          "score": 0.84589,
-          "percentile": 0.99711,
+          "score": 0.8458899855613708,
+          "percentile": 0.9971100091934204,
           "date": "2026-11-23"
         },
         "ssvc_exploitation": "active",
@@ -163,5 +163,47 @@ expression: out
     }
   ],
   "ignored": [],
+  "items": [
+    {
+      "key": "office-firewall",
+      "item": "Office firewall",
+      "product": "fortios",
+      "product_name": "FortiOS",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "counts": {
+        "now": 1,
+        "week": 0,
+        "eol": 0,
+        "unknown": 0,
+        "fyi": 0
+      },
+      "upgrade_to": "7.2.7",
+      "fixes": 1,
+      "of": 1,
+      "eol": false,
+      "unfixed": 0
+    },
+    {
+      "key": "nextcloud",
+      "item": "nextcloud",
+      "product": "nextcloud",
+      "product_name": "Nextcloud",
+      "version": "29.0.3",
+      "exposure": "internet",
+      "counts": {
+        "now": 0,
+        "week": 0,
+        "eol": 1,
+        "unknown": 0,
+        "fyi": 0
+      },
+      "upgrade_to": null,
+      "fixes": 0,
+      "of": 0,
+      "eol": true,
+      "unfixed": 0
+    }
+  ],
   "notes": []
 }

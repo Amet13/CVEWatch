@@ -1,4 +1,4 @@
-description: An inclusive upper bound gives no fixed version.
+description: An inclusive upper bound gives no fixed version, only fixed_after.
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -43,3 +43,4 @@ expect:
   rules:
   - UNP-AFFECTED
   fixed_in: none
+  fixed_after: 7.2.6

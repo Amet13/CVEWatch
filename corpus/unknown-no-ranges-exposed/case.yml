@@ -1,4 +1,4 @@
-description: Unknown on an internet-facing item would be week if confirmed, so it is kept.
+description: Unknown on an internet-facing item with CVSS 7.0 or more would be week if confirmed, so it is kept.
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -21,6 +21,9 @@ data:
   - id: CVE-2026-0001
     summary: New FortiOS flaw
     published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.0
     ranges:
     - source: nvd
       product: fortios

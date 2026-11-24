@@ -29,4 +29,4 @@ pub use deliver::{DeliverOptions, DeliveryOutcome, deliver};
 pub use error::{Error, Result};
 pub use github::{GitHub, IssuesStore};
 pub use message::{Dialect, Event, Message};
-pub use state::{DeliveryPlan, DeliveryState, FileStore, SentRecord, StateStore, plan};
+pub use state::{DeliveryPlan, DeliveryState, FileStore, ItemRecord, SentRecord, StateStore, plan};

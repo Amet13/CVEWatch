@@ -33,7 +33,8 @@
       "$ref": "#/$defs/Thresholds",
       "default": {
         "cvss_week": 9.0,
-        "epss_week": 0.05000000074505806,
+        "cvss_week_exposed": 7.0,
+        "epss_week": 0.05,
         "stale_fail_days": 7,
         "stale_warn_days": 3
       }
@@ -215,14 +216,20 @@
         "cvss_week": {
           "description": "CVSS base score at or above which an affected finding is at least `week`.",
           "type": "number",
-          "format": "float",
+          "format": "double",
           "default": 9.0
+        },
+        "cvss_week_exposed": {
+          "description": "CVSS base score at or above which an affected, internet-facing finding is at least `week`.",
+          "type": "number",
+          "format": "double",
+          "default": 7.0
         },
         "epss_week": {
           "description": "EPSS score at or above which an affected finding is at least `week`.",
           "type": "number",
-          "format": "float",
-          "default": 0.05000000074505806
+          "format": "double",
+          "default": 0.05
         },
         "stale_fail_days": {
           "description": "Days after which a run fails because the data is too old.",

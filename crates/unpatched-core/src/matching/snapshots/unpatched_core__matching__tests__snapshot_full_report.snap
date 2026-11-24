@@ -20,10 +20,10 @@ expression: "run(&cfg, &rich_dataset())"
   },
   "summary": {
     "now": 1,
-    "week": 1,
+    "week": 0,
     "eol": 1,
     "unknown": 1,
-    "fyi": 0,
+    "fyi": 1,
     "ignored": 1,
     "not_affected": 1
   },
@@ -89,43 +89,6 @@ expression: "run(&cfg, &rich_dataset())"
       ]
     },
     {
-      "key": "office-firewall/CVE-2026-0002",
-      "item": "Office firewall",
-      "product": "fortios",
-      "product_name": "FORTIOS",
-      "version": "7.2.5",
-      "exposure": "internet",
-      "vuln": "CVE-2026-0002",
-      "title": "Path traversal in the admin API",
-      "verdict": "affected",
-      "bucket": "week",
-      "rules": [
-        "UNP-EXPOSED",
-        "UNP-CONFLICT"
-      ],
-      "fixed_in": "7.2.8",
-      "latest_in_cycle": "7.2.11",
-      "cvss": null,
-      "signals": {
-        "kev": null,
-        "epss": null,
-        "ssvc_exploitation": null,
-        "ssvc_automatable": null
-      },
-      "evidence": [
-        {
-          "source": "cve-org",
-          "verdict": "affected",
-          "detail": "affected: 7.2.5 is inside >= 7.2.0 and < 7.2.8"
-        },
-        {
-          "source": "nvd",
-          "verdict": "not-affected",
-          "detail": "not affected: 7.2.5 is outside >= 7.0.0 and < 7.2.3"
-        }
-      ]
-    },
-    {
       "key": "office-firewall/eol",
       "item": "Office firewall",
       "product": "fortios",
@@ -169,8 +132,7 @@ expression: "run(&cfg, &rich_dataset())"
       "bucket": "unknown",
       "rules": [
         "UNP-UNKNOWN-NO-RANGES",
-        "UNP-EPSS",
-        "UNP-EXPOSED"
+        "UNP-EPSS"
       ],
       "fixed_in": null,
       "latest_in_cycle": null,
@@ -190,6 +152,43 @@ expression: "run(&cfg, &rich_dataset())"
           "source": "nvd",
           "verdict": "unknown",
           "detail": "unknown: no usable version data"
+        }
+      ]
+    },
+    {
+      "key": "office-firewall/CVE-2026-0002",
+      "item": "Office firewall",
+      "product": "fortios",
+      "product_name": "FORTIOS",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "vuln": "CVE-2026-0002",
+      "title": "Path traversal in the admin API",
+      "verdict": "affected",
+      "bucket": "fyi",
+      "rules": [
+        "UNP-AFFECTED",
+        "UNP-CONFLICT"
+      ],
+      "fixed_in": "7.2.8",
+      "latest_in_cycle": "7.2.11",
+      "cvss": null,
+      "signals": {
+        "kev": null,
+        "epss": null,
+        "ssvc_exploitation": null,
+        "ssvc_automatable": null
+      },
+      "evidence": [
+        {
+          "source": "cve-org",
+          "verdict": "affected",
+          "detail": "affected: 7.2.5 is inside >= 7.2.0 and < 7.2.8"
+        },
+        {
+          "source": "nvd",
+          "verdict": "not-affected",
+          "detail": "not affected: 7.2.5 is outside >= 7.0.0 and < 7.2.3"
         }
       ]
     }
@@ -230,6 +229,48 @@ expression: "run(&cfg, &rich_dataset())"
         "reason": "app disabled",
         "until": "2027-01-31"
       }
+    }
+  ],
+  "items": [
+    {
+      "key": "office-firewall",
+      "item": "Office firewall",
+      "product": "fortios",
+      "product_name": "FORTIOS",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "counts": {
+        "now": 1,
+        "week": 0,
+        "eol": 1,
+        "unknown": 1,
+        "fyi": 1
+      },
+      "upgrade_to": "7.2.8",
+      "fixes": 2,
+      "of": 2,
+      "eol": true,
+      "unfixed": 0
+    },
+    {
+      "key": "nextcloud",
+      "item": "nextcloud",
+      "product": "nextcloud",
+      "product_name": "NEXTCLOUD",
+      "version": "29.0.3",
+      "exposure": "internal",
+      "counts": {
+        "now": 0,
+        "week": 0,
+        "eol": 0,
+        "unknown": 0,
+        "fyi": 0
+      },
+      "upgrade_to": null,
+      "fixes": 0,
+      "of": 0,
+      "eol": false,
+      "unfixed": 0
     }
   ],
   "notes": [

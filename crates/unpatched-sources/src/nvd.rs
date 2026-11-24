@@ -238,7 +238,7 @@ struct RawCvssData {
     version: String,
     #[serde(default)]
     vector_string: Option<String>,
-    base_score: f32,
+    base_score: f64,
 }
 
 #[derive(Deserialize)]

@@ -24,6 +24,9 @@ struct Case {
     expect: Vec<Expect>,
     #[serde(default)]
     expect_ignored: Vec<Expect>,
+    /// The recommendation per stack item. Only the items listed are checked.
+    #[serde(default)]
+    expect_items: Vec<ExpectItem>,
     #[serde(default)]
     absent: Vec<String>,
     #[serde(default)]
@@ -41,7 +44,61 @@ struct Expect {
     /// A version, or `none` for "no fixed version". Not checked when left out.
     fixed_in: Option<String>,
     latest_in_cycle: Option<String>,
+    /// A version, or `none`. Not checked when left out.
+    fixed_after: Option<String>,
     title_contains: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExpectItem {
+    /// The stack item's key (the part of a finding key before `/`).
+    key: String,
+    /// A version, or `none`. Not checked when left out.
+    upgrade_to: Option<String>,
+    fixes: Option<usize>,
+    of: Option<usize>,
+    unfixed: Option<usize>,
+    eol: Option<bool>,
+    now: Option<usize>,
+    week: Option<usize>,
+}
+
+fn check_item(e: &ExpectItem, report: &unpatched_core::Report, problems: &mut Vec<String>) {
+    let Some(i) = report.items.iter().find(|i| i.key == e.key) else {
+        problems.push(format!("item {}: expected, but it is missing", e.key));
+        return;
+    };
+    let mut bad = |what: &str, want: String, got: String| {
+        problems.push(format!(
+            "item {}: {what}: expected {want}, got {got}",
+            e.key
+        ));
+    };
+    match e.upgrade_to.as_deref() {
+        None => {}
+        Some("none") if i.upgrade_to.is_none() => {}
+        Some(w) if i.upgrade_to.as_deref() == Some(w) => {}
+        Some(w) => bad("upgrade_to", w.to_owned(), format!("{:?}", i.upgrade_to)),
+    }
+    for (what, want, got) in [
+        ("fixes", e.fixes, i.fixes),
+        ("of", e.of, i.of),
+        ("unfixed", e.unfixed, i.unfixed),
+        ("now", e.now, i.counts.now),
+        ("week", e.week, i.counts.week),
+    ] {
+        if let Some(w) = want
+            && w != got
+        {
+            bad(what, w.to_string(), got.to_string());
+        }
+    }
+    if let Some(w) = e.eol
+        && w != i.eol
+    {
+        bad("eol", w.to_string(), i.eol.to_string());
+    }
 }
 
 fn corpus_dir() -> PathBuf {
@@ -91,6 +148,7 @@ fn check_expect(e: &Expect, f: &Finding, problems: &mut Vec<String>) {
     for (what, want, got) in [
         ("fixed_in", &e.fixed_in, &f.fixed_in),
         ("latest_in_cycle", &e.latest_in_cycle, &f.latest_in_cycle),
+        ("fixed_after", &e.fixed_after, &f.fixed_after),
     ] {
         match want.as_deref() {
             None => {}
@@ -140,6 +198,9 @@ fn run_case(case: &Case) -> Result<Vec<String>, String> {
                 ));
             }
         }
+    }
+    for e in &case.expect_items {
+        check_item(e, &report, &mut problems);
     }
     for key in &case.absent {
         if report

@@ -12,7 +12,10 @@ use crate::channels::Channel;
 use crate::error::{Error, Result};
 use crate::github::{GitHub, IssueSync};
 use crate::message::{Event, Message};
-use crate::state::{self, DeliveryPlan, DeliveryState, DigestDay, SentRecord, StateStore};
+use crate::render::{issue_bucket, issue_count};
+use crate::state::{
+    self, DeliveryPlan, DeliveryState, DigestDay, ItemRecord, SentRecord, StateStore,
+};
 
 #[derive(Debug, Clone)]
 pub struct DeliverOptions {
@@ -189,14 +192,6 @@ pub fn deliver_collect(
     for r in &plan.resolved {
         next.sent.remove(&r.key);
     }
-    let numbers = issues
-        .as_ref()
-        .map(IssueSync::issue_numbers)
-        .unwrap_or_default();
-    let human_closed: BTreeSet<&str> = issues
-        .iter()
-        .flat_map(|s| s.closed_but_affected.iter().map(|(k, _)| k.as_str()))
-        .collect();
     for f in &report.findings {
         let rec = next
             .sent
@@ -206,19 +201,39 @@ pub fn deliver_collect(
             rec.bucket = f.bucket;
             rec.channels.clear();
         }
-        if let Some(n) = numbers.get(&f.key).copied().filter(|n| *n > 0) {
-            rec.issue = Some(n);
-            if !rec.told("issues") {
-                rec.channels.push("issues".into());
-                rec.channels.sort();
-            }
-        }
-        rec.closed_by_human = human_closed.contains(f.key.as_str());
         for (channel, keys) in &told {
             if keys.contains(&f.key) {
                 rec.mark_told(channel, opts.now);
             }
         }
+    }
+    // Issues are per stack item.
+    let numbers = issues
+        .as_ref()
+        .map(IssueSync::issue_numbers)
+        .unwrap_or_default();
+    let human_closed: BTreeSet<&str> = issues
+        .iter()
+        .flat_map(|s| s.closed_but_affected.iter().map(|(k, _)| k.as_str()))
+        .collect();
+    let with_issue: BTreeSet<&str> = report
+        .items
+        .iter()
+        .filter(|i| issue_count(i) > 0)
+        .map(|i| i.key.as_str())
+        .collect();
+    next.items.retain(|k, _| with_issue.contains(k.as_str()));
+    for i in report.items.iter().filter(|i| issue_count(i) > 0) {
+        let bucket = issue_bucket(i).unwrap_or(Bucket::Unknown);
+        let rec = next
+            .items
+            .entry(i.key.clone())
+            .or_insert_with(|| ItemRecord::new(opts.now, bucket));
+        rec.bucket = bucket;
+        if let Some(n) = numbers.get(&i.key).copied().filter(|n| *n > 0) {
+            rec.issue = Some(n);
+        }
+        rec.closed_by_human = human_closed.contains(i.key.as_str());
     }
     next.last_run = Some(opts.now);
     if plan.digest_due && (channels.is_empty() || digest_sent) {
@@ -534,8 +549,7 @@ mod tests {
         assert_eq!(out.issues.as_ref().unwrap().created.len(), 1);
         assert_eq!(out.status_issue, Some(5));
         let saved = store.load().unwrap();
-        assert_eq!(saved.sent[&fortios().key].issue, Some(5));
-        assert!(saved.sent[&fortios().key].told("issues"));
+        assert_eq!(saved.items["office-firewall"].issue, Some(5));
 
         // `notify.issues: false` turns it off.
         let before = srv.requests().len();

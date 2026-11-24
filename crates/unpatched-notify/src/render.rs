@@ -6,7 +6,7 @@ use std::fmt::Write as _;
 use serde_json::{Value, json};
 use unpatched_core::config::Exposure;
 use unpatched_core::rules::{RuleId, all_rules};
-use unpatched_core::{Bucket, Finding, Report, SourceId, SsvcExploitation, Verdict};
+use unpatched_core::{Bucket, Finding, ItemSummary, Report, SourceId, SsvcExploitation, Verdict};
 
 use crate::state::DeliveryState;
 
@@ -76,6 +76,49 @@ fn rule_explanation(id: RuleId) -> &'static str {
         .into_iter()
         .find(|r| r.id == id)
         .map_or("", |r| r.explanation)
+}
+
+/// Compare dotted numbers loosely (`7.2.10` is after `7.2.9`). For display
+/// decisions only; verdicts use the product's version scheme in core.
+pub(crate) fn loose_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    let parts = |s: &str| -> Vec<u64> {
+        s.split(|c: char| !c.is_ascii_digit())
+            .filter(|p| !p.is_empty())
+            .map(|p| p.parse().unwrap_or(0))
+            .collect()
+    };
+    parts(a).cmp(&parts(b))
+}
+
+/// Longest title shown unless `--verbose`.
+pub const TITLE_MAX: usize = 140;
+
+/// The first sentence of a description, at most [`TITLE_MAX`] characters,
+/// with an ellipsis when it is cut.
+pub fn short_title(title: &str) -> String {
+    let t = title.trim();
+    let mut end = t.len();
+    let chars: Vec<(usize, char)> = t.char_indices().collect();
+    for (n, (i, c)) in chars.iter().enumerate() {
+        if *c == '\n' {
+            end = *i;
+            break;
+        }
+        if matches!(c, '.' | '!' | '?')
+            && chars
+                .get(n + 1)
+                .is_none_or(|(_, next)| next.is_whitespace())
+        {
+            end = i + c.len_utf8();
+            break;
+        }
+    }
+    let first = t[..end].trim();
+    if first.chars().count() <= TITLE_MAX {
+        return first.to_owned();
+    }
+    let cut: String = first.chars().take(TITLE_MAX - 1).collect();
+    format!("{}…", cut.trim_end())
 }
 
 /// "FortiOS 7.2.5", with the stack item's own name in brackets when it has one.
@@ -162,13 +205,19 @@ pub fn action(f: &Finding) -> String {
     if f.verdict == Verdict::Unknown {
         return missing(f);
     }
-    match (&f.fixed_in, &f.latest_in_cycle) {
-        (Some(fix), Some(latest)) if fix != latest => {
+    match (&f.fixed_in, &f.fixed_after, &f.latest_in_cycle) {
+        (Some(fix), _, Some(latest)) if fix != latest => {
             format!("Upgrade to {fix} or later ({latest} is current in this branch).")
         }
-        (Some(fix), _) => format!("Upgrade to {fix} or later."),
-        (None, Some(latest)) => format!("Upgrade to {latest} (current in this branch)."),
-        (None, None) => "No fixed version is known yet. Check the vendor advisory.".into(),
+        (Some(fix), _, _) => format!("Upgrade to {fix} or later."),
+        (None, Some(after), Some(latest))
+            if loose_cmp(latest, after) == std::cmp::Ordering::Greater =>
+        {
+            format!("Upgrade to a release after {after} (latest in this cycle: {latest}).")
+        }
+        (None, Some(after), _) => format!("Upgrade to a release after {after}."),
+        (None, None, Some(latest)) => format!("Upgrade to {latest} (current in this branch)."),
+        (None, None, None) => "No fixed version is known yet. Check the vendor advisory.".into(),
     }
 }
 
@@ -193,8 +242,72 @@ fn missing(f: &Finding) -> String {
     }
 }
 
-fn is_exploited(f: &Finding) -> bool {
-    f.signals.kev.is_some() || f.signals.ssvc_exploitation == Some(SsvcExploitation::Active)
+// ---------------------------------------------------------------- item lines
+
+/// "FortiOS 7.2.5", with the item's own name in brackets when it has one.
+pub fn item_subject(i: &ItemSummary) -> String {
+    if i.item == i.product {
+        format!("{} {}", i.product_name, i.version)
+    } else {
+        format!("{} {} ({})", i.product_name, i.version, i.item)
+    }
+}
+
+/// 🔴/🟡/⚫/❔/⚪ by the most urgent bucket, 🟢 when the item has no findings.
+pub fn item_emoji(i: &ItemSummary) -> &'static str {
+    i.counts.most_urgent().map_or("🟢", bucket_emoji)
+}
+
+/// "14 now · 36 week", only the buckets that have findings.
+pub fn item_counts(i: &ItemSummary) -> String {
+    let c = &i.counts;
+    let mut parts = Vec::new();
+    for (n, name) in [
+        (c.now, "now"),
+        (c.week, "week"),
+        (c.eol, "eol"),
+        (c.unknown, "unknown"),
+        (c.fyi, "fyi"),
+    ] {
+        if n > 0 {
+            parts.push(format!("{n} {name}"));
+        }
+    }
+    if parts.is_empty() {
+        "nothing to fix".into()
+    } else {
+        parts.join(" · ")
+    }
+}
+
+/// "upgrade to 7.2.12 (fixes 48 of 50)", when there is advice.
+pub fn item_advice(i: &ItemSummary) -> Option<String> {
+    match &i.upgrade_to {
+        Some(v) => Some(format!("upgrade to {v} (fixes {} of {})", i.fixes, i.of)),
+        None if i.eol => Some("upgrade to a supported release".into()),
+        None if i.unfixed > 0 => Some("no fixed version known yet".into()),
+        None => None,
+    }
+}
+
+/// `🔴 FortiOS 7.2.5 (Office firewall)  14 now · 36 week  →  upgrade to 7.2.12 (fixes 48 of 50)`
+pub fn item_line(i: &ItemSummary) -> String {
+    let mut line = format!("{} {}  {}", item_emoji(i), item_subject(i), item_counts(i));
+    if let Some(a) = item_advice(i) {
+        let _ = write!(line, "  →  {a}");
+    }
+    line
+}
+
+/// The items that have findings, most urgent first (stack order within a bucket).
+pub fn items_to_show(report: &Report) -> Vec<&ItemSummary> {
+    let mut items: Vec<&ItemSummary> = report
+        .items
+        .iter()
+        .filter(|i| i.counts.total() > 0)
+        .collect();
+    items.sort_by_key(|i| i.counts.most_urgent());
+    items
 }
 
 // ---------------------------------------------------------------- text
@@ -293,6 +406,14 @@ pub fn text(report: &Report, opts: &TextOptions) -> String {
     if report.findings.is_empty() {
         out.push_str("Nothing to fix.\n\n");
     }
+    let items = items_to_show(report);
+    if !items.is_empty() {
+        for i in items {
+            let bucket = i.counts.most_urgent().unwrap_or(Bucket::Fyi);
+            let _ = writeln!(out, "{}", paint.bucket(bucket, &item_line(i)));
+        }
+        out.push('\n');
+    }
     for bucket in BUCKETS {
         let group: Vec<&Finding> = report
             .findings
@@ -329,14 +450,23 @@ pub fn text(report: &Report, opts: &TextOptions) -> String {
     out
 }
 
+/// The full title with `--verbose`, else its first sentence.
+fn shown_title(f: &Finding, verbose: bool) -> String {
+    if verbose {
+        f.title.clone()
+    } else {
+        short_title(&f.title)
+    }
+}
+
 fn text_finding(out: &mut String, f: &Finding, opts: TextOptions, paint: &Paint) {
     let _ = writeln!(out, "  {}", paint.bold(&subject(f)));
     match &f.vuln {
         Some(id) => {
-            let _ = writeln!(out, "  {id}  {}", f.title);
+            let _ = writeln!(out, "  {id}  {}", shown_title(f, opts.verbose));
         }
         None => {
-            let _ = writeln!(out, "  {}", f.title);
+            let _ = writeln!(out, "  {}", shown_title(f, opts.verbose));
         }
     }
     let _ = writeln!(out, "    Why   {}", why(f));
@@ -369,14 +499,16 @@ fn text_finding(out: &mut String, f: &Finding, opts: TextOptions, paint: &Paint)
 
 // ---------------------------------------------------------------- markdown: issues
 
-/// Hidden marker that ties an issue to a finding.
-pub fn finding_marker(key: &str) -> String {
-    format!("<!-- unpatched:finding={} -->", escape_comment(key))
+const ITEM_MARKER: &str = "<!-- unpatched:item=";
+
+/// Hidden marker that ties an issue to a stack item.
+pub fn item_marker(key: &str) -> String {
+    format!("{ITEM_MARKER}{} -->", escape_comment(key))
 }
 
-/// The finding key in an issue body, if there is a marker.
-pub fn parse_finding_marker(body: &str) -> Option<String> {
-    let start = body.find("<!-- unpatched:finding=")? + "<!-- unpatched:finding=".len();
+/// The stack item key in an issue body, if there is a marker.
+pub fn parse_item_marker(body: &str) -> Option<String> {
+    let start = body.find(ITEM_MARKER)? + ITEM_MARKER.len();
     let end = body[start..].find(" -->")? + start;
     Some(unescape_comment(&body[start..end]))
 }
@@ -398,110 +530,124 @@ fn issue_what(f: &Finding) -> String {
     match (&f.vuln, f.bucket) {
         (Some(v), _) => v.clone(),
         (None, Bucket::Eol) => "past end of life".into(),
-        (None, _) => f.title.clone(),
+        (None, _) => short_title(&f.title),
     }
 }
 
-/// `🔴 Fix today: fortios 7.2.5 (Office firewall) — CVE-2024-21762 (exploited)`
-pub fn issue_title(f: &Finding) -> String {
-    let suffix = if is_exploited(f) {
-        " (exploited)"
-    } else if f.rules.contains(&RuleId::ExploitExposed) {
-        " (public exploit)"
-    } else {
-        ""
+/// Buckets that get an issue.
+pub const ISSUE_BUCKETS: [Bucket; 4] = [Bucket::Now, Bucket::Week, Bucket::Eol, Bucket::Unknown];
+
+/// Findings of an item that need action: `now`, `week`, `eol` or `unknown`.
+pub fn issue_count(i: &ItemSummary) -> usize {
+    i.counts.now + i.counts.week + i.counts.eol + i.counts.unknown
+}
+
+/// The most urgent bucket of an item that gets an issue.
+pub fn issue_bucket(i: &ItemSummary) -> Option<Bucket> {
+    ISSUE_BUCKETS.into_iter().find(|b| i.counts.get(*b) > 0)
+}
+
+/// `🔴 FortiOS 7.2.5 (Office firewall): 14 to fix today — upgrade to 7.2.12`
+pub fn issue_title(i: &ItemSummary) -> String {
+    let bucket = issue_bucket(i).unwrap_or(Bucket::Unknown);
+    let what = match bucket {
+        Bucket::Now => format!("{} to fix today", i.counts.now),
+        Bucket::Week => format!("{} to fix this week", i.counts.week),
+        Bucket::Eol => "past end of life".to_owned(),
+        Bucket::Unknown | Bucket::Fyi => format!("{} to check", i.counts.unknown),
+    };
+    let advice = match (&i.upgrade_to, i.eol) {
+        (Some(v), _) => format!(" — upgrade to {v}"),
+        (None, true) => " — upgrade to a supported release".to_owned(),
+        (None, false) => String::new(),
     };
     let title = format!(
-        "{} {}: {} — {}{suffix}",
-        bucket_emoji(f.bucket),
-        bucket_label(f.bucket),
-        subject(f),
-        issue_what(f)
+        "{} {}: {what}{advice}",
+        bucket_emoji(bucket),
+        item_subject(i)
     );
     crate::http::truncate(&title, 250)
 }
 
-fn issue_sentence(f: &Finding) -> String {
-    let who = if f.item == f.product {
-        format!("`{}`", subject(f))
-    } else {
-        format!("**{}** runs `{} {}`", f.item, f.product_name, f.version)
-    };
-    let id = f.vuln.as_deref().unwrap_or("this");
-    match (f.bucket, f.verdict) {
-        (Bucket::Eol, _) => format!("{who} is past end of life and no longer gets security fixes."),
-        (_, Verdict::Unknown) => {
-            format!("unpatched cannot tell whether {who} is affected by {id}.")
-        }
-        _ if f.item == f.product => format!("{who} is affected by {id}."),
-        _ => format!("{who}, which is affected by {id}."),
-    }
-}
+/// How many findings an issue lists before it says "and N more".
+pub const ISSUE_LIST_CAP: usize = 60;
 
-/// One GitHub issue per finding: `(title, body)`.
-pub fn markdown_issue(f: &Finding, _report: &Report) -> (String, String) {
+/// One GitHub issue per stack item: `(title, body)`.
+pub fn markdown_item_issue(item: &ItemSummary, report: &Report) -> (String, String) {
     let mut b = String::new();
-    let _ = writeln!(b, "{}\n", issue_sentence(f));
-    if let Some(v) = &f.vuln {
-        let _ = writeln!(b, "**{v}**: {}\n", f.title);
-    } else {
-        let _ = writeln!(b, "{}\n", f.title);
+    let _ = writeln!(b, "{}\n", md_escape(&item_line(item)));
+    if item.exposure == Exposure::Internet {
+        b.push_str("This item is marked as internet-facing.\n\n");
     }
-    let label = if f.bucket == Bucket::Now {
-        "Why now"
-    } else {
-        "Why"
-    };
-    let _ = writeln!(b, "**{label}:** {}\n", why(f));
-    let _ = writeln!(b, "**Do:** {}\n", action(f));
-    if !f.evidence.is_empty() {
-        b.push_str("**Evidence**\n\n");
-        for e in &f.evidence {
-            let _ = writeln!(
-                b,
-                "- {}: {} ({})",
-                source_name(e.source),
-                e.detail,
-                verdict_name(e.verdict)
-            );
+    let mut listed = 0usize;
+    let mut total = 0usize;
+    for bucket in ISSUE_BUCKETS {
+        let group: Vec<&Finding> = report
+            .findings
+            .iter()
+            .filter(|f| f.item_key() == item.key && f.bucket == bucket)
+            .collect();
+        if group.is_empty() {
+            continue;
+        }
+        total += group.len();
+        let _ = writeln!(
+            b,
+            "### {} {} ({})\n",
+            bucket_emoji(bucket),
+            bucket_label(bucket),
+            group.len()
+        );
+        for f in group {
+            if listed >= ISSUE_LIST_CAP {
+                break;
+            }
+            listed += 1;
+            let _ = writeln!(b, "{}", issue_entry(f));
         }
         b.push('\n');
     }
-    b.push_str("**Rules**\n\n");
-    for (i, r) in f.rules.iter().enumerate() {
-        if i == 0 {
-            let _ = writeln!(
-                b,
-                "- `{}` {}. {}",
-                r.code(),
-                rule_title(*r),
-                rule_explanation(*r)
-            );
-        } else {
-            let _ = writeln!(b, "- `{}` {}", r.code(), rule_title(*r));
-        }
+    if total > listed {
+        let _ = writeln!(
+            b,
+            "…and {} more (run `unpatched check` for all).\n",
+            total - listed
+        );
     }
-    let _ = writeln!(
-        b,
-        "- Verdict: {} · bucket: {}",
-        verdict_name(f.verdict),
-        bucket_label(f.bucket)
-    );
-    b.push('\n');
-    if !f.references.is_empty() {
-        b.push_str("**References**\n\n");
-        for url in &f.references {
-            let _ = writeln!(b, "- {url}");
-        }
-        b.push('\n');
+    if item.counts.fyi > 0 {
+        let _ = writeln!(
+            b,
+            "{} more finding{} of low urgency are not listed here.\n",
+            item.counts.fyi,
+            if item.counts.fyi == 1 { " is" } else { "s are" }
+        );
     }
     b.push_str(
-        "---\n\nClose this issue when it is fixed; unpatched closes it on its own once \
-         unpatched.yml shows a fixed version.\n\n",
+        "---\n\nunpatched keeps this issue up to date and closes it once the item has nothing \
+         left to fix (when the version in unpatched.yml is fixed).\n\n",
     );
-    b.push_str(&finding_marker(&f.key));
+    b.push_str(&item_marker(&item.key));
     b.push('\n');
-    (issue_title(f), b)
+    (issue_title(item), b)
+}
+
+/// One finding as a list entry: id, short title, why, fix.
+fn issue_entry(f: &Finding) -> String {
+    let id = issue_what(f);
+    let mut line = format!("- **{}**", md_escape(&id));
+    if f.vuln.is_some() {
+        let t = short_title(&f.title);
+        if !t.is_empty() {
+            let _ = write!(line, " {}", md_escape(&t));
+        }
+    }
+    let _ = write!(
+        line,
+        " — {} — {}",
+        md_escape(&why(f)),
+        md_escape(&action(f))
+    );
+    line
 }
 
 // ---------------------------------------------------------------- markdown: status issue
@@ -558,6 +704,20 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
     let _ = writeln!(b, "| Ignored on purpose | {} |", s.ignored);
     b.push('\n');
 
+    let items = items_to_show(report);
+    if !items.is_empty() {
+        b.push_str("### What to do\n\n");
+        for i in items {
+            let link = state
+                .items
+                .get(&i.key)
+                .and_then(|r| r.issue)
+                .map_or(String::new(), |n| format!("#{n} "));
+            let _ = writeln!(b, "- {link}{}", md_escape(&item_line(i)));
+        }
+        b.push('\n');
+    }
+
     let mut listed = 0usize;
     for bucket in BUCKETS {
         let group: Vec<&Finding> = report
@@ -574,18 +734,7 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
                 break;
             }
             listed += 1;
-            let rec = state.sent.get(&f.key);
-            let link = match (rec.and_then(|r| r.issue), bucket) {
-                (Some(n), _) => format!("#{n} "),
-                (None, _) => String::new(),
-            };
-            let _ = writeln!(
-                b,
-                "- {link}{} — {}: {}",
-                subject(f),
-                issue_what(f),
-                action(f)
-            );
+            let _ = writeln!(b, "- {} — {}: {}", subject(f), issue_what(f), action(f));
         }
         b.push('\n');
     }
@@ -593,21 +742,23 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
         let _ = writeln!(b, "…and {} more.\n", open - listed);
     }
 
-    let reopened: Vec<_> = state
-        .sent
+    let reopened: Vec<(&ItemSummary, Option<u64>)> = report
+        .items
         .iter()
-        .filter(|(k, r)| r.closed_by_human && report.findings.iter().any(|f| &f.key == *k))
+        .filter(|i| issue_count(i) > 0)
+        .filter_map(|i| {
+            let rec = state.items.get(&i.key)?;
+            rec.closed_by_human.then_some((i, rec.issue))
+        })
         .collect();
     if !reopened.is_empty() {
         b.push_str("### Closed but still affected\n\n");
         b.push_str(
-            "Someone closed these issues, but the findings are still there. unpatched does not reopen them.\n\n",
+            "Someone closed these issues, but the items still have findings. unpatched does not reopen them.\n\n",
         );
-        for (key, rec) in reopened {
-            let f = report.findings.iter().find(|f| &f.key == key);
-            let name = f.map_or_else(|| key.clone(), subject);
-            let link = rec.issue.map_or(String::new(), |n| format!("#{n} "));
-            let _ = writeln!(b, "- {link}{name}");
+        for (i, issue) in reopened {
+            let link = issue.map_or(String::new(), |n| format!("#{n} "));
+            let _ = writeln!(b, "- {link}{}", item_subject(i));
         }
         b.push('\n');
     }
@@ -650,6 +801,13 @@ pub fn markdown_summary(report: &Report) -> String {
             if n == 1 { "" } else { "s" },
             heartbeat(report)
         );
+        let items = items_to_show(report);
+        if !items.is_empty() {
+            for i in items {
+                let _ = writeln!(b, "- {}", md_escape(&item_line(i)));
+            }
+            b.push('\n');
+        }
         b.push_str("| Bucket | Findings |\n| --- | ---: |\n");
         for (bucket, n) in [
             (Bucket::Now, s.now),
@@ -768,7 +926,13 @@ fn sarif_result(f: &Finding, suppressed: bool) -> Value {
         "ruleId": rule.code(),
         "level": sarif_level(f.bucket),
         "message": {
-            "text": format!("{}: {} Why: {} Do: {}", subject(f), f.title, why(f), action(f)),
+            "text": format!(
+                "{}: {} Why: {} Do: {}",
+                subject(f),
+                short_title(&f.title),
+                why(f),
+                action(f)
+            ),
         },
         "locations": [{
             "physicalLocation": { "artifactLocation": { "uri": "unpatched.yml" } },
@@ -784,6 +948,7 @@ fn sarif_result(f: &Finding, suppressed: bool) -> Value {
             "verdict": f.verdict,
             "vulnerability": f.vuln,
             "fixedIn": f.fixed_in,
+            "fixedAfter": f.fixed_after,
             "rules": f.rules.iter().map(|r| r.code()).collect::<Vec<_>>(),
         },
     });
@@ -835,19 +1000,28 @@ pub fn sarif(report: &Report) -> String {
 mod tests {
     use super::*;
     use crate::fixture::{fortios, report, sample_report};
-    use crate::state::SentRecord;
+    use crate::state::{ItemRecord, SentRecord};
 
     fn state_with_issues(r: &Report) -> DeliveryState {
         let mut s = DeliveryState {
             last_run: Some(r.generated_at),
             ..DeliveryState::default()
         };
-        for (i, f) in r.findings.iter().enumerate() {
-            let mut rec = SentRecord::new(r.generated_at, f.bucket);
-            rec.issue = (f.bucket != Bucket::Fyi).then_some(10 + i as u64);
-            s.sent.insert(f.key.clone(), rec);
+        for f in &r.findings {
+            s.sent
+                .insert(f.key.clone(), SentRecord::new(r.generated_at, f.bucket));
+        }
+        for (i, item) in r.items.iter().enumerate() {
+            let bucket = item.counts.most_urgent().unwrap();
+            let mut rec = ItemRecord::new(r.generated_at, bucket);
+            rec.issue = (bucket != Bucket::Fyi).then_some(10 + i as u64);
+            s.items.insert(item.key.clone(), rec);
         }
         s
+    }
+
+    fn item<'a>(r: &'a Report, key: &str) -> &'a ItemSummary {
+        r.items.iter().find(|i| i.key == key).unwrap()
     }
 
     #[test]
@@ -887,44 +1061,136 @@ mod tests {
     }
 
     #[test]
-    fn issue_for_now_finding() {
+    fn issue_for_an_item_with_now_findings() {
         let r = sample_report();
-        let (title, body) = markdown_issue(&fortios(), &r);
+        let (title, body) = markdown_item_issue(item(&r, "office-firewall"), &r);
         assert_eq!(
             title,
-            "🔴 Fix today: FortiOS 7.2.5 (Office firewall) — CVE-2024-21762 (exploited)"
+            "🔴 FortiOS 7.2.5 (Office firewall): 1 to fix today — upgrade to 7.2.7"
         );
-        insta::assert_snapshot!("issue_now", body);
+        insta::assert_snapshot!("issue_item_now", body);
     }
 
     #[test]
-    fn issue_for_eol_and_unknown() {
+    fn issue_for_week_eol_and_unknown_items() {
         let r = sample_report();
-        let eol = r.findings.iter().find(|f| f.bucket == Bucket::Eol).unwrap();
-        let (title, body) = markdown_issue(eol, &r);
-        assert_eq!(title, "⚫ End of life: PostgreSQL 13.12 — past end of life");
-        insta::assert_snapshot!("issue_eol", body);
-        let unk = r
-            .findings
-            .iter()
-            .find(|f| f.bucket == Bucket::Unknown)
-            .unwrap();
-        let (title, body) = markdown_issue(unk, &r);
-        assert!(title.starts_with("❔ Unknown: Home Assistant 2024.10.1"));
-        insta::assert_snapshot!("issue_unknown", body);
+        let (title, body) = markdown_item_issue(item(&r, "nextcloud"), &r);
+        assert_eq!(
+            title,
+            "🟡 Nextcloud 29.0.3: 2 to fix this week — upgrade to 29.0.8"
+        );
+        insta::assert_snapshot!("issue_item_week", body);
+        let (title, body) = markdown_item_issue(item(&r, "postgresql"), &r);
+        assert_eq!(
+            title,
+            "⚫ PostgreSQL 13.12: past end of life — upgrade to a supported release"
+        );
+        insta::assert_snapshot!("issue_item_eol", body);
+        let (title, body) = markdown_item_issue(item(&r, "home-assistant"), &r);
+        assert_eq!(title, "❔ Home Assistant 2024.10.1: 1 to check");
+        insta::assert_snapshot!("issue_item_unknown", body);
+    }
+
+    #[test]
+    fn long_issues_are_capped() {
+        let findings: Vec<Finding> = (0..100)
+            .map(|i| {
+                let mut f = fortios();
+                f.key = format!("office-firewall/CVE-2026-{i:04}");
+                f.vuln = Some(format!("CVE-2026-{i:04}"));
+                f
+            })
+            .collect();
+        let r = report(findings);
+        let (title, body) = markdown_item_issue(item(&r, "office-firewall"), &r);
+        assert!(title.contains("100 to fix today"), "{title}");
+        assert_eq!(body.matches("\n- **CVE-").count(), ISSUE_LIST_CAP);
+        assert!(body.contains("…and 40 more (run `unpatched check` for all)."));
+        assert!(body.contains("<!-- unpatched:item=office-firewall -->"));
     }
 
     #[test]
     fn marker_round_trip() {
-        for key in ["a/CVE-1", "weird--key>x%2D/y", "plain"] {
-            let m = finding_marker(key);
+        for key in ["a", "weird--key>x%2D", "plain"] {
+            let m = item_marker(key);
             assert!(!m[4..m.len() - 3].contains("--"), "{m}");
             assert_eq!(
-                parse_finding_marker(&format!("text\n\n{m}\n")).as_deref(),
+                parse_item_marker(&format!("text\n\n{m}\n")).as_deref(),
                 Some(key)
             );
         }
-        assert_eq!(parse_finding_marker("no marker"), None);
+        assert_eq!(parse_item_marker("no marker"), None);
+    }
+
+    #[test]
+    fn titles_are_cut_to_the_first_sentence() {
+        assert_eq!(short_title("One. Two."), "One.");
+        assert_eq!(short_title("No stop here"), "No stop here");
+        assert_eq!(
+            short_title("Versions 7.2.5 and 7.2.6 are hit. More."),
+            "Versions 7.2.5 and 7.2.6 are hit."
+        );
+        assert_eq!(short_title("First line\nsecond line"), "First line");
+        let long = format!("{} end.", "word ".repeat(60));
+        let cut = short_title(&long);
+        assert_eq!(cut.chars().count(), TITLE_MAX);
+        assert!(cut.ends_with('…'));
+    }
+
+    #[test]
+    fn verbose_text_keeps_the_full_title() {
+        let mut f = fortios();
+        f.title = "First sentence. Second sentence with more detail.".into();
+        let r = report(vec![f]);
+        let short = text(&r, &TextOptions::default());
+        assert!(short.contains("First sentence.") && !short.contains("Second sentence"));
+        let full = text(
+            &r,
+            &TextOptions {
+                verbose: true,
+                color: false,
+            },
+        );
+        assert!(full.contains("Second sentence"));
+    }
+
+    #[test]
+    fn item_lines() {
+        let r = sample_report();
+        assert_eq!(
+            item_line(item(&r, "office-firewall")),
+            "🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)"
+        );
+        assert_eq!(
+            item_line(item(&r, "postgresql")),
+            "⚫ PostgreSQL 13.12  1 eol  →  upgrade to a supported release"
+        );
+        let mut i = item(&r, "nextcloud").clone();
+        i.counts.now = 14;
+        i.counts.week = 36;
+        i.upgrade_to = Some("7.2.12".into());
+        i.fixes = 48;
+        i.of = 50;
+        assert_eq!(
+            item_line(&i),
+            "🔴 Nextcloud 29.0.3  14 now · 36 week  →  upgrade to 7.2.12 (fixes 48 of 50)"
+        );
+    }
+
+    #[test]
+    fn fixed_after_advice() {
+        let mut f = fortios();
+        f.fixed_in = None;
+        f.fixed_after = Some("9.8".into());
+        f.latest_in_cycle = None;
+        assert_eq!(action(&f), "Upgrade to a release after 9.8.");
+        f.latest_in_cycle = Some("9.9p2".into());
+        assert_eq!(
+            action(&f),
+            "Upgrade to a release after 9.8 (latest in this cycle: 9.9p2)."
+        );
+        f.latest_in_cycle = Some("9.7".into());
+        assert_eq!(action(&f), "Upgrade to a release after 9.8.");
     }
 
     #[test]
@@ -937,8 +1203,7 @@ mod tests {
     fn status_issue() {
         let r = sample_report();
         let mut s = state_with_issues(&r);
-        let key = &r.findings[1].key;
-        s.sent.get_mut(key).unwrap().closed_by_human = true;
+        s.items.get_mut("nextcloud").unwrap().closed_by_human = true;
         let body = markdown_status(&r, &s);
         assert_eq!(parse_state_block(&body).unwrap(), s);
         insta::assert_snapshot!("status", body);

@@ -100,7 +100,7 @@ fn exploit() -> ExploitRef {
     }
 }
 
-fn epss(score: f32) -> Epss {
+fn epss(score: f64) -> Epss {
     Epss {
         score,
         percentile: 0.9,
@@ -157,6 +157,15 @@ fn one(config: &Config, data: &MemoryDataset) -> Finding {
     let r = run(config, data);
     assert_eq!(r.findings.len(), 1, "{:#?}", r.findings);
     r.findings.into_iter().next().unwrap()
+}
+
+fn with_cvss(mut v: Vulnerability, score: f64) -> Vulnerability {
+    v.cvss = Some(Cvss {
+        version: "3.1".into(),
+        score,
+        vector: None,
+    });
+    v
 }
 
 fn fortios_cfg(version: &str, exposure: Exposure) -> Config {
@@ -235,7 +244,7 @@ fn exploit_matters_only_when_internet_facing() {
         .with_signals("CVE-2026-0003", signals);
     let f = one(&fortios_cfg("7.2.1", Exposure::Internet), &data);
     assert_eq!(f.bucket, Bucket::Now);
-    assert_eq!(f.rules, vec![RuleId::ExploitExposed, RuleId::Exposed]);
+    assert_eq!(f.rules, vec![RuleId::ExploitExposed]);
     let f = one(&fortios_cfg("7.2.1", Exposure::Internal), &data);
     assert_eq!(f.bucket, Bucket::Fyi);
     assert_eq!(f.rules, vec![RuleId::Affected]);
@@ -284,10 +293,36 @@ fn epss_cvss_and_exposure_mean_week() {
     );
     assert_eq!((f.bucket, f.rules), (Bucket::Week, vec![RuleId::Cvss]));
 
+    // Exposure alone is not enough; it needs CVSS at or above `cvss_week_exposed`.
     let f = one(
         &fortios_cfg("7.2.1", Exposure::Internet),
-        &base_data().with_vuln(fortios_vuln("CVE-3")),
+        &base_data().with_vuln(with_cvss(fortios_vuln("CVE-3"), 7.0)),
     );
+    assert_eq!((f.bucket, f.rules), (Bucket::Week, vec![RuleId::Exposed]));
+}
+
+#[test]
+fn internet_alone_is_not_week() {
+    let cfg = fortios_cfg("7.2.1", Exposure::Internet);
+    // No CVSS.
+    let f = one(&cfg, &base_data().with_vuln(fortios_vuln("CVE-3")));
+    assert_eq!((f.bucket, f.rules), (Bucket::Fyi, vec![RuleId::Affected]));
+    // Below the exposed threshold.
+    let v = with_cvss(fortios_vuln("CVE-3"), 6.9);
+    let f = one(&cfg, &base_data().with_vuln(v));
+    assert_eq!(f.bucket, Bucket::Fyi);
+    // At the threshold but not internet-facing.
+    let v = with_cvss(fortios_vuln("CVE-3"), 8.0);
+    let f = one(
+        &fortios_cfg("7.2.1", Exposure::Internal),
+        &base_data().with_vuln(v),
+    );
+    assert_eq!(f.bucket, Bucket::Fyi);
+    // The threshold is configurable.
+    let mut cfg = cfg;
+    cfg.thresholds.cvss_week_exposed = 5.0;
+    let v = with_cvss(fortios_vuln("CVE-3"), 6.9);
+    let f = one(&cfg, &base_data().with_vuln(v));
     assert_eq!((f.bucket, f.rules), (Bucket::Week, vec![RuleId::Exposed]));
 }
 
@@ -371,7 +406,14 @@ fn unknown_without_urgency_is_dropped_and_not_counted() {
     let r = run(&fortios_cfg("7.2.5", Exposure::Internal), &data);
     assert!(r.findings.is_empty());
     assert_eq!(r.summary, Summary::default());
-    // An internet-facing item makes it a `week` candidate, so it is kept.
+    // Internet-facing alone is not urgent either.
+    let r = run(&fortios_cfg("7.2.5", Exposure::Internet), &data);
+    assert!(r.findings.is_empty());
+    // Internet-facing and severe makes it a `week` candidate, so it is kept.
+    let data = base_data().with_vuln(with_cvss(
+        vuln("CVE-2026-7", vec![range(SourceId::Nvd, "fortios", vec![])]),
+        8.1,
+    ));
     let r = run(&fortios_cfg("7.2.5", Exposure::Internet), &data);
     assert_eq!(r.findings.len(), 1);
     assert_eq!(r.findings[0].bucket, Bucket::Unknown);
@@ -379,7 +421,7 @@ fn unknown_without_urgency_is_dropped_and_not_counted() {
 
 #[test]
 fn unparseable_item_version_is_unknown_with_a_note() {
-    let data = base_data().with_vuln(fortios_vuln("CVE-1"));
+    let data = base_data().with_vuln(with_cvss(fortios_vuln("CVE-1"), 8.0));
     let r = run(&fortios_cfg("not-a-version", Exposure::Internet), &data);
     assert_eq!(r.findings.len(), 1);
     let f = &r.findings[0];
@@ -392,13 +434,16 @@ fn unparseable_item_version_is_unknown_with_a_note() {
 
 #[test]
 fn unparseable_bound_in_data_is_unknown() {
-    let data = base_data().with_vuln(vuln(
-        "CVE-1",
-        vec![range(
-            SourceId::CveOrg,
-            "fortios",
-            vec![between("7.2.0", "seven")],
-        )],
+    let data = base_data().with_vuln(with_cvss(
+        vuln(
+            "CVE-1",
+            vec![range(
+                SourceId::CveOrg,
+                "fortios",
+                vec![between("7.2.0", "seven")],
+            )],
+        ),
+        8.0,
     ));
     let f = one(&fortios_cfg("7.2.5", Exposure::Internet), &data);
     assert_eq!(f.verdict, Verdict::Unknown);
@@ -442,12 +487,15 @@ fn all_sources_agreeing_not_affected_is_not_affected() {
 
 #[test]
 fn not_affected_plus_unparseable_source_is_unknown() {
-    let data = base_data().with_vuln(vuln(
-        "CVE-2026-5",
-        vec![
-            range(SourceId::CveOrg, "fortios", vec![between("7.2.0", "7.2.6")]),
-            range(SourceId::Nvd, "fortios", vec![between("a", "b")]),
-        ],
+    let data = base_data().with_vuln(with_cvss(
+        vuln(
+            "CVE-2026-5",
+            vec![
+                range(SourceId::CveOrg, "fortios", vec![between("7.2.0", "7.2.6")]),
+                range(SourceId::Nvd, "fortios", vec![between("a", "b")]),
+            ],
+        ),
+        8.0,
     ));
     let r = run(&fortios_cfg("7.3.0", Exposure::Internet), &data);
     assert_eq!(r.summary.not_affected, 0);
@@ -1059,4 +1107,180 @@ fn snapshot_quiet_report() {
         item("nextcloud", "29.0.9", Exposure::Internal),
     ]);
     insta::assert_json_snapshot!(run(&cfg, &rich_dataset()));
+}
+
+// ---- weak "all versions" evidence ----
+
+fn ivanti_like(version: &str, nvd: Vec<Constraint>) -> (Config, MemoryDataset) {
+    let mut cna = range(SourceId::CveOrg, "fortios", vec![Constraint::All]);
+    cna.unaffected = vec![
+        Constraint::Exact {
+            version: "25.1.3".into(),
+        },
+        Constraint::Exact {
+            version: "22.7.14".into(),
+        },
+    ];
+    let data = base_data()
+        .with_vuln(vuln(
+            "CVE-2026-9",
+            vec![cna, range(SourceId::Nvd, "fortios", nvd)],
+        ))
+        .with_signals(
+            "CVE-2026-9",
+            Signals {
+                kev: Some(kev()),
+                ..Signals::default()
+            },
+        );
+    (fortios_cfg(version, Exposure::Internet), data)
+}
+
+#[test]
+fn weak_all_versions_does_not_beat_a_specific_not_affected() {
+    let (cfg, data) = ivanti_like("22.7.2", vec![between("25.1.0", "25.1.3")]);
+    let f = one(&cfg, &data);
+    assert_eq!(f.verdict, Verdict::Unknown);
+    assert_eq!(f.bucket, Bucket::Unknown);
+    assert_eq!(f.rules, vec![RuleId::Conflict, RuleId::Kev]);
+    assert_eq!(f.fixed_in, None);
+    assert_eq!(f.evidence[0].verdict, Verdict::Affected);
+    assert!(f.evidence[0].detail.contains("weak"), "{:?}", f.evidence);
+    assert_eq!(f.evidence[1].verdict, Verdict::NotAffected);
+}
+
+#[test]
+fn weak_all_versions_alone_is_still_affected() {
+    let (cfg, data) = ivanti_like("22.7.2", vec![]);
+    let f = one(&cfg, &data);
+    assert_eq!(f.verdict, Verdict::Affected);
+    assert_eq!(f.bucket, Bucket::Now);
+}
+
+#[test]
+fn specific_affected_beats_everything() {
+    // NVD has a specific range containing the version; the CNA is weak; a
+    // third source says not affected. Specific affected wins, with a conflict.
+    let cna = range(SourceId::CveOrg, "fortios", vec![Constraint::All]);
+    let data = base_data().with_vuln(vuln(
+        "CVE-2026-9",
+        vec![
+            cna,
+            range(SourceId::Nvd, "fortios", vec![between("7.2.0", "7.2.6")]),
+            range(SourceId::Osv, "fortios", vec![between("7.0.0", "7.1.0")]),
+        ],
+    ));
+    let f = one(&fortios_cfg("7.2.5", Exposure::Internal), &data);
+    assert_eq!(f.verdict, Verdict::Affected);
+    assert_eq!(f.rules, vec![RuleId::Affected, RuleId::Conflict]);
+}
+
+// ---- fixed_after ----
+
+#[test]
+fn inclusive_end_gives_fixed_after() {
+    let inclusive = |end: &str| Constraint::Range {
+        start: Some(bound("8.6", true)),
+        end: Some(bound(end, true)),
+    };
+    let data = base_data().with_vuln(vuln(
+        "CVE-2026-8",
+        vec![
+            range(SourceId::Nvd, "fortios", vec![inclusive("9.8")]),
+            range(SourceId::CveOrg, "fortios", vec![inclusive("9.7")]),
+        ],
+    ));
+    let f = one(&fortios_cfg("9.6", Exposure::Internal), &data);
+    assert_eq!(f.fixed_in, None);
+    assert_eq!(f.fixed_after.as_deref(), Some("9.8"));
+    // A known fix wins, and fixed_after is then not set.
+    let data = base_data().with_vuln(vuln(
+        "CVE-2026-8",
+        vec![
+            range(SourceId::Nvd, "fortios", vec![inclusive("9.8")]),
+            range(SourceId::CveOrg, "fortios", vec![between("8.6", "9.7")]),
+        ],
+    ));
+    let f = one(&fortios_cfg("9.6", Exposure::Internal), &data);
+    assert_eq!(f.fixed_in.as_deref(), Some("9.7"));
+    assert_eq!(f.fixed_after, None);
+}
+
+// ---- item summaries ----
+
+fn fix_vuln(id: &str, start: &str, fixed: &str) -> Vulnerability {
+    vuln(
+        id,
+        vec![range(
+            SourceId::CveOrg,
+            "fortios",
+            vec![between(start, fixed)],
+        )],
+    )
+}
+
+#[test]
+fn item_summary_recommends_one_upgrade() {
+    let cycle = |c: &str| EolCycle {
+        cycle: c.into(),
+        release_date: None,
+        eol: None,
+        eol_reached: false,
+        latest: None,
+        lts: false,
+    };
+    let data = base_data()
+        .with_eol("fortios", vec![cycle("7.2"), cycle("7.4")])
+        .with_vuln(fix_vuln("CVE-1", "7.0.0", "7.2.7"))
+        .with_vuln(fix_vuln("CVE-2", "7.0.0", "7.2.9"))
+        // Only fixed in the next cycle: not in the recommendation's cycle.
+        .with_vuln(fix_vuln("CVE-3", "7.0.0", "7.4.2"))
+        .with_vuln(vuln(
+            "CVE-4",
+            vec![range(SourceId::CveOrg, "fortios", vec![Constraint::All])],
+        ))
+        .with_signals(
+            "CVE-1",
+            Signals {
+                kev: Some(kev()),
+                ..Signals::default()
+            },
+        );
+    let r = run(&fortios_cfg("7.2.5", Exposure::Internal), &data);
+    assert_eq!(r.items.len(), 1);
+    let i = &r.items[0];
+    assert_eq!(i.key, "fortios");
+    assert_eq!(i.upgrade_to.as_deref(), Some("7.2.9"));
+    assert_eq!(i.fixes, 2);
+    assert_eq!(i.of, 4);
+    assert_eq!(i.unfixed, 1);
+    assert!(!i.eol);
+    assert_eq!(i.counts.now, 1);
+    assert_eq!(i.counts.fyi, 3);
+}
+
+#[test]
+fn item_summary_falls_back_to_the_largest_fix() {
+    // No cycle data: same major.minor. Nothing fits 7.2, so the largest fix.
+    let data = base_data()
+        .with_vuln(fix_vuln("CVE-1", "7.0.0", "7.4.2"))
+        .with_vuln(fix_vuln("CVE-2", "7.0.0", "7.4.10"));
+    let r = run(&fortios_cfg("7.2.5", Exposure::Internal), &data);
+    let i = &r.items[0];
+    assert_eq!(i.upgrade_to.as_deref(), Some("7.4.10"));
+    assert_eq!((i.fixes, i.of), (2, 2));
+}
+
+#[test]
+fn item_summary_without_fixes_or_findings() {
+    let r = run(
+        &fortios_cfg("7.4.3", Exposure::Internal),
+        &base_data().with_vuln(fix_vuln("CVE-1", "7.0.0", "7.2.7")),
+    );
+    let i = &r.items[0];
+    assert_eq!(
+        (i.upgrade_to.clone(), i.fixes, i.of, i.unfixed),
+        (None, 0, 0, 0)
+    );
+    assert_eq!(i.counts.total(), 0);
 }

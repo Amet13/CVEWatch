@@ -2,6 +2,12 @@
 source: crates/unpatched-notify/src/render.rs
 expression: "text(&r, &opts)"
 ---
+🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
+🟡 Nextcloud 29.0.3  2 week  →  upgrade to 29.0.8 (fixes 2 of 2)
+⚫ PostgreSQL 13.12  1 eol  →  upgrade to a supported release
+❔ Home Assistant 2024.10.1  1 unknown
+⚪ Redis 7.2.1  1 fyi  →  upgrade to 7.2.4 (fixes 1 of 1)
+
 🔴 Fix today (1)
 
   FortiOS 7.2.5 (Office firewall)
@@ -12,7 +18,7 @@ expression: "text(&r, &opts)"
     Evidence  CVE.org: affected 7.2.0 to 7.2.6 (CNA Fortinet) (affected)
     Evidence  NVD: cpe:2.3:o:fortinet:fortios up to (excluding) 7.2.7 (affected)
     Rule UNP-KEV  CISA lists this vulnerability in its Known Exploited Vulnerabilities catalog, so attackers are using it now. Fix it today.
-    Rule UNP-EXPOSED  This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.
+    Rule UNP-EXPOSED  This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week.
     See   https://fortiguard.fortinet.com/psirt/FG-IR-24-015
 
 🟡 This week (2)
@@ -24,7 +30,7 @@ expression: "text(&r, &opts)"
     Rule  UNP-EPSS, UNP-EXPOSED · verdict affected
     Evidence  CVE.org: affected 29.0.0 to 29.0.7 (CNA GitHub_M) (affected)
     Rule UNP-EPSS  The EPSS score is at or above your threshold (default 0.05), which means exploitation in the next 30 days is more likely than for most vulnerabilities. Fix it this week.
-    Rule UNP-EXPOSED  This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.
+    Rule UNP-EXPOSED  This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week.
 
   Nextcloud 29.0.3
   CVE-2026-1002  Improper access control in Nextcloud Server (CVE-2026-1002)
@@ -33,7 +39,7 @@ expression: "text(&r, &opts)"
     Rule  UNP-EPSS, UNP-EXPOSED · verdict affected
     Evidence  CVE.org: affected 29.0.0 to 29.0.7 (CNA GitHub_M) (affected)
     Rule UNP-EPSS  The EPSS score is at or above your threshold (default 0.05), which means exploitation in the next 30 days is more likely than for most vulnerabilities. Fix it this week.
-    Rule UNP-EXPOSED  This version is affected and the item is marked as internet-facing, so attackers can reach it. Fix it this week.
+    Rule UNP-EXPOSED  This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week.
 
 ⚫ End of life (1)
 
@@ -62,7 +68,7 @@ expression: "text(&r, &opts)"
     Why   CVSS 5.3
     Do    Upgrade to 7.2.4 or later.
     Rule  UNP-AFFECTED · verdict affected
-    Rule UNP-AFFECTED  This version is affected, but nothing says it is exploited, it is not internet-facing and the scores are below your thresholds. Fix it with your normal updates.
+    Rule UNP-AFFECTED  This version is affected, but nothing says it is exploited, it is not both internet-facing and severe, and the scores are below your thresholds. Fix it with your normal updates.
     See   https://example.com/redis-advisory
 
 🟢 1,412 checked, nothing else affects you

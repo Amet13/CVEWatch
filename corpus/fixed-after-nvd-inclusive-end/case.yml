@@ -1,0 +1,50 @@
+description: 'NVD gives only an inclusive upper bound (<= 9.8): no fixed version, but a release after 9.8 fixes it.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: openssh
+      version: "9.6"
+      exposure: internet
+data:
+  products:
+  - id: openssh
+    name: OpenSSH
+    vendor: OpenBSD
+    kind: server
+    versioning: dotted
+    match:
+      cpe:
+      - openbsd:openssh
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-6387
+    summary: regreSSHion
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.1
+    ranges:
+    - source: nvd
+      product: openssh
+      constraints:
+      - kind: range
+        start:
+          version: '8.6'
+          inclusive: true
+        end:
+          version: '9.8'
+          inclusive: true
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: openssh/CVE-2024-6387
+  bucket: week
+  verdict: affected
+  rules:
+  - UNP-EXPOSED
+  fixed_in: none
+  fixed_after: '9.8'
