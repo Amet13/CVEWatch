@@ -1,0 +1,19 @@
+{
+  "id": "explain-a-finding",
+  "title": "Explain why a finding is in the 'now' bucket",
+  "kind": "answer",
+  "prompt": "unpatched put CVE-2024-21762 on my FortiOS 7.2.5 firewall (internet-facing) in the \"now\" bucket. Explain why, using the rule ids, and say what the evidence from each source is.",
+  "expect": {
+    "matches": [
+      "UNP-KEV",
+      "(?i)ransomware",
+      "(?i)cve[ .-]?org|cve record",
+      "(?i)\\bNVD\\b",
+      "7\\.2\\.7"
+    ],
+    "notMatches": ["(?i)\\b(is|are) not affected\\b"]
+  },
+  "reference": {
+    "answer.md": "Rules: UNP-KEV (in CISA KEV since 2024-02-09, known ransomware use), UNP-SSVC-ACTIVE, UNP-EPSS, UNP-CVSS and UNP-EXPOSED (internet-facing). Evidence: the CVE.org record says 7.2.0 to 7.2.6 is affected; NVD says >= 7.2.0 and < 7.2.7. Both say affected, so the verdict is affected. Fix: upgrade to 7.2.7 or later."
+  }
+}

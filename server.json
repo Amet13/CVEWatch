@@ -1,0 +1,45 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Amet13/unpatched",
+  "title": "unpatched",
+  "description": "Is the software you run affected by a vulnerability? Verdicts with evidence, rule ids and fixed versions, from your unpatched.yml",
+  "version": "0.1.0",
+  "websiteUrl": "https://amet13.github.io/unpatched/",
+  "repository": {
+    "url": "https://github.com/Amet13/unpatched",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/amet13/unpatched:0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "docker",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--mount",
+          "value": "type=bind,src={stack_dir},dst=/work",
+          "description": "The folder with unpatched.yml, mounted where the server works",
+          "isRequired": true,
+          "variables": {
+            "stack_dir": {
+              "description": "The folder that holds unpatched.yml",
+              "format": "filepath",
+              "isRequired": true
+            }
+          }
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "valueHint": "command",
+          "value": "mcp"
+        }
+      ]
+    }
+  ]
+}

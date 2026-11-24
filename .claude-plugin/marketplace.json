@@ -1,0 +1,12 @@
+{
+  "name": "unpatched",
+  "description": "unpatched: hear about vulnerabilities only when something you run is affected",
+  "owner": { "name": "Amet Umierov", "url": "https://github.com/amet13" },
+  "plugins": [
+    {
+      "name": "unpatched",
+      "source": "./",
+      "description": "The unpatched skills (set-up-unpatched, inventory-from-notes, plan-upgrades, explain-a-finding) and the read-only MCP server. Needs the unpatched CLI on PATH."
+    }
+  ]
+}

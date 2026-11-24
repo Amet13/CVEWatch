@@ -1,0 +1,29 @@
+{
+  "id": "set-up-homelab",
+  "title": "Set up unpatched for a small office and homelab",
+  "kind": "config",
+  "prompt": "Set up unpatched in this folder. What I run: a FortiGate office firewall on FortiOS 7.2.5 that is reachable from the internet, and a Linux server on kernel 6.6.20 that is only used inside the network. I want alerts as GitHub issues only, and nothing else to set up. Write the files and check them.",
+  "files": {
+    "README.md": "# private-infra\n\nOur private infrastructure notes.\n"
+  },
+  "expect": {
+    "stack": [
+      { "product": "fortios", "version": "7.2.5", "exposure": "internet" },
+      { "product": "linux-kernel", "version": "6.6.20" }
+    ],
+    "findings": [
+      { "vuln": "CVE-2024-21762", "verdict": "affected", "bucket": "now", "fixed_in": "7.2.7" }
+    ],
+    "files": [".github/workflows/unpatched.yml"],
+    "fileContains": [
+      { "file": ".github/workflows/unpatched.yml", "pattern": "amet13/unpatched@", "flags": "i" }
+    ],
+    "fileNotContains": [
+      { "file": "unpatched.yml", "pattern": "(?i)(token|webhook)\\s*:\\s*['\"]?[A-Za-z0-9:_-]{20,}" }
+    ]
+  },
+  "reference": {
+    "unpatched.yml": "version: 1\nstack:\n  - product: fortios\n    version: 7.2.5\n    exposure: internet\n    name: Office firewall\n  - product: linux-kernel\n    version: 6.6.20\nnotify:\n  issues: true\n",
+    ".github/workflows/unpatched.yml": "on:\n  schedule: [{ cron: \"17 6 * * *\" }]\n  workflow_dispatch:\npermissions: { contents: write, issues: write }\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - uses: amet13/unpatched@v1\n"
+  }
+}

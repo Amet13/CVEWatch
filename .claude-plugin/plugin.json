@@ -1,0 +1,21 @@
+{
+  "name": "unpatched",
+  "displayName": "unpatched",
+  "version": "0.1.0",
+  "description": "Skills and an MCP server that tell you when software you run is affected by a vulnerability: set up unpatched, build the inventory, plan upgrades, explain findings. Needs the unpatched CLI on PATH.",
+  "author": {
+    "name": "Amet Umierov",
+    "url": "https://github.com/amet13"
+  },
+  "homepage": "https://amet13.github.io/unpatched/",
+  "repository": "https://github.com/Amet13/unpatched",
+  "license": "MIT",
+  "keywords": ["security", "vulnerabilities", "cve", "homelab", "patching"],
+  "skills": "./skills",
+  "mcpServers": {
+    "unpatched": {
+      "command": "unpatched",
+      "args": ["mcp"]
+    }
+  }
+}
