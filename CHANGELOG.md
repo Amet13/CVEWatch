@@ -8,6 +8,8 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-24
+
 ### Added
 
 - `unpatched`, a full rewrite in Rust of the Go tool CVEWatch: list the software you run, and a daily GitHub Action tells you only when something you run is affected, what to do, and whether it is being exploited. Keyless and open data only, and no servers: the database is built daily in this repository and published on the rolling `db` release.
@@ -21,6 +23,8 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 - New threshold `cvss_week_exposed` (default 7.0).
 - `check --notify` in GitHub Actions warns (`::warning::`) when the repository is public, because the stack and the issues are then visible to everyone.
 - `--now` is a hidden global option, used by `check`, `explain` and `db info`.
+- `unpatched db build --strict` (fails, and writes nothing, when any source failed) and `unpatched db info --json` (counts and sources, for scripts). The daily database build uses both, and refuses to replace the published database when it has more than 20% fewer vulnerabilities or KEV entries.
+- `unpatched db update` tries again (after 20 s, then 60 s) when the release is being replaced and the checksum does not match yet, or the file is not there.
 - Repository automation: CI on three operating systems, the daily database build, releases with `dist`, a Docker image, and weekly and monthly upkeep (see MAINTAINING.md).
 
 ### Changed

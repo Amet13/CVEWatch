@@ -7,6 +7,7 @@
 //! - `corpus new <name>`: start a corpus case.
 //! - `docs check`: fail if they are out of date.
 //! - `docs`: regenerate the generated parts of the guide, `llms.txt` and `llms-full.txt`.
+//! - `versions`: fail if a repeated version (server.json, plugin files) differs from Cargo.toml.
 //! - `check`: everything CI runs (fmt, clippy, tests, generated-file checks).
 
 mod catalog;
@@ -14,6 +15,7 @@ mod check;
 mod corpus;
 mod docs;
 mod schema;
+mod versions;
 
 use anyhow::{Result, bail};
 
@@ -27,6 +29,7 @@ tasks:
   docs check       fail if the generated docs are out of date
   docs             regenerate the generated parts of README.md and docs/guide/, and llms.txt
   corpus new NAME  start a corpus case in corpus/NAME/case.yml
+  versions         fail if a version in server.json, the plugin files or Cargo.toml differs
   check            fmt, clippy, tests and generated-file checks";
 
 fn main() {
@@ -47,6 +50,7 @@ fn run(args: &[&str]) -> Result<()> {
         ["docs"] => docs::build(),
         ["docs", "check"] => docs::check(),
         ["corpus", "new", name] => corpus::new(name),
+        ["versions"] => versions::check(),
         ["check"] => check::run(),
         ["help" | "--help" | "-h"] | [] => {
             println!("{USAGE}");

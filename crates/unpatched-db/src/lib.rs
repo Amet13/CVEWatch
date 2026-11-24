@@ -16,7 +16,7 @@ pub mod schema;
 
 pub use build::{BuildOptions, BuildSummary, build};
 pub use check::run_check;
-pub use download::{DEFAULT_DB_URL, db_url, download};
+pub use download::{DEFAULT_DB_URL, RETRY_DELAYS, db_url, download, download_with};
 pub use error::{DbError, Result};
 pub use health::sources_health;
 pub use paths::{cache_dir, default_db_path};

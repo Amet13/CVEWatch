@@ -40,7 +40,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
-          toolchain: stable
+          toolchain: 1.100.0
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
       # fmt, clippy (warnings are errors), tests, and the generated-file checks.
@@ -61,11 +61,11 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
-          toolchain: stable
+          toolchain: 1.100.0
           components: clippy
       - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
-      - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo test --workspace
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
 
   msrv:
     name: MSRV (1.90)
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      # Overrides rust-toolchain.toml. Keep in step with `rust-version` in Cargo.toml.
+      # Overrides rust-toolchain.toml (1.100.0). Keep in step with `rust-version` in Cargo.toml.
       RUSTUP_TOOLCHAIN: "1.90"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -83,7 +83,7 @@ jobs:
         with:
           toolchain: "1.90"
       - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
-      - run: cargo check --workspace
+      - run: cargo check --workspace --locked
 
   deny:
     name: cargo deny
@@ -160,11 +160,11 @@ jobs:
       - if: hashFiles('action.yml') != ''
         uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
-          toolchain: stable
+          toolchain: 1.100.0
       - if: hashFiles('action.yml') != ''
         uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
       - if: hashFiles('action.yml') != ''
-        run: cargo build --release -p unpatched
+        run: cargo build --release --locked -p unpatched
       # The stack a new user starts from, checked against the frozen fixture database
       # with the binary just built (no release download, no network).
       - if: hashFiles('action.yml') != ''
@@ -178,6 +178,8 @@ jobs:
           config: unpatched.yml
           db: fixtures/smoke/unpatched-db.sqlite
           dry-run: "true"
+          # The fixture database is frozen, so it is always old: allow that.
+          args: --offline --allow-stale
 
   docker:
     name: docker build

@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Amet13/unpatched",
   "title": "unpatched",
-  "description": "Is the software you run affected by a vulnerability? Verdicts with evidence, rule ids and fixed versions, from your unpatched.yml",
+  "description": "Is the software you run affected by a vulnerability? Verdicts with evidence and fixed versions",
   "version": "3.0.0",
   "websiteUrl": "https://amet13.github.io/unpatched/",
   "repository": {

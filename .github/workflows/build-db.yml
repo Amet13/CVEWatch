@@ -1,7 +1,9 @@
 # Builds the vulnerability database every day and publishes it as assets of the rolling
 # release `db`: unpatched-db.sqlite.zst, SHA256SUMS and a build-provenance attestation.
 # If anything fails before the last step, the assets of the previous run stay as they
-# are; watchdog.yml opens an issue for the failed run.
+# are; watchdog.yml opens an issue for the failed run. The build is strict (any failed
+# source fails it) and a database with far fewer vulnerabilities or KEV entries than the
+# published one is refused, with one issue that closes itself when the next run is fine.
 name: build-db
 
 on:
@@ -27,22 +29,63 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
-          toolchain: stable
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
       - name: Build the binary
         run: cargo build --release --locked -p unpatched
       - name: Get the CVE records
         run: git clone --depth 1 https://github.com/CVEProject/cvelistV5 /tmp/cvelist
       - name: Build the database
-        run: cargo run --release --locked -p unpatched -- db build --cvelist /tmp/cvelist --out unpatched-db.sqlite.zst
+        run: cargo run --release --locked -p unpatched -- db build --strict --cvelist /tmp/cvelist --out unpatched-db.sqlite.zst
       - name: Smoke-check the database
         run: ./target/release/unpatched db info --db unpatched-db.sqlite.zst
+      # A source that answers with almost nothing must not replace a good database.
+      - name: Compare with the published database
+        id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          : > "$RUNNER_TEMP/body.md"
+          mkdir -p "$RUNNER_TEMP/old"
+          if ! gh release download db --pattern unpatched-db.sqlite.zst --dir "$RUNNER_TEMP/old" 2> /dev/null; then
+            echo "No published database yet: nothing to compare with."
+            bash .github/scripts/issue.sh "Database build refused" "$RUNNER_TEMP/body.md"
+            exit 0
+          fi
+          old="$(./target/release/unpatched db info --json --db "$RUNNER_TEMP/old/unpatched-db.sqlite.zst")"
+          new="$(./target/release/unpatched db info --json --db unpatched-db.sqlite.zst)"
+          problems=""
+          for key in vulnerabilities kev; do
+            before="$(jq -r ".$key" <<< "$old")"
+            after="$(jq -r ".$key" <<< "$new")"
+            echo "$key: published $before, new $after"
+            # Fails when the new count is below 80% of the published one.
+            if [ "$((after * 100))" -lt "$((before * 80))" ]; then
+              problems="$problems- \`$key\` dropped from $before to $after (more than 20%).\n"
+            fi
+          done
+          if [ -n "$problems" ]; then
+            {
+              echo "The daily database build was not published. Run: $URL"
+              echo
+              printf '%b' "$problems"
+              echo
+              echo "The previous database stays. Check \`unpatched db sources-health\`. This issue closes itself when a run is fine."
+            } > "$RUNNER_TEMP/body.md"
+            bash .github/scripts/issue.sh "Database build refused" "$RUNNER_TEMP/body.md"
+            echo "::error::The new database is much smaller than the published one."
+            exit 1
+          fi
+          bash .github/scripts/issue.sh "Database build refused" "$RUNNER_TEMP/body.md"
       - name: Checksums
         run: |
           sha256sum unpatched-db.sqlite.zst > SHA256SUMS
@@ -71,6 +114,9 @@ jobs:
             gh release create db --target "$GITHUB_SHA" --prerelease --latest=false \
               --title "Database (rolling)" --notes "$notes"
           fi
-          gh release upload db unpatched-db.sqlite.zst SHA256SUMS --clobber
+          # The asset first, then its checksums: a reader that sees the new SHA256SUMS
+          # always finds the matching asset (the CLI retries in the short gap between).
+          gh release upload db unpatched-db.sqlite.zst --clobber
+          gh release upload db SHA256SUMS --clobber
           gh release edit db --prerelease --latest=false --title "Database (rolling)" --notes "$notes"
           echo "Published the database built on ${built}."

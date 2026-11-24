@@ -308,3 +308,61 @@ fn committed_smoke_db_is_current() {
     assert_eq!(committed.info().built_at, fresh.info().built_at);
     assert!(std::fs::metadata(&smoke).unwrap().len() < 1_000_000);
 }
+
+#[test]
+fn strict_build_passes_when_every_source_is_ok() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("db.sqlite");
+    let o = BuildOptions {
+        strict: true,
+        ..opts(&out)
+    };
+    build(&o, &catalog(), &Http::new().unwrap()).unwrap();
+    assert!(out.is_file());
+}
+
+#[test]
+fn strict_build_writes_nothing_when_a_source_failed() {
+    let dir = tempfile::tempdir().unwrap();
+    // Fixtures without the EPSS files: that source fails, the rest is fine.
+    let fx = dir.path().join("fixtures");
+    for entry in std::fs::read_dir(fixtures()).unwrap() {
+        let path = entry.unwrap().path();
+        let name = path.file_name().unwrap().to_owned();
+        if name == "epss" || !path.is_dir() {
+            continue;
+        }
+        let dest = fx.join(&name);
+        std::fs::create_dir_all(&dest).unwrap();
+        copy_dir(&path, &dest);
+    }
+    let out = dir.path().join("db.sqlite");
+    let loose = BuildOptions {
+        offline_fixtures: Some(fx.clone()),
+        ..opts(&out)
+    };
+    let sum = build(&loose, &catalog(), &Http::new().unwrap()).unwrap();
+    assert!(sum.sources.iter().any(|s| !s.ok), "{:?}", sum.sources);
+    std::fs::remove_file(&out).unwrap();
+
+    let strict = BuildOptions {
+        strict: true,
+        ..loose
+    };
+    let err = build(&strict, &catalog(), &Http::new().unwrap()).unwrap_err();
+    assert!(err.to_string().contains("--strict"), "{err}");
+    assert!(!out.exists());
+}
+
+fn copy_dir(from: &Path, to: &Path) {
+    for entry in std::fs::read_dir(from).unwrap() {
+        let path = entry.unwrap().path();
+        let dest = to.join(path.file_name().unwrap());
+        if path.is_dir() {
+            std::fs::create_dir_all(&dest).unwrap();
+            copy_dir(&path, &dest);
+        } else {
+            std::fs::copy(&path, &dest).unwrap();
+        }
+    }
+}

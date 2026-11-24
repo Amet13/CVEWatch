@@ -8,8 +8,10 @@ branding:
 inputs:
   version:
     description: >-
-      The unpatched release to run, like v3.0.0 or v3 (the newest v3.x.y).
-      Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest release.
+      The unpatched release to run, like v3.0.0, v3.1.0-rc.1 or v3 (the newest stable v3.x.y).
+      Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest
+      release. Set it when you pin the action to a commit SHA (`uses: amet13/unpatched@<sha>`),
+      because a SHA says nothing about the version.
     required: false
     default: ""
   binary:
@@ -50,8 +52,13 @@ runs:
         set -euo pipefail
         repo="Amet13/unpatched"
         want="$INPUT_VERSION"
-        if [ -z "$want" ] && printf '%s' "$ACTION_REF" | grep -Eq '^v[0-9]+(\.[0-9]+){0,2}$'; then
-          want="$ACTION_REF"
+        if [ -z "$want" ]; then
+          # A ref like v3, v3.1 or v3.1.0, or a release candidate like v3.1.0-rc.1 (an exact version).
+          if printf '%s' "$ACTION_REF" | grep -Eq '^v[0-9]+(\.[0-9]+){0,2}(-[0-9A-Za-z.-]+)?$'; then
+            want="$ACTION_REF"
+          else
+            echo "::notice title=unpatched version::The action ref '$ACTION_REF' is not a version (a commit or a branch), so the latest release runs. Set the 'version:' input, like version: v3.0.0, to pin it."
+          fi
         fi
         case "$want" in
           "")
@@ -59,9 +66,10 @@ runs:
           v[0-9]*.[0-9]*.[0-9]*)
             tag="$want" ;;
           v[0-9]*)
-            # v3 or v3.0: the newest release that starts with it.
+            # v3 or v3.0: the highest stable release that starts with it (by version,
+            # not by date: a patch release of an older line may be newer).
             prefix="${want}."
-            tag="$(gh api "repos/$repo/releases?per_page=100" --jq "[.[] | select(.prerelease == false and .draft == false) | .tag_name | select(startswith(\"$prefix\"))] | .[0] // empty")"
+            tag="$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.prerelease == false and .draft == false) | .tag_name | select(startswith(\"$prefix\")) | select(test(\"^v[0-9]+\\\\.[0-9]+\\\\.[0-9]+$\"))" | sort -V | tail -n 1)"
             if [ -z "$tag" ]; then
               echo "::error::No release of $repo starts with $prefix. Use a full version such as v3.0.0."
               exit 1
@@ -162,7 +170,10 @@ runs:
         if [ -n "$INPUT_ARGS" ]; then
           # Split on spaces on purpose: `args` is a list of options.
           # shellcheck disable=SC2206
+          # No globbing: a `*` in the arguments stays a `*`.
+          set -f
           extra=($INPUT_ARGS)
+          set +f
           args+=("${extra[@]}")
         fi
         "$bin" "${args[@]}"

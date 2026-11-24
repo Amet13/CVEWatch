@@ -9,7 +9,9 @@
 #                               dependency bumps folded into one line
 #   release.sh bump <next> <tag>
 #                               sets the version in Cargo.toml (the package and the
-#                               workspace path dependencies), refreshes Cargo.lock, and
+#                               workspace path dependencies), server.json (both versions
+#                               and the image tag), gemini-extension.json and the
+#                               .claude-plugin files, refreshes Cargo.lock, and
 #                               moves `[Unreleased]` in CHANGELOG.md to a dated section
 #
 # Needs git history (fetch-depth: 0) for `notes` and `bump`; `bump` needs cargo.
@@ -54,6 +56,11 @@ bump() {
     -e "/^\[workspace\.package\]/,/^\[/ s/^version = \"$current\"/version = \"$next\"/" \
     -e "/path = \"(crates|xtask)\// s/version = \"$current\"/version = \"$next\"/" \
     Cargo.toml
+  # The same version in the MCP registry file, the Docker image tag and the plugin files.
+  sed -i -E \
+    -e "s/\"version\": \"$current\"/\"version\": \"$next\"/" \
+    -e "s#(\"identifier\": \"[^\"]*:)$current\"#\1$next\"#" \
+    server.json gemini-extension.json .claude-plugin/plugin.json .claude-plugin/marketplace.json
   cargo update --workspace --quiet
   body="$(mktemp)"
   notes "$tag" > "$body"
