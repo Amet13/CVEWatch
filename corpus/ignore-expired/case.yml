@@ -57,3 +57,5 @@ expect:
   - UNP-KEV
   - UNP-IGNORE-EXPIRED
   fixed_in: 7.2.7
+notes_contain:
+- "ignore[0] expired on 2026-11-01; the finding is back."
