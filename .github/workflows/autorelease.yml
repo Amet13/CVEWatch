@@ -17,7 +17,7 @@
 #   - daily, `publish`, as a safety net for anything above that did not run.
 #
 # A tag made with GITHUB_TOKEN starts no workflow, so release.yml is dispatched on it.
-# Tags before v3 are the Go CVEWatch releases and are ignored.
+# Versions start at 3.0.0; older tags in this repository are ignored.
 name: autorelease
 
 on:

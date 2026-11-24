@@ -21,7 +21,6 @@ It is not a scanner for code dependencies or container images; use OSV-Scanner o
 - [How accurate is it](https://amet13.github.io/unpatched/guide/accuracy.html): How unpatched's verdicts are tested (the corpus, the catalog checks), and its honest limits. No measured accuracy numbers have been published yet.
 - [Privacy](https://amet13.github.io/unpatched/guide/privacy.html): What leaves your machine when you run unpatched: the database download from GitHub and OSV queries for package items. There is no telemetry.
 - [FAQ](https://amet13.github.io/unpatched/guide/faq.html): Answers to common questions: why not Dependabot, Trivy or OpenCVE, why a finding is unknown, why a product is unverified, public repositories, and schedule pauses.
-- [Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html): For people who used CVEWatch (the Go tool): what changed in unpatched, how old commands and config map to the new ones, and where the old versions are.
 
 ## More
 

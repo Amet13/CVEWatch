@@ -27,4 +27,3 @@
 # More
 
 - [FAQ](faq.md)
-- [Coming from CVEWatch](migrate-from-cvewatch.md)

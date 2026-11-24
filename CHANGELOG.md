@@ -4,15 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project follows [Semantic Versioning](https://semver.org/).
 
-History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not developed any more. Its releases stay listed on the releases page, and its last commit is tagged `v2-final`. This changelog starts with the Rust rewrite.
-
 ## [Unreleased]
 
 ## [3.0.0] - 2026-11-24
 
 ### Added
 
-- `unpatched`, a full rewrite in Rust of the Go tool CVEWatch: list the software you run, and a daily GitHub Action tells you only when something you run is affected, what to do, and whether it is being exploited. Keyless and open data only, and no servers: the database is built daily in this repository and published on the rolling `db` release.
+- `unpatched`: list the software you run, and a daily GitHub Action tells you only when something you run is affected, what to do, and whether it is being exploited. Keyless and open data only, and no servers: the database is built daily in this repository and published on the rolling `db` release.
 - The `unpatched` command line: `check` (text, JSON, Markdown and SARIF output, `--exit-code`, `--notify`, `--dry-run`), `init` (questions in a terminal, a commented template otherwise; `--github` adds the daily workflow), `explain` (a rule, a CVE or a finding key), `search`, `catalog list|show`, `db update|info|build|sources-health`, `mcp` and `schema config|report`. Exit codes: 1 fix today (with `--exit-code`), 2 usage or config error, 3 data error, 4 delivery error.
 - The GitHub Action (`uses: amet13/unpatched@v3`): downloads the release binary, checks its SHA-256, caches it, and writes the run summary to the job. Inputs: `version`, `binary`, `config`, `db`, `dry-run`, `args`. `templates/github/` has a starting `unpatched.yml` and workflow.
 - The end-to-end corpus (`corpus/`, 70+ cases) and `cargo xtask corpus new <name>`; `cargo xtask schema` writes `schema/unpatched.schema.json` and `schema/report.schema.json`.
@@ -66,6 +64,4 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 - CVSS and EPSS scores are `f64`, so JSON shows `9.6` and not `9.600000381469727`.
 - A product that is in the catalog but not in the database now says so ("the database has no data for product ... yet. Run `unpatched db update`").
 - `unpatched init --github` prints `.github/workflows/unpatched.yml` without a stray `./`; every command and argument has a help line; the config schema has a description for every key.
-- The project, the crate, the command and the config file are now called `unpatched` (was CVEWatch).
-- Everything from the Go tool is removed. The last Go release is `v2.6.1`.
 - Releasing needs no clone or local tag: Actions → autorelease → Run workflow → `publish` releases the version in `Cargo.toml` (waiting for CI on `main`), and `patch`, `minor`, `major` or `auto` open a release pull request that is published when it merges.

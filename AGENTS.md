@@ -59,7 +59,7 @@ test to get green. A wrong verdict is fixed by adding a failing corpus case firs
   versions" only) never decides alone. Details in the `matching.rs` module docs.
 - Buckets rank by exploitation (KEV, SSVC, public exploits, EPSS, exposure), not
   by CVSS alone.
-- Versions continue the CVEWatch line: Go was 2.x, `unpatched` is 3.x. The
+- Versions start at 3.0.0; older tags in this repository are ignored. The
   Rust toolchain is pinned in `rust-toolchain.toml`. MIT license.
 
 ## Style
