@@ -212,6 +212,7 @@ fn scheme_example(s: &unpatched_core::Scheme) -> &'static str {
         Scheme::Rpm => "3.0.7-27.el9",
         Scheme::Apk => "3.1.4-r0",
         Scheme::Pep440 => "2.31.0",
+        Scheme::Synology => "7.2.1-69057-5",
     }
 }
 

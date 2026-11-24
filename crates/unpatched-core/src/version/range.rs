@@ -24,6 +24,7 @@ pub fn constraint_matches(
             Ok(true)
         }
         Constraint::Exact { version: v } => {
+            portable_release_is_ambiguous(scheme, version, v)?;
             Ok(cmp_to_bound(scheme, version, v)? == Ordering::Equal)
         }
         Constraint::Unplaced {
@@ -66,6 +67,9 @@ pub fn constraint_matches(
                 inclusive,
             }) = end
             {
+                if *inclusive {
+                    portable_release_is_ambiguous(scheme, version, e)?;
+                }
                 let o = cmp_to_bound(scheme, version, e)?;
                 let ok = if *inclusive {
                     o != Ordering::Greater
@@ -136,12 +140,34 @@ fn unplaced_is_elsewhere(version: &str, base: &str) -> bool {
     })
 }
 
+/// `9.8p1` against "up to and including 9.8" (or exactly `9.8`) cannot be
+/// decided: for OpenSSH the first portable release of 9.8 *is* the fix for
+/// CVE-2024-6387, while other advisories mean every 9.8pN. Saying `affected`
+/// would raise a false alarm on a patched system, and saying `not-affected`
+/// needs evidence, so the source's verdict is `unknown` and the reason says why.
+fn portable_release_is_ambiguous(
+    scheme: &Scheme,
+    version: &str,
+    bound: &str,
+) -> Result<(), VersionError> {
+    if matches!(scheme, Scheme::Dotted | Scheme::Calver) && is_portable_release_of(version, bound) {
+        return Err(VersionError {
+            scheme: scheme.clone(),
+            version: bound.to_string(),
+            reason: format!(
+                "the data says \"up to {bound}\" and it is not clear whether {version} (a release of {bound}) is included"
+            ),
+        });
+    }
+    Ok(())
+}
+
 /// True for `9.8p1` against the bound `9.8`.
 ///
-/// OpenSSH has no release `9.8`, only `9.8p1` (the portable release), yet
-/// advisories and NVD write "up to and including 9.8". A `p<number>` suffix
-/// directly after the bound's text is the same release for a bound check, so
-/// `<= 9.8` includes 9.8p1 and `< 9.8` does not. A bound that already has its
+/// OpenSSH has no release `9.8`, only `9.8p1` (the portable release). A
+/// `p<number>` suffix directly after the bound's text is the same release for a
+/// bound check: `>= 8.6` includes 8.6p1 and `< 9.8` does not include 9.8p1.
+/// Inclusive ends and exact matches are ambiguous (see above). A bound that already has its
 /// own suffix (`9.8p2`) is compared as it is.
 fn is_portable_release_of(version: &str, bound: &str) -> bool {
     let v = version.trim();
@@ -213,7 +239,19 @@ mod tests {
         // OpenSSH has no 9.8, only 9.8p1; "up to and including 9.8" includes it.
         let d = Scheme::Dotted;
         let upto = range(Some(("8.6", true)), Some(("9.8", true)));
-        assert!(constraint_matches(&d, &upto, "9.8p1").unwrap());
+        // 9.8p1 against "up to and including 9.8": cannot be decided (unknown).
+        let e = constraint_matches(&d, &upto, "9.8p1").unwrap_err();
+        assert!(e.reason.contains("not clear"), "{e}");
+        assert!(
+            constraint_matches(
+                &d,
+                &Constraint::Exact {
+                    version: "9.8".into()
+                },
+                "9.8p1"
+            )
+            .is_err()
+        );
         assert!(constraint_matches(&d, &upto, "9.7p1").unwrap());
         assert!(!constraint_matches(&d, &upto, "9.9p1").unwrap());
         // `< 9.8` does not include 9.8p1, and `>= 8.6` does include 8.6p1.
