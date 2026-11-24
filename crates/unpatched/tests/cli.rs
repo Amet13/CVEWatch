@@ -469,3 +469,38 @@ fn the_copies_of_the_templates_agree() {
         assert_eq!(a, b, "{file}");
     }
 }
+
+#[test]
+fn help_pages_have_no_trailing_spaces() {
+    let dir = tempfile::tempdir().unwrap();
+    let paths: [&[&str]; 12] = [
+        &[],
+        &["check"],
+        &["init"],
+        &["explain"],
+        &["search"],
+        &["catalog"],
+        &["catalog", "list"],
+        &["catalog", "show"],
+        &["db"],
+        &["db", "build"],
+        &["mcp"],
+        &["schema"],
+    ];
+    for args in paths {
+        let out = stdout_of({
+            let mut c = unpatched(dir.path());
+            c.args(args).arg("--help");
+            c
+        });
+        for (n, line) in out.lines().enumerate() {
+            assert!(!line.ends_with(' '), "{args:?} line {}: {line:?}", n + 1);
+        }
+    }
+    let out = stdout_of({
+        let mut c = unpatched(dir.path());
+        c.args(["catalog", "show", "--help"]);
+        c
+    });
+    assert!(out.contains("A product id or alias"), "{out}");
+}

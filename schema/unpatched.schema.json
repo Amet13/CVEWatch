@@ -9,6 +9,7 @@
       "default": "monday"
     },
     "ignore": {
+      "description": "Risks you accept on purpose, each with a reason and an end date.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/Ignore"
@@ -24,12 +25,14 @@
       }
     },
     "stack": {
+      "description": "The software you run, one entry per instance.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/StackItem"
       }
     },
     "thresholds": {
+      "description": "When a finding gets more urgent.",
       "$ref": "#/$defs/Thresholds",
       "default": {
         "cvss_week": 9.0,
@@ -71,6 +74,7 @@
       "type": "object",
       "properties": {
         "cve": {
+          "description": "The CVE (or advisory) id to ignore.",
           "type": "string"
         },
         "product": {
@@ -81,9 +85,11 @@
           ]
         },
         "reason": {
+          "description": "Why you accept the risk. Shown in the report.",
           "type": "string"
         },
         "until": {
+          "description": "The last day the entry applies. After it the finding comes back.",
           "type": "string",
           "format": "date"
         }
@@ -110,6 +116,7 @@
           "default": true
         },
         "ntfy": {
+          "description": "Send messages to an ntfy topic.",
           "anyOf": [
             {
               "$ref": "#/$defs/Ntfy"
@@ -125,6 +132,7 @@
           "default": false
         },
         "telegram": {
+          "description": "Send messages to a Telegram chat.",
           "anyOf": [
             {
               "$ref": "#/$defs/Telegram"
@@ -146,10 +154,12 @@
       "type": "object",
       "properties": {
         "server": {
+          "description": "The ntfy server.",
           "type": "string",
           "default": "https://ntfy.sh"
         },
         "topic": {
+          "description": "The ntfy topic to publish to.",
           "type": "string"
         }
       },
@@ -163,6 +173,7 @@
       "type": "object",
       "properties": {
         "exposure": {
+          "description": "Whether the item is reachable from the internet. It can move a finding up a bucket.",
           "$ref": "#/$defs/Exposure",
           "default": "internal"
         },

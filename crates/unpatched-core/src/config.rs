@@ -10,9 +10,12 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     /// File format version. Only `1` exists.
     pub version: u32,
+    /// The software you run, one entry per instance.
     pub stack: Vec<StackItem>,
+    /// Risks you accept on purpose, each with a reason and an end date.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ignore: Vec<Ignore>,
+    /// When a finding gets more urgent.
     #[serde(default)]
     pub thresholds: Thresholds,
     #[serde(default)]
@@ -49,6 +52,7 @@ pub struct StackItem {
     /// Required with `product`; taken from the purl otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    /// Whether the item is reachable from the internet. It can move a finding up a bucket.
     #[serde(default)]
     pub exposure: Exposure,
     /// Your label, e.g. "Office firewall". Tells instances apart.
@@ -60,11 +64,14 @@ pub struct StackItem {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Ignore {
+    /// The CVE (or advisory) id to ignore.
     pub cve: String,
     /// Only for this product id (or stack item `name`); all items when empty.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub product: Option<String>,
+    /// Why you accept the risk. Shown in the report.
     pub reason: String,
+    /// The last day the entry applies. After it the finding comes back.
     pub until: NaiveDate,
 }
 
@@ -124,6 +131,7 @@ pub struct Notify {
     /// GitHub Issues in the repository the Action runs in.
     #[serde(default = "yes")]
     pub issues: bool,
+    /// Send messages to a Telegram chat.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub telegram: Option<Telegram>,
     /// Slack incoming webhook (URL in `UNPATCHED_SLACK_WEBHOOK`).
@@ -132,6 +140,7 @@ pub struct Notify {
     /// Discord webhook (URL in `UNPATCHED_DISCORD_WEBHOOK`).
     #[serde(default)]
     pub discord: bool,
+    /// Send messages to an ntfy topic.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ntfy: Option<Ntfy>,
     /// Generic JSON webhook (URL in `UNPATCHED_WEBHOOK_URL`).
@@ -166,7 +175,9 @@ pub struct Telegram {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Ntfy {
+    /// The ntfy topic to publish to.
     pub topic: String,
+    /// The ntfy server.
     #[serde(default = "default_ntfy_server")]
     pub server: String,
 }

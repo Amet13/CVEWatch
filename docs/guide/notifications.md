@@ -10,8 +10,8 @@ unpatched tells you in three kinds of message:
 | Digest | On your digest day (`digest:` in `unpatched.yml`, default `monday`), even when nothing needs action: the footer says how many items were checked and how old the database is, so silence never means broken. Also sent if the last one is 7 or more days old. |
 | Resolved | A finding that you were told about is gone. |
 
-GitHub issues work differently: one issue per finding, opened and closed as the
-findings change. See [Findings and rules](findings.md#read-a-github-issue).
+GitHub issues work differently: one issue per stack item, opened and closed as the
+item's findings change. See [Findings and rules](findings.md#read-a-github-issue).
 
 Chat channels are opt-in. Add them in `unpatched.yml` and give each its secret in
 an environment variable. In GitHub Actions, add a repository secret and pass it
@@ -121,11 +121,11 @@ digest, and a footer that says it is still running:
 ```text
 unpatched · week 48
 
-🔴 Fix today  FortiOS 7.2.5 (Office firewall): CVE-2024-21762, exploited, upgrade to 7.2.7+
-🟡 This week  Nextcloud 29.0.3: 2 advisories, upgrade to 29.0.8+ (EPSS 7%)
-⚫ End of life  PostgreSQL 13.12: past end of life. Plan an upgrade.
-❔ Unknown  Home Assistant 2024.10.1: 1 advisory with no version data yet
-⚪ FYI  Redis 7.2.1: CVE-2025-1111, upgrade to 7.2.4+
+🔴  FortiOS 7.2.5 (Office firewall): 1 now → upgrade to 7.2.7 (fixes 1 of 1)
+🟡  Nextcloud 29.0.3: 2 week → upgrade to 29.0.8 (fixes 2 of 2)
+⚫  PostgreSQL 13.12: 1 eol → upgrade to a supported release
+❔  Home Assistant 2024.10.1: 1 unknown
+⚪  Redis 7.2.1: 1 fyi → upgrade to 7.2.4 (fixes 1 of 1)
 
 🟢 1,412 checked, nothing else affects you
 Database: built 2026-11-22 02:41 UTC, 1 day old

@@ -38,7 +38,7 @@ sorting by CVSS gives mostly noise.
 - **Honest about gaps.** If the data is missing, conflicting or cannot be read,
   the verdict is `unknown`, with the reason. It is never "not affected" without
   evidence.
-- **Quiet by default.** A GitHub issue per finding, a weekly digest in the chat
+- **Quiet by default.** A GitHub issue per stack item, a weekly digest in the chat
   channels you choose, and a status issue that says when it last ran, so silence
   never means broken.
 

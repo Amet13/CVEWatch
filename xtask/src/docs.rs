@@ -441,7 +441,7 @@ fn snapshot_body(name: &str) -> Result<String> {
 }
 
 fn example_issue() -> Result<String> {
-    let body = snapshot_body("render__tests__issue_now")?;
+    let body = snapshot_body("render__tests__issue_item_now")?;
     Ok(format!("```markdown\n{body}\n```"))
 }
 
@@ -548,27 +548,6 @@ fn default_of(p: &Value) -> String {
     }
 }
 
-/// Text for keys whose Rust field has no doc comment, so the schema has no
-/// description. Adding the comment in `unpatched-core` makes the entry here unused.
-fn fallback(key: &str) -> &'static str {
-    match key {
-        "stack" => "The software you run, one entry per instance. See [The stack](#the-stack).",
-        "ignore" => "Risks you accept on purpose. See [Ignore entries](#ignore-entries).",
-        "thresholds" => "When a finding gets more urgent. See [Thresholds](#thresholds).",
-        "exposure" => {
-            "Whether the item is reachable from the internet. It can move a finding up a bucket."
-        }
-        "telegram" => "Send messages to a Telegram chat.",
-        "ntfy" => "Send messages to an ntfy topic.",
-        "cve" => "The CVE (or advisory) id to ignore.",
-        "reason" => "Why you accept the risk. Shown in the report.",
-        "until" => "The last day the entry applies. After it the finding comes back.",
-        "topic" => "The ntfy topic to publish to.",
-        "server" => "The ntfy server.",
-        _ => "",
-    }
-}
-
 fn table_for(schema: &Value, defs: &Value, order: &[&str]) -> String {
     let props = schema["properties"]
         .as_object()
@@ -603,9 +582,6 @@ fn table_for(schema: &Value, defs: &Value, order: &[&str]) -> String {
                     .and_then(Value::as_str)
                     .unwrap_or(""),
             );
-        }
-        if desc.is_empty() {
-            fallback(k).clone_into(&mut desc);
         }
         let _ = writeln!(
             s,

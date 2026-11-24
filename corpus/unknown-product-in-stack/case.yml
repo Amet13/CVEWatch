@@ -23,4 +23,4 @@ data:
     sources: []
 expect: []
 notes_contain:
-- unknown product
+- has no data for product

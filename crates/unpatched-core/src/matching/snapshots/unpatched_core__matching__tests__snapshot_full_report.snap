@@ -274,6 +274,6 @@ expression: "run(&cfg, &rich_dataset())"
     }
   ],
   "notes": [
-    "stack[2]: unknown product \"nope\". Run `unpatched catalog list` to see the ids."
+    "stack[2]: the database has no data for product \"nope\" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids."
   ]
 }

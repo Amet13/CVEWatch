@@ -188,7 +188,7 @@ impl Run<'_> {
             (Some(id), None) => {
                 let Some(entry) = self.data.product(id) else {
                     self.notes.push(format!(
-                        "{at}: unknown product {id:?}. Run `unpatched catalog list` to see the ids."
+                        "{at}: the database has no data for product {id:?} yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids."
                     ));
                     return;
                 };

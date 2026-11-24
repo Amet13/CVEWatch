@@ -311,13 +311,19 @@ fn item_label(item: &StackItem) -> String {
         .unwrap_or_default()
 }
 
-fn judge(db: &Db, config: &Config, item: &StackItem, v: &Vulnerability) -> String {
+fn judge(
+    db: &Db,
+    config: &Config,
+    item: &StackItem,
+    v: &Vulnerability,
+    ctx_now: chrono::DateTime<Utc>,
+) -> String {
     let mut s = String::new();
     let one = Config {
         stack: vec![item.clone()],
         ..config.clone()
     };
-    let now = Utc::now();
+    let now = ctx_now;
     let run = |force: bool| -> Report {
         evaluate(&one, &One { db, vuln: v, force }, &HashMap::new(), now)
     };
@@ -476,7 +482,7 @@ fn explain_vuln(ctx: &Ctx, id: &str, only_item: Option<&str>) -> Res<u8> {
                 item_label(item),
                 item.version.as_deref().unwrap_or_default()
             );
-            s.push_str(&judge(&db, &config, item, &v));
+            s.push_str(&judge(&db, &config, item, &v, ctx.now));
         }
         if !not_concerned.is_empty() {
             let n = not_concerned.len();
@@ -510,7 +516,7 @@ fn explain_vuln(ctx: &Ctx, id: &str, only_item: Option<&str>) -> Res<u8> {
 fn explain_key(ctx: &Ctx, key: &str) -> Res<u8> {
     read_config_text(&ctx.config)?;
     let config = load_config(&ctx.config)?;
-    let report = super::check::evaluate(ctx, &config, Utc::now(), true)?;
+    let report = super::check::evaluate(ctx, &config, ctx.now, true)?;
     let found = report
         .findings
         .iter()

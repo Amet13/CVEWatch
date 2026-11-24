@@ -24,6 +24,8 @@ pub struct Ctx {
     pub quiet: bool,
     /// Colour on stdout.
     pub color: bool,
+    /// The time of this run: `--now`, else the clock.
+    pub now: DateTime<Utc>,
 }
 
 impl Ctx {

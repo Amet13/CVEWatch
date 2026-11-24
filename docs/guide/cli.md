@@ -194,7 +194,7 @@ Show one product (id or alias)
 Usage: unpatched catalog show [OPTIONS] <ID>
 
 Arguments:
-  <ID>
+  <ID>  A product id or alias, like `fortios` or `fortigate`
 
 Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
