@@ -6,7 +6,7 @@ use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
-use crate::{catalog, docs, schema};
+use crate::{catalog, docs, schema, versions};
 
 enum Action {
     /// Run cargo with these arguments and fail if it exits non-zero.
@@ -52,6 +52,10 @@ fn steps() -> Vec<Step> {
         Step {
             name: "docs",
             action: Action::Func(docs::check),
+        },
+        Step {
+            name: "versions",
+            action: Action::Func(versions::check),
         },
     ]
 }

@@ -354,6 +354,35 @@ jobs:
       "id-token": "write"
       "packages": "write"
 
+  # CUSTOM: list the MCP server in the official MCP Registry (server.json), signing in
+  # with this workflow's identity (OIDC: no secret). The registry checks that the
+  # image has the label io.modelcontextprotocol.server.name (docker/Dockerfile). A failure
+  # here never blocks the release: it only leaves the registry entry one version behind,
+  # and the job can be re-run.
+  custom-publish-mcp-registry:
+    needs:
+      - plan
+      - custom-publish-docker
+    if: ${{ always() && needs.custom-publish-docker.result == 'success' && !fromJson(needs.plan.outputs.val).announcement_is_prerelease }}
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 10
+    continue-on-error: true
+    permissions:
+      "contents": "read"
+      "id-token": "write"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ fromJson(needs.plan.outputs.val).announcement_tag }}
+      - name: Install mcp-publisher
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSfL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+      - name: Publish server.json
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
+
   announce:
     needs:
       - plan
