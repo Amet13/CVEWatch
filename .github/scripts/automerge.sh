@@ -128,4 +128,10 @@ for w in ci.yml codeql.yml pages.yml; do
     started+=("${w%.yml}")
   fi
 done
+# A merged release pull request (it changes the version): publish it now, not at the
+# next daily run. The publish step waits for ci on main before it tags anything.
+if [ "${branch:-}" = "automation/release" ]; then
+  gh workflow run autorelease.yml --ref main -f release=publish
+  started+=("autorelease")
+fi
 echo "Merged #$pr and started ${started[*]} on main."

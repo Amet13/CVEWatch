@@ -9,7 +9,6 @@
   <a href="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml/badge.svg?branch=main" alt="Daily database"></a>
   <a href="https://github.com/Amet13/unpatched/releases"><img src="https://img.shields.io/github/v/release/Amet13/unpatched?filter=v3*&amp;sort=semver&amp;label=release" alt="Latest release"></a>
   <a href="https://amet13.github.io/unpatched/"><img src="https://img.shields.io/badge/docs-guide-111111" alt="Docs"></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/Amet13/unpatched"><img src="https://api.scorecard.dev/projects/github.com/Amet13/unpatched/badge" alt="OpenSSF Scorecard"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-111111" alt="MIT license"></a>
 </p>
 

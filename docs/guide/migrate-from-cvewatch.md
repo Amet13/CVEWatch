@@ -5,7 +5,7 @@
 This project used to be CVEWatch, a command-line tool written in Go (versions 1.x
 and 2.x). It has been rewritten from scratch in Rust and renamed `unpatched`. The
 Go tool is not developed any more. Its releases stay listed on the releases page,
-and its last commit is tagged `v2-final`.
+and its last release is `v2.6.1`.
 
 The old tool and the new one answer different questions:
 
@@ -71,7 +71,7 @@ rate limits (the database is prebuilt), and date and CVSS filters.
 unpatched continues the version line: CVEWatch was 2.x, unpatched starts at 3.0.0. Go releases remain
 under the 1.x and 2.x numbers and are not updated. If you need the old tool, take
 a release from the [releases page](https://github.com/Amet13/unpatched/releases)
-or check out the `v2-final` tag. It is not maintained and will not get fixes.
+or check out the `v2.6.1` tag. It is not maintained and will not get fixes.
 
 The repository is renamed from `Amet13/CVEWatch` to `Amet13/unpatched` at launch.
 GitHub redirects the old address, including clones.

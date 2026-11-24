@@ -18,22 +18,23 @@ when, and what is still yours.
 | Mondays | Dependabot | Pull requests for Cargo crates, GitHub Actions and the Docker base image. Only versions at least 7 days old are proposed (30 days for a major crate version; security updates at once). Patch and minor updates are labelled `automerge`; majors come in their own pull request and wait for you. |
 | When ci or codeql finishes | `automerge.yml` | Merges a same-repository pull request labelled `automerge` (opened by you, by the repository's own workflows or by Dependabot) once every check on its head commit has passed. A pull request behind `main` gets `main` merged in and CI runs again. |
 | 1st of the month | `autorelease.yml` (propose) | When shipped files changed since the last release, opens "Release vX.Y.Z": a minor bump when `[Unreleased]` has `### Added` entries, else a patch bump (never a major one), the version in `Cargo.toml`, and a dated CHANGELOG section with the commit subjects. |
-| Daily | `autorelease.yml` (publish) | When `Cargo.toml` has a version with no tag yet and CI passed on `main`, creates the tag and starts `release.yml` on it. Never makes the very first release. |
+| After a release pull request merges, and daily | `autorelease.yml` (publish) | When `Cargo.toml` has a version with no tag yet, waits for CI on `main`'s head, creates the tag and starts `release.yml` on it. The same as Run workflow → `publish`. |
 | On a release | `release.yml` | `dist` builds archives for Linux (x86_64, aarch64, musl), macOS (x86_64, arm64) and Windows (x86_64), the shell and PowerShell installers, the Homebrew formula (`unpatched.rb`, a release asset: there is no tap), checksums and attestations, and creates the GitHub release. Then `publish-docker.yml` (`ghcr.io/amet13/unpatched`, amd64 and arm64) runs in the `release` environment, then the MCP Registry entry (`server.json`) is updated; a failure of that last job does not fail the release. `action-e2e.yml` runs the Action with the released binary on Linux, macOS and Windows, and only then does the major tag (`v3`) move: it needs the GitHub release and that test, not Docker, and it never moves backwards. |
 | On changes to the docs | `pages.yml` | Builds the guide with mdBook and publishes it to GitHub Pages. Does nothing until `book.toml` exists. |
 | After any of the above, and hourly | `watchdog.yml` | Opens "Automation failed: …" when a run on `main`, a scheduled run, an automation branch or a release tag fails, and closes it when the newest run succeeds. A job that never got a runner is re-run once. The hourly sweep also covers runs the automation started itself, and restarts a run stuck in the queue. |
-| Weekly | `codeql.yml`, `scorecard.yml` | CodeQL for Rust and for the workflows, and the OpenSSF Scorecard. |
+| Weekly | `codeql.yml` | CodeQL for Rust and for the workflows. |
 
 Every pull request goes through the same CI as a person's. Nothing is merged on
 a red or missing check.
 
 ## What stays with a person
 
-- **The first release.** Nothing makes the first release (`v3.0.0`) for you. See
-  "First-time steps" below. After that, `autorelease.yml` makes the patch and
-  minor releases. A major release (`4.0.0`, …) is always yours: change the
-  version in `Cargo.toml` and in the path dependencies, move `[Unreleased]` in
-  `CHANGELOG.md`, and merge.
+- **Deciding to release.** No clone and no local tags: Actions → autorelease → Run
+  workflow. `publish` releases the version `Cargo.toml` has now (the first release,
+  3.0.0, goes out this way). `patch`, `minor`, `major` or `auto` open a "Release
+  vX.Y.Z" pull request with the version and the changelog; it merges when CI passes
+  and is published right after. The monthly run proposes `auto` releases on its own
+  when shipped files changed.
 - **Major updates.** Dependabot's major-version pull requests are not labelled
   `automerge`. Read the changelog of the dependency, then merge or close.
 - **Wrong verdicts.** Each report becomes a failing corpus case, then a fix. A
@@ -53,10 +54,9 @@ a red or missing check.
 
 Do these once. The workflows cannot do them for you.
 
-1. **Mark the Go history:** tag the last Go commit `v2-final`
-   (`git tag v2-final dba17e2 && git push origin v2-final`) and delete the stray tags
-   `rm` and `tm` (`git push origin :refs/tags/rm :refs/tags/tm`), so no tag looks like
-   a version to `autorelease.yml` or the Action.
+1. **Optional: delete the stray tags `rm` and `tm`** (Code → Tags → the tag → Delete).
+   Nothing depends on it: the workflows and the Action only read `v3` and later
+   version tags, and the Go releases (up to `v2.6.1`) stay as they are.
 2. **Turn on Issues and Dependabot alerts:** Settings → General → Features → Issues,
    and Settings → Code security → Dependabot alerts. The watchdog and `build-db` report
    problems as issues; with Issues off they only warn in the run's summary.
@@ -83,11 +83,9 @@ Do these once. The workflows cannot do them for you.
    `autorelease.yml` creates tags with `GITHUB_TOKEN`, which cannot be a bypass
    actor. Do not cover the floating major tag (`v3`): `release.yml` moves it through
    the API, and `v*.*.*` does not match it.
-10. **Make the first release by hand:** `CHANGELOG.md` already has the
-    `## [3.0.0]` section (dist puts it in the release notes: check
-    `dist plan --tag=v3.0.0 --output-format=json`, field `announcement_changelog`).
-    Merge, then `git tag v3.0.0 && git push origin v3.0.0`. `release.yml` starts
-    on the tag. After that, `autorelease.yml` takes over.
+10. **Release 3.0.0:** Actions → autorelease → Run workflow → `publish`. It waits
+    for CI on `main`, creates the `v3.0.0` tag and starts `release.yml`. The notes
+    come from the `## [3.0.0]` section of `CHANGELOG.md`.
 
 The `automerge` and `maintenance` labels are created by the workflows on first
 use.

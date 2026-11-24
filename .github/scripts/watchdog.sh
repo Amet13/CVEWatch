@@ -29,7 +29,7 @@ NOW="${NOW:-$(date +%s)}"
 export NOW
 
 # The workflows watched (watchdog.yml lists the same under workflow_run).
-WATCHED='["ci","codeql","build-db","pages","release","maintenance","autorelease","automerge","OpenSSF Scorecard"]'
+WATCHED='["ci","codeql","build-db","pages","release","maintenance","autorelease","automerge"]'
 # Workflows whose failed jobs are re-run once when a job never got a runner.
 RERUN='["ci","build-db","release"]'
 # Workflows started again after a run stuck in the queue: their dispatch needs no inputs.
