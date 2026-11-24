@@ -86,7 +86,7 @@ prints the whole entry.
 | `samba` | Samba | Samba | server | dotted | tracked (`samba`) | 2026-11-23 |
 | `screenconnect` | ConnectWise ScreenConnect | ConnectWise | server | dotted | not tracked | 2026-11-23 |
 | `sonicos` | SonicOS | SonicWall | appliance | dotted | not tracked | 2026-11-23 |
-| `synology-dsm` | Synology DiskStation Manager (DSM) | Synology | os | dotted | not tracked | 2026-11-23 |
+| `synology-dsm` | Synology DiskStation Manager (DSM) | Synology | os | synology | not tracked | 2026-11-23 |
 | `tomcat` | Apache Tomcat | Apache Software Foundation | server | dotted | tracked (`tomcat`) | 2026-11-23 |
 | `traefik` | Traefik | Traefik Labs | server | semver | tracked (`traefik`) | 2026-11-23 |
 | `truenas` | TrueNAS | iXsystems | os | dotted | tracked (`truenas`) | 2026-11-23 |

@@ -80,6 +80,11 @@ pub enum Constraint {
     All,
     /// Exactly this version.
     Exact { version: String },
+    /// A release named together with an update that cannot be placed in the
+    /// version order (`8.0` and `update2`, `2019` and `cumulative_update_14`).
+    /// A version that could be that release is `unknown`; one that clearly is
+    /// another release is not matched.
+    Unplaced { version: String, update: String },
     /// `start <= v < end` style, either end optional.
     Range {
         start: Option<Bound>,

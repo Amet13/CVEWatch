@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 
 use crate::model::{Bound, Constraint};
-use crate::version::{Scheme, VersionError};
+use crate::version::{Scheme, VersionError, cmp_digits};
 
 /// Does `version` fall inside `constraint` under `scheme`?
 ///
@@ -25,6 +25,23 @@ pub fn constraint_matches(
         }
         Constraint::Exact { version: v } => {
             Ok(cmp_to_bound(scheme, version, v)? == Ordering::Equal)
+        }
+        Constraint::Unplaced {
+            version: base,
+            update,
+        } => {
+            scheme.validate(version)?;
+            if unplaced_is_elsewhere(version, base) {
+                Ok(false)
+            } else {
+                Err(VersionError {
+                    scheme: scheme.clone(),
+                    version: format!("{base}:{update}"),
+                    reason: format!(
+                        "the update {update:?} of release {base} cannot be placed in the version order"
+                    ),
+                })
+            }
         }
         Constraint::Range { start, end } => {
             // Validate even when both ends are open.
@@ -85,6 +102,39 @@ pub(crate) fn cmp_to_bound(
     }
 }
 
+/// Can `version` not be the release `base` plus some update?
+///
+/// An update such as `update2` follows its release (`8.0` and `update2` is
+/// 8.0.2), so only a version that clearly belongs to another release is ruled
+/// out: both start with a number of the same width, and `base` is not the start
+/// of `version`. When the numbers are not alike (build 15.2.1544 against the
+/// name `2019`), nothing can be said.
+fn unplaced_is_elsewhere(version: &str, base: &str) -> bool {
+    let parts = |s: &'_ str| -> Vec<String> {
+        s.trim()
+            .split(['.', '-', '_', '+'])
+            .map(|p| {
+                p.bytes()
+                    .take_while(u8::is_ascii_digit)
+                    .map(char::from)
+                    .collect()
+            })
+            .collect()
+    };
+    let (v, b) = (parts(version), parts(base));
+    let (Some(v0), Some(b0)) = (v.first(), b.first()) else {
+        return false;
+    };
+    if v0.is_empty() || b0.is_empty() || v0.len() != b0.len() {
+        return false;
+    }
+    b.iter().enumerate().any(|(i, bp)| {
+        !bp.is_empty()
+            && v.get(i)
+                .is_some_and(|vp| !vp.is_empty() && cmp_digits(vp, bp).is_ne())
+    })
+}
+
 /// True for `9.8p1` against the bound `9.8`.
 ///
 /// OpenSSH has no release `9.8`, only `9.8p1` (the portable release), yet
@@ -133,6 +183,27 @@ mod tests {
         };
         assert!(constraint_matches(&d, &exact, "7.2.0").unwrap());
         assert!(!constraint_matches(&d, &exact, "7.2.1").unwrap());
+    }
+
+    #[test]
+    fn unplaced_updates_are_unknown_unless_clearly_elsewhere() {
+        let d = Scheme::Dotted;
+        let u = |v: &str, up: &str| Constraint::Unplaced {
+            version: v.into(),
+            update: up.into(),
+        };
+        // 8.0 + update2 may be 8.0.2: cannot say.
+        let e = constraint_matches(&d, &u("8.0", "update2"), "8.0.2").unwrap_err();
+        assert!(e.to_string().contains("8.0:update2"), "{e}");
+        assert!(constraint_matches(&d, &u("8.0", "update2"), "8.0").is_err());
+        // Another release of the same width: not matched.
+        assert!(!constraint_matches(&d, &u("7.0", "update3o"), "8.0.2").unwrap());
+        assert!(!constraint_matches(&d, &u("8.1", "update1"), "8.0.2").unwrap());
+        assert!(!constraint_matches(&d, &u("2.8.4", "a"), "6.4.1").unwrap());
+        // A name against a build number (Exchange 2019 against 15.2.1544.4): cannot say.
+        assert!(constraint_matches(&d, &u("2019", "cumulative_update_14"), "15.2.1544.4").is_err());
+        // A version that does not parse is still an error.
+        assert!(constraint_matches(&d, &u("8.0", "update2"), "nope").is_err());
     }
 
     #[test]

@@ -632,6 +632,7 @@ Show a catalog entry, the names it matches in each source:
 ```text
 $ unpatched catalog show fortios
 # catalog/fortios.yml
+# Write the version like: 7.2.5 (three numbers; leave out 'build 1517')
 id: fortios
 name: FortiOS
 vendor: Fortinet
@@ -661,6 +662,7 @@ aliases:
 - fortigate
 - fortinet firewall
 homepage: https://www.fortinet.com/products/fortigate/fortios
+version_hint: 7.2.5 (three numbers; leave out 'build 1517')
 checked: 2026-11-23
 ```
 
@@ -1262,8 +1264,9 @@ renaming one would be a breaking change.
 | `UNP-EXPOSED` | Affected, reachable from the internet and severe | This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week. | This rule puts an affected, internet-facing finding with CVSS at or above cvss_week_exposed in: This week (week), unless a Fix today rule applies. |
 | `UNP-AFFECTED` | Affected, no sign of exploitation | This version is affected, but nothing says it is exploited, it is not both internet-facing and severe, and the scores are below your thresholds. Fix it with your normal updates. | This rule puts an affected finding in: FYI (fyi). |
 | `UNP-EOL` | End of life | This release cycle no longer gets security fixes (endoflife.date). New vulnerabilities will not be patched, so plan an upgrade to a supported cycle. | This rule makes the finding: End of life (eol), one per stack item. |
-| `UNP-UNKNOWN-NO-RANGES` | No usable version data yet | No source says which versions are affected (new CVEs often wait for NVD analysis). It could matter, so check the advisory yourself. The finding goes away when data arrives. | This rule makes the verdict unknown; shown when the signals would make it Fix today or This week. |
-| `UNP-UNKNOWN-VERSION` | Version cannot be compared | Either your configured version or a version in the data does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml. | This rule makes the verdict unknown; shown when the signals would make it Fix today or This week. |
+| `UNP-UNKNOWN-NO-RANGES` | No usable version data yet | No source names the affected versions: new CVEs often wait for NVD analysis, and a record that only says "all versions" or gives no version is not a range anyone checked. It could matter, so check the advisory yourself. The finding goes away when data arrives. | This rule makes the verdict unknown; shown when the signals would make it Fix today or This week. |
+| `UNP-UNKNOWN-VERSION` | Version cannot be compared | Your configured version does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml (`unpatched catalog show` says how the product writes versions). | This rule makes the verdict unknown; shown when the signals would make it Fix today or This week. |
+| `UNP-UNKNOWN-DATA` | A version in the data cannot be read | A source gave a version bound that does not parse under this product's version scheme, so it cannot be compared. Your own version is fine. Read the advisory and check it by hand. | This rule makes the verdict unknown; shown when the signals would make it Fix today or This week. |
 | `UNP-CONFLICT` | Sources disagree | One source says this version is affected and another says it is not. A source that only says "all versions" does not outweigh one with exact ranges, so the verdict is unknown. Read the evidence to see which source to trust. | This rule is added when sources disagree; it makes the verdict unknown when the only "affected" comes from a source that says all versions. |
 | `UNP-UNVERIFIED-PRODUCT` | Product not found in the data | The catalog's names for this product match no record in the database, so an empty result would not mean you are safe. Check the catalog entry or report it. | This rule makes a finding in: Unknown, so an empty result is never read as safe. |
 | `UNP-IGNORED` | Ignored on purpose | An ignore entry in unpatched.yml accepts this risk until its date. The finding is listed separately and comes back when the entry expires. | This rule moves the finding to the ignored list. |
@@ -1523,7 +1526,7 @@ prints the whole entry.
 | `samba` | Samba | Samba | server | dotted | tracked (`samba`) | 2026-11-23 |
 | `screenconnect` | ConnectWise ScreenConnect | ConnectWise | server | dotted | not tracked | 2026-11-23 |
 | `sonicos` | SonicOS | SonicWall | appliance | dotted | not tracked | 2026-11-23 |
-| `synology-dsm` | Synology DiskStation Manager (DSM) | Synology | os | dotted | not tracked | 2026-11-23 |
+| `synology-dsm` | Synology DiskStation Manager (DSM) | Synology | os | synology | not tracked | 2026-11-23 |
 | `tomcat` | Apache Tomcat | Apache Software Foundation | server | dotted | tracked (`tomcat`) | 2026-11-23 |
 | `traefik` | Traefik | Traefik Labs | server | semver | tracked (`traefik`) | 2026-11-23 |
 | `truenas` | TrueNAS | iXsystems | os | dotted | tracked (`truenas`) | 2026-11-23 |

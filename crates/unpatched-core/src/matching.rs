@@ -642,7 +642,7 @@ fn short_version_note(target: &Target) -> Option<String> {
     let parts = |v: &str| v.split(['.', '-']).filter(|p| !p.is_empty()).count();
     (parts(&target.version) < parts(example)).then(|| {
         format!(
-            "{} {:?} has fewer parts than {} versions usually have ({hint}). A shorter version can give wrong results; check the version.",
+            "{} {:?} has fewer parts than {} versions usually have. Write it like {hint}; a shorter version can give wrong results.",
             target.display, target.version, target.product_name
         )
     })
@@ -1031,6 +1031,9 @@ fn describe(c: &Constraint) -> String {
     match c {
         Constraint::All => "all versions".to_string(),
         Constraint::Exact { version } => format!("exactly {version}"),
+        Constraint::Unplaced { version, update } => {
+            format!("{version} with the update {update} (cannot be placed in the version order)")
+        }
         Constraint::Range { start, end } => {
             let mut parts = Vec::new();
             if let Some(s) = start {

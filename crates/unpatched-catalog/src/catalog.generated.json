@@ -966,7 +966,7 @@
       "ivanti vpn"
     ],
     "homepage": "https://www.ivanti.com/products/connect-secure-vpn",
-    "version_hint": "22.7R2.5 (release, R number and patch; 9.1R18.3 for 9.x)",
+    "version_hint": "22.7R2 or 22.7R2.5 (release, R number, and the patch number when there is one)",
     "checked": "2026-11-23"
   },
   {

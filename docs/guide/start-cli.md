@@ -316,6 +316,7 @@ Show a catalog entry, the names it matches in each source:
 ```text
 $ unpatched catalog show fortios
 # catalog/fortios.yml
+# Write the version like: 7.2.5 (three numbers; leave out 'build 1517')
 id: fortios
 name: FortiOS
 vendor: Fortinet
@@ -345,6 +346,7 @@ aliases:
 - fortigate
 - fortinet firewall
 homepage: https://www.fortinet.com/products/fortigate/fortios
+version_hint: 7.2.5 (three numbers; leave out 'build 1517')
 checked: 2026-11-23
 ```
 

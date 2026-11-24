@@ -52,14 +52,19 @@ pub(super) fn parse(input: &str) -> Result<Synology, String> {
     for (slot, c) in nums.iter_mut().zip(&comps) {
         *slot = number(c, "release number")?;
     }
+    // NVD writes `6.2.4-25556.4` for build 25556, update 4.
+    let (build, dotted_update) = match build.and_then(|b| b.split_once('.')) {
+        Some((b, u)) => (Some(b), Some(u)),
+        None => (build, None),
+    };
+    let update = update.or(dotted_update);
     let build = match build {
         Some(b) => number(b, "build")?,
         None => 0,
     };
     let update = match (update, word_update) {
         (Some(_), Some(_)) => return Err("the update is given twice".into()),
-        (Some(u), None) => number(u, "update")?,
-        (None, Some(u)) => number(u, "update")?,
+        (Some(u), None) | (None, Some(u)) => number(u, "update")?,
         (None, None) => 0,
     };
     if update > 0 && build == 0 {
@@ -103,6 +108,12 @@ mod tests {
         assert_eq!(cmp("7.2.1-69057 Update 5", "7.2.1-69057-5"), Equal);
         assert_eq!(cmp("DSM 7.2.1-69057", "7.2.1-69057"), Equal);
         assert_eq!(cmp("7.2.1-69057 update 5", "7.2.1-69057-4"), Greater);
+    }
+
+    #[test]
+    fn nvd_writes_the_update_after_a_dot() {
+        assert_eq!(cmp("6.2.4-25556.4", "6.2.4-25556-4"), Equal);
+        assert_eq!(cmp("6.2.4-25556.4", "6.2.4-25556"), Greater);
     }
 
     #[test]

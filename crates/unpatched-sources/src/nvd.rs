@@ -357,12 +357,10 @@ fn cpe_range(m: &RawMatch) -> Option<CpeRange> {
         Some(Constraint::Range { start, end })
     } else if version == "*" && has_update(update) {
         // `*` with an update (`*:p1`) names no version we can compare.
-        let _ = write!(
-            raw,
-            " (update '{update}' has no version to join to, so this statement is unreadable)"
-        );
-        Some(Constraint::Exact {
-            version: format!("*:{update}"),
+        raw.push_str(" (an update with no version to join to: this statement is unreadable)");
+        Some(Constraint::Unplaced {
+            version: "*".to_owned(),
+            update: update.to_owned(),
         })
     } else if version == "*" || version.is_empty() {
         Some(Constraint::All)
@@ -372,9 +370,7 @@ fn cpe_range(m: &RawMatch) -> Option<CpeRange> {
         );
         None
     } else if has_update(update) {
-        Some(Constraint::Exact {
-            version: fold_update(version, update, &mut raw),
-        })
+        Some(fold_update(version, update, &mut raw))
     } else {
         Some(Constraint::Exact {
             version: version.to_owned(),
@@ -399,10 +395,10 @@ fn has_update(update: &str) -> bool {
 /// Ivanti Connect Secure 22.7R2.4 is `22.7` and `r2.4`. Dropping the update
 /// turns 8.5p1 into 8.5. Short patch or release tokens (`p1`, `r2.4`, `rc1`,
 /// `beta2`) are joined to the version. Any other update (`cumulative_update_23`,
-/// `sp1`) cannot be placed in the product's version order, so the joined text
-/// `2019:cumulative_update_23` is kept: it does not parse as a version, and the
-/// verdict is `unknown` instead of a wrong `not-affected`.
-fn fold_update(version: &str, update: &str, raw: &mut String) -> String {
+/// `sp1`) cannot be placed in the product's version order and become an
+/// [`Constraint::Unplaced`]: a version that could be that release is `unknown`
+/// instead of a wrong `not-affected`.
+fn fold_update(version: &str, update: &str, raw: &mut String) -> Constraint {
     let u = update.to_ascii_lowercase();
     let number = |s: &str| {
         s.starts_with(|c: char| c.is_ascii_digit())
@@ -417,13 +413,18 @@ fn fold_update(version: &str, update: &str, raw: &mut String) -> String {
             .any(|p| u.strip_prefix(p).is_some_and(|r| r.is_empty() || number(r)));
     if foldable {
         let _ = write!(raw, " (read as version {version}{u})");
-        format!("{version}{u}")
+        Constraint::Exact {
+            version: format!("{version}{u}"),
+        }
     } else {
         let _ = write!(
             raw,
             " (update '{update}' cannot be placed in the version order, so this statement is unreadable)"
         );
-        format!("{version}:{update}")
+        Constraint::Unplaced {
+            version: version.to_owned(),
+            update: update.to_owned(),
+        }
     }
 }
 
@@ -831,14 +832,21 @@ mod tests {
     fn versions() -> Vec<NvdRecord> {
         let mut v = Vec::new();
         parse_nvd_feed(fixture("nvd/nvdcve-2.0-versions.json").as_slice(), |r| {
-            v.push(r)
+            v.push(r);
         })
         .unwrap();
         v
     }
 
-    fn exact(v: &str) -> Option<Constraint> {
-        Some(Constraint::Exact { version: v.into() })
+    fn exact(v: &str) -> Constraint {
+        Constraint::Exact { version: v.into() }
+    }
+
+    fn constraints(r: &NvdRecord) -> Vec<Constraint> {
+        r.cpe_ranges
+            .iter()
+            .filter_map(|c| c.constraint.clone())
+            .collect()
     }
 
     #[test]
@@ -846,14 +854,12 @@ mod tests {
         let recs = versions();
         // Ivanti Connect Secure: `22.7` + `r2.4` is release 22.7R2.4.
         let r = get(&recs, "CVE-2024-21887");
-        let c: Vec<_> = r.cpe_ranges.iter().map(|c| c.constraint.clone()).collect();
+        let c = constraints(r);
         assert!(c.contains(&exact("22.6r2")), "{c:?}");
         assert!(c.contains(&exact("9.1r17.1")), "{c:?}");
         // `22.2:-` is plain 22.2 (update '-' means no update)
         assert!(c.contains(&exact("22.2")), "{c:?}");
-        assert!(
-            !c.contains(&exact("22.6")) || r.cpe_ranges.iter().any(|x| x.raw.contains("22.6:-"))
-        );
+        assert!(c.contains(&exact("22.6")), "{c:?}");
         assert!(
             r.cpe_ranges
                 .iter()
@@ -861,10 +867,10 @@ mod tests {
         );
         // OpenSSH: `8.5` + `p1` is 8.5p1, and `4.4:-` is 4.4.
         let r = get(&recs, "CVE-2024-6387");
-        let c: Vec<_> = r.cpe_ranges.iter().map(|c| c.constraint.clone()).collect();
+        let c = constraints(r);
         assert!(c.contains(&exact("8.5p1")), "{c:?}");
         assert!(c.contains(&exact("4.4")), "{c:?}");
-        assert!(c.contains(&Some(range(Some(("8.6", true)), Some(("9.8", true))))));
+        assert!(c.contains(&range(Some(("8.6", true)), Some(("9.8", true)))));
         assert!(!c.contains(&exact("8.5")), "{c:?}");
     }
 
@@ -872,8 +878,14 @@ mod tests {
     fn update_that_cannot_be_placed_is_unreadable() {
         let recs = versions();
         let r = get(&recs, "CVE-2023-21529");
-        let c: Vec<_> = r.cpe_ranges.iter().map(|c| c.constraint.clone()).collect();
-        assert!(c.contains(&exact("2013:cumulative_update_23")), "{c:?}");
+        let c = constraints(r);
+        assert!(
+            c.contains(&Constraint::Unplaced {
+                version: "2013".into(),
+                update: "cumulative_update_23".into()
+            }),
+            "{c:?}"
+        );
         assert!(!c.contains(&exact("2013")), "{c:?}");
         assert!(
             r.cpe_ranges

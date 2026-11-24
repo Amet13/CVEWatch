@@ -28,6 +28,9 @@ pub(crate) fn push_unique(list: &mut Vec<Constraint>, c: Constraint) {
     }
 }
 
+/// A catalog id with the description starts that a CNA key needs.
+pub type DescribedKey = (String, Vec<String>);
+
 /// Lookup tables from names used by the sources to catalog product ids.
 /// Built from the catalog so `nvd` and `cve_org` can label ranges with the
 /// product id instead of the source's own names.
@@ -40,7 +43,7 @@ pub struct CatalogIndex {
     /// (CNA vendor, CNA product) to (catalog id, lower-case description starts).
     /// These keys only count when the CVE description starts with one of the
     /// texts (see `CnaKey::summary_starts`).
-    pub cna_described: std::collections::HashMap<(String, String), Vec<(String, Vec<String>)>>,
+    pub cna_described: std::collections::HashMap<(String, String), Vec<DescribedKey>>,
 }
 
 impl CatalogIndex {

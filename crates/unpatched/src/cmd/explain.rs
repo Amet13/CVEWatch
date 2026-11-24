@@ -99,6 +99,9 @@ fn describe(c: &Constraint) -> String {
     match c {
         Constraint::All => "all versions".into(),
         Constraint::Exact { version } => format!("exactly {version}"),
+        Constraint::Unplaced { version, update } => {
+            format!("{version} with the update {update} (cannot be placed in the version order)")
+        }
         Constraint::Range { start, end } => {
             let mut parts = Vec::new();
             if let Some(s) = start {

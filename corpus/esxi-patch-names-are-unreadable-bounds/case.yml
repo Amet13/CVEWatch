@@ -53,12 +53,15 @@ data:
     - source: nvd
       product: esxi
       constraints:
-      - kind: exact
-        version: '8.0:update2'
-      - kind: exact
-        version: '8.0:update1'
-      - kind: exact
-        version: '7.0:update3o'
+      - kind: unplaced
+        version: '8.0'
+        update: 'update2'
+      - kind: unplaced
+        version: '8.0'
+        update: 'update1'
+      - kind: unplaced
+        version: '7.0'
+        update: 'update3o'
       raw: ''
   signals:
     CVE-2024-22252:
