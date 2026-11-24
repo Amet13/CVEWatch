@@ -41,6 +41,7 @@ pub fn base(key: &str, item: &str, product: &str, version: &str, bucket: Bucket)
         rules: vec![],
         fixed_in: None,
         fixed_after: None,
+        fix_other_train: None,
         latest_in_cycle: None,
         cvss: None,
         signals: Signals::default(),

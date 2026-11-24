@@ -30,6 +30,23 @@ pub enum SourceId {
     Metasploit,
 }
 
+impl SourceId {
+    /// The source's name as people know it.
+    pub fn label(self) -> &'static str {
+        match self {
+            SourceId::CveOrg => "CVE.org",
+            SourceId::CisaAdp => "CISA Vulnrichment",
+            SourceId::Nvd => "NVD",
+            SourceId::Osv => "OSV",
+            SourceId::Kev => "CISA KEV",
+            SourceId::Epss => "EPSS",
+            SourceId::Endoflife => "endoflife.date",
+            SourceId::ExploitDb => "Exploit-DB",
+            SourceId::Metasploit => "Metasploit",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum VulnStatus {

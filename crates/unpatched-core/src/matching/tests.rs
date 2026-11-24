@@ -26,6 +26,7 @@ fn entry(id: &str, scheme: Scheme) -> CatalogEntry {
         eol: None,
         aliases: vec![],
         homepage: None,
+        version_hint: None,
         checked: date(2026, 11, 1),
     }
 }
@@ -447,7 +448,12 @@ fn unparseable_bound_in_data_is_unknown() {
     ));
     let f = one(&fortios_cfg("7.2.5", Exposure::Internet), &data);
     assert_eq!(f.verdict, Verdict::Unknown);
-    assert_eq!(f.rules[0], RuleId::UnknownVersion);
+    // The fault is in the data, not in the configured version.
+    assert_eq!(f.rules[0], RuleId::UnknownData);
+    let advice = f.advice().unwrap();
+    assert!(advice.contains("CVE.org data"), "{advice}");
+    assert!(advice.contains("'seven'"), "{advice}");
+    assert!(advice.contains("Your version is fine"), "{advice}");
 }
 
 #[test]
@@ -486,7 +492,7 @@ fn all_sources_agreeing_not_affected_is_not_affected() {
 }
 
 #[test]
-fn not_affected_plus_unparseable_source_is_unknown() {
+fn unparseable_source_does_not_block_a_clean_not_affected() {
     let data = base_data().with_vuln(with_cvss(
         vuln(
             "CVE-2026-5",
@@ -497,9 +503,20 @@ fn not_affected_plus_unparseable_source_is_unknown() {
         ),
         8.0,
     ));
+    // The NVD bound cannot be read, so NVD says nothing; CVE.org has a clean range.
+    let r = run(&fortios_cfg("7.3.0", Exposure::Internet), &data);
+    assert_eq!(r.summary.not_affected, 1);
+    assert!(r.findings.is_empty());
+    // Without the clean source the verdict stays unknown.
+    let data = base_data().with_vuln(with_cvss(
+        vuln(
+            "CVE-2026-5",
+            vec![range(SourceId::Nvd, "fortios", vec![between("a", "b")])],
+        ),
+        8.0,
+    ));
     let r = run(&fortios_cfg("7.3.0", Exposure::Internet), &data);
     assert_eq!(r.summary.not_affected, 0);
-    assert_eq!(r.findings.len(), 1);
     assert_eq!(r.findings[0].verdict, Verdict::Unknown);
 }
 
@@ -591,7 +608,7 @@ fn latest_in_cycle_comes_from_the_longest_matching_cycle() {
     let data = base_data()
         .with_vuln(vuln(
             "CVE-1",
-            vec![range(SourceId::CveOrg, "fortios", vec![Constraint::All])],
+            vec![range(SourceId::CveOrg, "fortios", vec![open_from("7.0.0")])],
         ))
         .with_eol("fortios", vec![cycle("7.2", "7.2.5")]);
     let f = one(&fortios_cfg("7.2.5", Exposure::Internal), &data);
@@ -1150,11 +1167,14 @@ fn weak_all_versions_does_not_beat_a_specific_not_affected() {
 }
 
 #[test]
-fn weak_all_versions_alone_is_still_affected() {
+fn weak_all_versions_alone_is_unknown_never_now() {
     let (cfg, data) = ivanti_like("22.7.2", vec![]);
     let f = one(&cfg, &data);
-    assert_eq!(f.verdict, Verdict::Affected);
-    assert_eq!(f.bucket, Bucket::Now);
+    assert_eq!(f.verdict, Verdict::Unknown);
+    assert_eq!(f.bucket, Bucket::Unknown);
+    // Still visible, because it is in KEV.
+    assert_eq!(f.rules, vec![RuleId::UnknownNoRanges, RuleId::Kev]);
+    assert!(f.evidence[0].detail.contains("weak"), "{:?}", f.evidence);
 }
 
 #[test]
@@ -1208,6 +1228,14 @@ fn inclusive_end_gives_fixed_after() {
 
 // ---- item summaries ----
 
+/// Affected from `start` on, with no end (no fix known).
+fn open_from(start: &str) -> Constraint {
+    Constraint::Range {
+        start: Some(bound(start, true)),
+        end: None,
+    }
+}
+
 fn fix_vuln(id: &str, start: &str, fixed: &str) -> Vulnerability {
     vuln(
         id,
@@ -1237,7 +1265,7 @@ fn item_summary_recommends_one_upgrade() {
         .with_vuln(fix_vuln("CVE-3", "7.0.0", "7.4.2"))
         .with_vuln(vuln(
             "CVE-4",
-            vec![range(SourceId::CveOrg, "fortios", vec![Constraint::All])],
+            vec![range(SourceId::CveOrg, "fortios", vec![open_from("7.0.0")])],
         ))
         .with_signals(
             "CVE-1",

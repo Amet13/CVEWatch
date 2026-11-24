@@ -59,7 +59,7 @@ expression: "text(&r, &opts)"
     Do    No source has version data for this yet. Read the advisory and check your version by hand.
     Rule  UNP-UNKNOWN-NO-RANGES · verdict unknown
     Evidence  CVE.org: no version data (unknown)
-    Rule UNP-UNKNOWN-NO-RANGES  No source says which versions are affected (new CVEs often wait for NVD analysis). It could matter, so check the advisory yourself. The finding goes away when data arrives.
+    Rule UNP-UNKNOWN-NO-RANGES  No source names the affected versions: new CVEs often wait for NVD analysis, and a record that only says "all versions" or gives no version is not a range anyone checked. It could matter, so check the advisory yourself. The finding goes away when data arrives.
 
 ⚪ FYI (1)
 

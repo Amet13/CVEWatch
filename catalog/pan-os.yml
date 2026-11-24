@@ -13,4 +13,5 @@ match:
 eol: panos
 aliases: [panos, palo alto, globalprotect]
 homepage: https://www.paloaltonetworks.com/network-security/pan-os
+version_hint: "10.2.8, or 10.2.8-h3 for a hotfix"
 checked: 2026-11-23

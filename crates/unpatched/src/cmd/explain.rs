@@ -64,7 +64,7 @@ fn effect(id: RuleId) -> &'static str {
         }
         RuleId::Affected => "puts an affected finding in: FYI (fyi)",
         RuleId::Eol => "makes the finding: End of life (eol), one per stack item",
-        RuleId::UnknownNoRanges | RuleId::UnknownVersion => {
+        RuleId::UnknownNoRanges | RuleId::UnknownVersion | RuleId::UnknownData => {
             "makes the verdict unknown; shown when the signals would make it Fix today or This week"
         }
         RuleId::Conflict => {

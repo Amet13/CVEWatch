@@ -37,6 +37,10 @@ pub struct CatalogIndex {
     pub cpe: std::collections::HashMap<String, Vec<String>>,
     /// (CNA vendor, CNA product) to catalog ids.
     pub cna: std::collections::HashMap<(String, String), Vec<String>>,
+    /// (CNA vendor, CNA product) to (catalog id, lower-case description starts).
+    /// These keys only count when the CVE description starts with one of the
+    /// texts (see `CnaKey::summary_starts`).
+    pub cna_described: std::collections::HashMap<(String, String), Vec<(String, Vec<String>)>>,
 }
 
 impl CatalogIndex {
@@ -47,12 +51,18 @@ impl CatalogIndex {
                 add(idx.cpe.entry(key.to_ascii_lowercase()).or_default(), &e.id);
             }
             for k in &e.keys.cna {
-                add(
-                    idx.cna
-                        .entry((k.vendor.clone(), k.product.clone()))
-                        .or_default(),
-                    &e.id,
-                );
+                let key = (k.vendor.clone(), k.product.clone());
+                if k.summary_starts.is_empty() {
+                    add(idx.cna.entry(key).or_default(), &e.id);
+                } else {
+                    idx.cna_described.entry(key).or_default().push((
+                        e.id.clone(),
+                        k.summary_starts
+                            .iter()
+                            .map(|s| s.trim().to_lowercase())
+                            .collect(),
+                    ));
+                }
             }
         }
         idx

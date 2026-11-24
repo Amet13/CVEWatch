@@ -11,4 +11,5 @@ match:
 eol: postgresql
 aliases: [postgres, pg]
 homepage: https://www.postgresql.org/
+version_hint: "13.4 (major.minor; two numbers since version 10)"
 checked: 2026-11-23

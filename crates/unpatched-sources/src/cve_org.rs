@@ -86,8 +86,19 @@ impl CveRecord {
         let mut ranges: Vec<AffectedRange> = Vec::new();
         for a in &self.cna_affected {
             let mut products: Vec<&String> = Vec::new();
-            if let Some(ids) = index.cna.get(&(a.vendor.clone(), a.product.clone())) {
+            let cna_key = (a.vendor.clone(), a.product.clone());
+            if let Some(ids) = index.cna.get(&cna_key) {
                 products.extend(ids);
+            }
+            if let Some(described) = index.cna_described.get(&cna_key) {
+                let text = self.summary.trim_start().to_lowercase();
+                for (id, starts) in described {
+                    if starts.iter().any(|s| text.starts_with(s.as_str()))
+                        && !products.contains(&id)
+                    {
+                        products.push(id);
+                    }
+                }
             }
             for key in &a.cpe_keys {
                 if let Some(ids) = index.cpe.get(key) {

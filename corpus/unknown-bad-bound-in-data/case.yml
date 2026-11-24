@@ -1,4 +1,4 @@
-description: A range bound that does not parse makes that source unknown, not not-affected.
+description: A range bound in the data that does not parse makes that source unknown, not not-affected, and says the fault is in the data.
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -50,5 +50,5 @@ expect:
   bucket: unknown
   verdict: unknown
   rules:
-  - UNP-UNKNOWN-VERSION
+  - UNP-UNKNOWN-DATA
   - UNP-KEV

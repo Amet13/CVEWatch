@@ -12,4 +12,5 @@ match:
   kev:
     - { vendorProject: Fortinet, product: FortiWeb }
 homepage: https://www.fortinet.com/products/web-application-firewall/fortiweb
+version_hint: "7.4.2 (three numbers; leave out the build)"
 checked: 2026-11-23

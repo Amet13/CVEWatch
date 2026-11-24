@@ -13,4 +13,5 @@ match:
     - { vendorProject: Fortinet, product: FortiOS and FortiProxy }
     - { vendorProject: Fortinet, product: FortiOS and FortiProxy SSL-VPN }
 homepage: https://www.fortinet.com/products/secure-web-gateway/fortiproxy
+version_hint: "7.4.3 (three numbers; leave out the build)"
 checked: 2026-11-23

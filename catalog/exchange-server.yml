@@ -24,4 +24,5 @@ match:
 eol: msexchange
 aliases: [exchange, ms exchange, microsoft exchange]
 homepage: https://learn.microsoft.com/exchange/
+version_hint: "the build number, for example 15.2.1544.4 (not '2019 CU14')"
 checked: 2026-11-23

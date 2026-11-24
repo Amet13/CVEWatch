@@ -1,4 +1,4 @@
-description: 'When the only evidence is a weak all-versions CNA record and no source contradicts it, the item is still affected.'
+description: 'An all-versions record is not a range anyone checked: a KEV-listed CVE with only that evidence stays visible as unknown, never in Fix today.'
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -55,9 +55,10 @@ data:
     sources: []
 expect:
 - key: vpn/CVE-2026-104935
-  bucket: now
-  verdict: affected
+  bucket: unknown
+  verdict: unknown
   rules:
+  - UNP-UNKNOWN-NO-RANGES
   - UNP-KEV
   - UNP-CVSS
   - UNP-EXPOSED

@@ -24,6 +24,12 @@ pub enum ProductKind {
 pub struct CnaKey {
     pub vendor: String,
     pub product: String,
+    /// For a CNA that files every product under one name (Nextcloud uses the
+    /// product `security-advisories` for the server and all its apps): the CVE
+    /// description must start with one of these texts (ignoring case) for the
+    /// record to count for this product. Empty means no condition.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub summary_starts: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -65,6 +71,11 @@ pub struct CatalogEntry {
     pub aliases: Vec<String>,
     #[serde(default)]
     pub homepage: Option<String>,
+    /// How this product writes its versions, when that is not obvious:
+    /// `7.2.5 (without 'build')`, `22.7R2.5`. Shown by `unpatched catalog show`
+    /// and when a version cannot be compared.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version_hint: Option<String>,
     /// When a person last checked this entry against real data.
     pub checked: NaiveDate,
 }

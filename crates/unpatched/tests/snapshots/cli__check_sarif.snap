@@ -1,6 +1,5 @@
 ---
 source: crates/unpatched/tests/cli.rs
-assertion_line: 118
 expression: out
 ---
 {
@@ -172,7 +171,7 @@ expression: out
             },
             {
               "fullDescription": {
-                "text": "No source says which versions are affected (new CVEs often wait for NVD analysis). It could matter, so check the advisory yourself. The finding goes away when data arrives."
+                "text": "No source names the affected versions: new CVEs often wait for NVD analysis, and a record that only says \"all versions\" or gives no version is not a range anyone checked. It could matter, so check the advisory yourself. The finding goes away when data arrives."
               },
               "id": "UNP-UNKNOWN-NO-RANGES",
               "name": "UNP-UNKNOWN-NO-RANGES",
@@ -182,12 +181,22 @@ expression: out
             },
             {
               "fullDescription": {
-                "text": "Either your configured version or a version in the data does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml."
+                "text": "Your configured version does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml (`unpatched catalog show` says how the product writes versions)."
               },
               "id": "UNP-UNKNOWN-VERSION",
               "name": "UNP-UNKNOWN-VERSION",
               "shortDescription": {
                 "text": "Version cannot be compared"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A source gave a version bound that does not parse under this product's version scheme, so it cannot be compared. Your own version is fine. Read the advisory and check it by hand."
+              },
+              "id": "UNP-UNKNOWN-DATA",
+              "name": "UNP-UNKNOWN-DATA",
+              "shortDescription": {
+                "text": "A version in the data cannot be read"
               }
             },
             {

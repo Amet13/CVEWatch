@@ -202,6 +202,9 @@ pub fn action(f: &Finding) -> String {
     if f.bucket == Bucket::Eol {
         return "Upgrade to a supported release.".into();
     }
+    if let Some(advice) = f.advice() {
+        return advice;
+    }
     if f.verdict == Verdict::Unknown {
         return missing(f);
     }

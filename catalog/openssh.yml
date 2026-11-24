@@ -12,4 +12,5 @@ match:
     - { vendorProject: OpenBSD, product: OpenSSH }
 aliases: [sshd, openssh server]
 homepage: https://www.openssh.com/
+version_hint: "9.6p1 (as printed by `ssh -V`)"
 checked: 2026-11-23

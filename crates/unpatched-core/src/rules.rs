@@ -37,6 +37,9 @@ pub enum RuleId {
     /// The configured version does not parse under the product's scheme.
     #[serde(rename = "UNP-UNKNOWN-VERSION")]
     UnknownVersion,
+    /// A version in a source's data does not parse; the configured version does.
+    #[serde(rename = "UNP-UNKNOWN-DATA")]
+    UnknownData,
     /// Sources disagree.
     #[serde(rename = "UNP-CONFLICT")]
     Conflict,
@@ -74,6 +77,7 @@ impl RuleId {
             RuleId::Eol => "UNP-EOL",
             RuleId::UnknownNoRanges => "UNP-UNKNOWN-NO-RANGES",
             RuleId::UnknownVersion => "UNP-UNKNOWN-VERSION",
+            RuleId::UnknownData => "UNP-UNKNOWN-DATA",
             RuleId::Conflict => "UNP-CONFLICT",
             RuleId::UnverifiedProduct => "UNP-UNVERIFIED-PRODUCT",
             RuleId::Ignored => "UNP-IGNORED",
@@ -96,7 +100,7 @@ pub fn all_rules() -> Vec<RuleInfo> {
     ALL.iter().copied().map(rule).collect()
 }
 
-const ALL: [RuleId; 15] = [
+const ALL: [RuleId; 16] = [
     RuleId::Kev,
     RuleId::SsvcActive,
     RuleId::ExploitExposed,
@@ -107,6 +111,7 @@ const ALL: [RuleId; 15] = [
     RuleId::Eol,
     RuleId::UnknownNoRanges,
     RuleId::UnknownVersion,
+    RuleId::UnknownData,
     RuleId::Conflict,
     RuleId::UnverifiedProduct,
     RuleId::Ignored,
@@ -152,11 +157,15 @@ fn text(id: RuleId) -> (&'static str, &'static str) {
         ),
         RuleId::UnknownNoRanges => (
             "No usable version data yet",
-            "No source says which versions are affected (new CVEs often wait for NVD analysis). It could matter, so check the advisory yourself. The finding goes away when data arrives.",
+            "No source names the affected versions: new CVEs often wait for NVD analysis, and a record that only says \"all versions\" or gives no version is not a range anyone checked. It could matter, so check the advisory yourself. The finding goes away when data arrives.",
         ),
         RuleId::UnknownVersion => (
             "Version cannot be compared",
-            "Either your configured version or a version in the data does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml.",
+            "Your configured version does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml (`unpatched catalog show` says how the product writes versions).",
+        ),
+        RuleId::UnknownData => (
+            "A version in the data cannot be read",
+            "A source gave a version bound that does not parse under this product's version scheme, so it cannot be compared. Your own version is fine. Read the advisory and check it by hand.",
         ),
         RuleId::Conflict => (
             "Sources disagree",

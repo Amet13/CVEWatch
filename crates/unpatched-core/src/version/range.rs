@@ -77,8 +77,35 @@ pub(crate) fn cmp_to_bound(
             scheme.validate(version)?;
             scheme.compare(upstream, bound)
         }
+        Scheme::Dotted | Scheme::Calver if is_portable_release_of(version, bound) => {
+            scheme.validate(version)?;
+            Ok(Ordering::Equal)
+        }
         _ => scheme.compare(version, bound),
     }
+}
+
+/// True for `9.8p1` against the bound `9.8`.
+///
+/// OpenSSH has no release `9.8`, only `9.8p1` (the portable release), yet
+/// advisories and NVD write "up to and including 9.8". A `p<number>` suffix
+/// directly after the bound's text is the same release for a bound check, so
+/// `<= 9.8` includes 9.8p1 and `< 9.8` does not. A bound that already has its
+/// own suffix (`9.8p2`) is compared as it is.
+fn is_portable_release_of(version: &str, bound: &str) -> bool {
+    let v = version.trim();
+    let b = bound.trim();
+    if !b.ends_with(|c: char| c.is_ascii_digit()) {
+        return false;
+    }
+    let Some(rest) = v.get(b.len()..) else {
+        return false;
+    };
+    if !v.is_char_boundary(b.len()) || !v[..b.len()].eq_ignore_ascii_case(b) {
+        return false;
+    }
+    rest.strip_prefix(['p', 'P'])
+        .is_some_and(|n| !n.is_empty() && n.bytes().all(|c| c.is_ascii_digit()))
 }
 
 #[cfg(test)]
