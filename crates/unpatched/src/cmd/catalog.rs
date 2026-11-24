@@ -74,6 +74,10 @@ pub fn show(id: &str) -> Res<u8> {
         ));
     };
     let yaml = serde_norway::to_string(e).unwrap_or_default();
-    out(&format!("# catalog/{}.yml\n{yaml}", e.id));
+    let hint = e
+        .version_hint
+        .as_deref()
+        .map_or_else(String::new, |h| format!("# Write the version like: {h}\n"));
+    out(&format!("# catalog/{}.yml\n{hint}{yaml}", e.id));
     Ok(0)
 }

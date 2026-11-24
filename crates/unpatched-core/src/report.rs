@@ -73,6 +73,11 @@ pub struct Finding {
     /// and including this one is affected: the fix is a later release.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fixed_after: Option<String>,
+    /// Set to the installed release branch (for example `7.2`) when `fixed_in`
+    /// is on another branch: this branch has no fix in the data, and the fix
+    /// means moving to another release train.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fix_other_train: Option<String>,
     /// Latest release in the same cycle (endoflife.date), when newer than `fixed_in`.
     pub latest_in_cycle: Option<String>,
     pub cvss: Option<Cvss>,
@@ -89,6 +94,48 @@ impl Finding {
     /// The stack item's key: the part of `key` before the first `/`.
     pub fn item_key(&self) -> &str {
         self.key.split_once('/').map_or(&self.key, |(k, _)| k)
+    }
+
+    /// What to do, when the wording depends on more than the fix version: the
+    /// only fix is on another release train, or a version in the data cannot be
+    /// read. `None` leaves the wording to the renderer.
+    pub fn advice(&self) -> Option<String> {
+        match self.verdict {
+            Verdict::Affected if self.bucket != Bucket::Eol => {
+                let branch = self.fix_other_train.as_deref()?;
+                let fix = self.fixed_in.as_deref()?;
+                Some(format!(
+                    "No fix on the {branch} branch in the data; the first fixed release is {fix} \
+                     (another release train). Check the vendor advisory."
+                ))
+            }
+            Verdict::Unknown if self.rules.first() == Some(&RuleId::UnknownData) => {
+                Some(self.unreadable_data_advice())
+            }
+            _ => None,
+        }
+    }
+
+    /// "A version in the NVD data cannot be read ('9.5.1.'). Your version is fine."
+    fn unreadable_data_advice(&self) -> String {
+        let bad = |e: &Evidence| {
+            let rest = e.detail.split_once("cannot read \"")?.1;
+            rest.split_once('"').map(|(v, _)| v.to_string())
+        };
+        let found = self
+            .evidence
+            .iter()
+            .find_map(|e| bad(e).map(|v| (e.source, v)));
+        match found {
+            Some((source, v)) => format!(
+                "A version in the {} data cannot be read ('{v}'). Your version is fine; \
+                 read the advisory and check it by hand.",
+                source.label()
+            ),
+            None => "A version in the data cannot be read. Your version is fine; read the \
+                     advisory and check it by hand."
+                .into(),
+        }
     }
 }
 

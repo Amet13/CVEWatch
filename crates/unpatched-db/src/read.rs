@@ -74,6 +74,18 @@ impl Db {
                     .map(|d| d.with_timezone(&Utc))
                     .map_err(|e| not_db(format!("built_at: {e}")))
             })?;
+        // A source this build does not know would make every range of it fail to
+        // load, and the product would look clean. Refuse the database instead.
+        for table in ["ranges", "exploits"] {
+            let mut st = conn.prepare(&format!("SELECT DISTINCT source FROM {table}"))?;
+            let names = st.query_map([], |r| r.get::<_, String>(0))?;
+            for name in names {
+                let name = name?;
+                if source_from_str(&name).is_none() {
+                    return Err(DbError::UnknownSource { source_name: name });
+                }
+            }
+        }
         let sources: Vec<SourceStatus> = match meta("sources")? {
             Some(s) => serde_json::from_str(&s)?,
             None => Vec::new(),

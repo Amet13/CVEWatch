@@ -136,6 +136,29 @@ mod tests {
     }
 
     #[test]
+    fn ivanti_releases_sort_in_release_order() {
+        // 22.7 is the base release, then R1, R2 and its patches, then the next release.
+        let order = [
+            "9.1R17",
+            "9.1R17.2",
+            "9.1R18",
+            "22.6R2.1",
+            "22.7",
+            "22.7R1",
+            "22.7R2",
+            "22.7R2.4",
+            "22.7R2.5",
+            "22.7R2.10",
+            "22.8",
+            "22.8R1",
+        ];
+        for w in order.windows(2) {
+            assert_eq!(cmp(w[0], w[1]), Less, "{} < {}", w[0], w[1]);
+        }
+        assert_eq!(cmp("22.7R2.5", "22.7r2.5"), Equal);
+    }
+
+    #[test]
     fn trailing_zeros_are_equal() {
         assert_eq!(cmp("7.2", "7.2.0"), Equal);
         assert_eq!(cmp("7", "7.0.0.0"), Equal);

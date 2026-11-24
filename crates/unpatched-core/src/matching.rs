@@ -70,6 +70,8 @@ struct Target {
     /// `AffectedRange::product` value to select ranges with.
     range_key: String,
     is_purl: bool,
+    /// The catalog's `version_hint`, for notes about the version.
+    version_hint: Option<String>,
 }
 
 /// Evaluate a whole config. `package_vulns` holds OSV results per purl stack
@@ -168,6 +170,7 @@ impl Run<'_> {
             rules: vec![RuleId::StaleData],
             fixed_in: None,
             fixed_after: None,
+            fix_other_train: None,
             latest_in_cycle: None,
             cvss: None,
             signals: Signals::default(),
@@ -233,6 +236,7 @@ impl Run<'_> {
                         ignore_names,
                         range_key: entry.id,
                         is_purl: false,
+                        version_hint: entry.version_hint.clone(),
                     },
                     vulns,
                 )
@@ -275,6 +279,7 @@ impl Run<'_> {
                         ignore_names,
                         range_key: format!("purl:{}", parts.bare),
                         is_purl: true,
+                        version_hint: None,
                     },
                     vulns,
                 )
@@ -288,10 +293,18 @@ impl Run<'_> {
 
         let version_err = target.scheme.validate(&target.version).err();
         if let Some(e) = &version_err {
+            let hint = target
+                .version_hint
+                .as_deref()
+                .map_or_else(String::new, |h| {
+                    format!(" {} versions are written like {h}.", target.product_name)
+                });
             self.notes.push(format!(
-                "{at}: {} cannot be compared, so its findings are unknown ({}).",
+                "{at}: {} cannot be compared, so its findings are unknown ({}).{hint}",
                 target.display, e.reason
             ));
+        } else if let Some(note) = short_version_note(&target) {
+            self.notes.push(format!("{at}: {note}"));
         }
 
         if !verified {
@@ -312,6 +325,7 @@ impl Run<'_> {
                 rules: vec![RuleId::UnverifiedProduct],
                 fixed_in: None,
                 fixed_after: None,
+                fix_other_train: None,
                 latest_in_cycle: None,
                 cvss: None,
                 signals: Signals::default(),
@@ -342,8 +356,16 @@ impl Run<'_> {
             })
             .map(str::to_string);
 
+        let train: Option<Vec<String>> =
+            cycle.map(|c| c.cycle.trim().split('.').map(str::to_string).collect());
         for vuln in &vulns {
-            self.vuln(&target, vuln, version_err.as_ref(), latest.as_deref());
+            self.vuln(
+                &target,
+                vuln,
+                version_err.as_ref(),
+                latest.as_deref(),
+                train.as_deref(),
+            );
         }
     }
 
@@ -376,6 +398,7 @@ impl Run<'_> {
             rules: vec![RuleId::Eol],
             fixed_in: None,
             fixed_after: None,
+            fix_other_train: None,
             latest_in_cycle: None,
             cvss: None,
             signals: Signals::default(),
@@ -395,6 +418,7 @@ impl Run<'_> {
         vuln: &Vulnerability,
         version_err: Option<&VersionError>,
         latest_in_cycle: Option<&str>,
+        train: Option<&[String]>,
     ) {
         if vuln.status == VulnStatus::Rejected {
             return;
@@ -431,7 +455,10 @@ impl Run<'_> {
         let with_data: Vec<&SourceResult> = results.iter().filter(|r| r.has_data).collect();
         // Weak "all versions" evidence does not beat a source with specific ranges.
         let weak_conflict = any_affected && !strong_affected && any_not_affected;
-        let verdict = if weak_conflict {
+        // Only "all versions" evidence, from every source, and nothing against it:
+        // that is not a range anyone checked, so it is never urgent by itself.
+        let weak_only = any_affected && !strong_affected && !any_not_affected;
+        let verdict = if weak_conflict || weak_only {
             Verdict::Unknown
         } else if any_affected {
             Verdict::Affected
@@ -477,14 +504,12 @@ impl Run<'_> {
             }
             if weak_conflict {
                 rules.push(RuleId::Conflict);
+            } else if version_err.is_some() {
+                rules.push(RuleId::UnknownVersion);
+            } else if !weak_only && results.iter().any(|r| r.errored) {
+                rules.push(RuleId::UnknownData);
             } else {
-                rules.push(
-                    if version_err.is_some() || results.iter().any(|r| r.errored) {
-                        RuleId::UnknownVersion
-                    } else {
-                        RuleId::UnknownNoRanges
-                    },
-                );
+                rules.push(RuleId::UnknownNoRanges);
             }
             rules.extend(&now_rules);
             rules.extend(&week_rules);
@@ -504,6 +529,14 @@ impl Run<'_> {
             (fixed_in, fixed_after, latest_in_cycle.map(str::to_string))
         } else {
             (None, None, None)
+        };
+
+        let other_train = match (&fixed_in, train) {
+            (Some(fix), Some(prefix)) => {
+                let prefix_refs: Vec<&str> = prefix.iter().map(String::as_str).collect();
+                (!has_release_prefix(fix, &prefix_refs)).then(|| prefix.join("."))
+            }
+            _ => None,
         };
 
         let mut title = if vuln.summary.trim().is_empty() {
@@ -529,6 +562,7 @@ impl Run<'_> {
             rules,
             fixed_in,
             fixed_after,
+            fix_other_train: other_train,
             latest_in_cycle: latest,
             cvss: vuln.cvss.clone(),
             signals,
@@ -638,6 +672,27 @@ impl Run<'_> {
     }
 }
 
+/// A note when the configured version has fewer parts than the catalog's
+/// example (`7.2` for FortiOS, whose hint says `7.2.5`): a shorter version
+/// can sit on the wrong side of a bound.
+fn short_version_note(target: &Target) -> Option<String> {
+    let hint = target.version_hint.as_deref()?;
+    let example = hint
+        .split_whitespace()
+        .next()?
+        .trim_end_matches([',', ';', '.']);
+    if !example.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let parts = |v: &str| v.split(['.', '-']).filter(|p| !p.is_empty()).count();
+    (parts(&target.version) < parts(example)).then(|| {
+        format!(
+            "{} {:?} has fewer parts than {} versions usually have. Write it like {hint}; a shorter version can give wrong results.",
+            target.display, target.version, target.product_name
+        )
+    })
+}
+
 fn release_parts(version: &str) -> Vec<&str> {
     let v = version.trim();
     let v = match v.strip_prefix(['v', 'V']) {
@@ -707,6 +762,10 @@ fn item_summary(info: &ItemInfo, findings: &[Finding]) -> ItemSummary {
     let largest = |list: &[&str]| -> Option<String> {
         let mut best: Option<&str> = None;
         for v in list {
+            // Never recommend a version that is not newer than the installed one.
+            if info.scheme.compare(v, &info.version) != Ok(std::cmp::Ordering::Greater) {
+                continue;
+            }
             best = match best {
                 Some(b) if info.scheme.compare(v, b) != Ok(std::cmp::Ordering::Greater) => Some(b),
                 None | Some(_) if info.scheme.validate(v).is_ok() => Some(v),
@@ -821,7 +880,6 @@ fn judge_source(
         .iter()
         .map(|r| judge_range(scheme, version, version_err, r))
         .collect();
-    let has_data = ranges.iter().any(|r| !r.constraints.is_empty());
     let errored = outcomes.iter().any(|o| matches!(o, RangeOutcome::Error(_)));
     let mut fixes = Vec::new();
     let mut inclusive_ends = Vec::new();
@@ -863,6 +921,10 @@ fn judge_source(
     } else {
         Verdict::Unknown
     };
+    // A source whose data cannot be read (or compared) says nothing: it must not
+    // block another source's clean answer, and it never says `not-affected`.
+    let has_data = ranges.iter().any(|r| !r.constraints.is_empty())
+        && !(errored && verdict == Verdict::Unknown);
     let verdict_text = match verdict {
         Verdict::Affected => "affected",
         Verdict::NotAffected => "not affected",
@@ -1014,6 +1076,9 @@ fn describe(c: &Constraint) -> String {
     match c {
         Constraint::All => "all versions".to_string(),
         Constraint::Exact { version } => format!("exactly {version}"),
+        Constraint::Unplaced { version, update } => {
+            format!("{version} with the update {update} (cannot be placed in the version order)")
+        }
         Constraint::Range { start, end } => {
             let mut parts = Vec::new();
             if let Some(s) = start {

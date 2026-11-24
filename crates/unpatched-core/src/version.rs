@@ -26,6 +26,8 @@ pub enum Scheme {
     Apk,
     /// Python PEP 440.
     Pep440,
+    /// Synology DSM: `major.minor[.patch]-build[-update]` (`7.2.1-69057-5`).
+    Synology,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -45,6 +47,7 @@ mod props;
 mod range;
 mod rpm;
 mod semver;
+mod synology;
 
 pub use range::constraint_matches;
 
@@ -92,6 +95,11 @@ impl Scheme {
             Scheme::Pep440 => {
                 let pa = pep440::parse(a).map_err(|r| err(a, r))?;
                 let pb = pep440::parse(b).map_err(|r| err(b, r))?;
+                Ok(pa.cmp(&pb))
+            }
+            Scheme::Synology => {
+                let pa = synology::parse(a).map_err(|r| err(a, r))?;
+                let pb = synology::parse(b).map_err(|r| err(b, r))?;
                 Ok(pa.cmp(&pb))
             }
         }

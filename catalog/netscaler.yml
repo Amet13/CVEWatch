@@ -24,4 +24,5 @@ match:
     - { vendorProject: Citrix, product: "Application Delivery Controller (ADC), Gateway, and SD-WAN WANOP Appliance" }
 aliases: [citrix adc, citrix gateway, citrix netscaler, netscaler adc, netscaler gateway]
 homepage: https://www.netscaler.com/
+version_hint: "13.1-49.13 (release-build, as `show version` prints it)"
 checked: 2026-11-23

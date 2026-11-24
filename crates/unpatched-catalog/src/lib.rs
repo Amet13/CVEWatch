@@ -231,12 +231,14 @@ mod tests {
                 cna: vec![CnaKey {
                     vendor: "Acme".into(),
                     product: id.into(),
+                    summary_starts: vec![],
                 }],
                 kev: vec![],
             },
             eol: None,
             aliases: vec![],
             homepage: None,
+            version_hint: None,
             checked: NaiveDate::from_ymd_opt(2026, 11, 23).unwrap(),
         }
     }
@@ -319,6 +321,7 @@ mod tests {
         e.keys.cna.push(CnaKey {
             vendor: String::new(),
             product: "x".into(),
+            summary_starts: vec![],
         });
         e.keys.kev.push(KevKey {
             vendor_project: "x".into(),

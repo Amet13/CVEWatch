@@ -39,6 +39,7 @@ expect:                          # every finding that must be reported, and no o
     latest_in_cycle: 7.2.11      # optional: a version, or `none`
     fixed_after: 9.8             # optional: a version, or `none` (an inclusive upper bound with no fix named)
     title_contains: (disputed)   # optional
+    advice_contains: another release train   # optional: text in `Finding::advice()`
 expect_ignored: []               # findings an `ignore` entry covers (same fields as expect)
 expect_items:                    # the per-item recommendation (only the items and fields listed are checked)
   - key: fortios                 # the stack item's key

@@ -26,6 +26,7 @@ fn entry(id: &str, scheme: Scheme) -> CatalogEntry {
         eol: None,
         aliases: vec![],
         homepage: None,
+        version_hint: None,
         checked: date(2026, 11, 1),
     }
 }
@@ -447,7 +448,12 @@ fn unparseable_bound_in_data_is_unknown() {
     ));
     let f = one(&fortios_cfg("7.2.5", Exposure::Internet), &data);
     assert_eq!(f.verdict, Verdict::Unknown);
-    assert_eq!(f.rules[0], RuleId::UnknownVersion);
+    // The fault is in the data, not in the configured version.
+    assert_eq!(f.rules[0], RuleId::UnknownData);
+    let advice = f.advice().unwrap();
+    assert!(advice.contains("CVE.org data"), "{advice}");
+    assert!(advice.contains("'seven'"), "{advice}");
+    assert!(advice.contains("Your version is fine"), "{advice}");
 }
 
 #[test]
@@ -486,7 +492,7 @@ fn all_sources_agreeing_not_affected_is_not_affected() {
 }
 
 #[test]
-fn not_affected_plus_unparseable_source_is_unknown() {
+fn unparseable_source_does_not_block_a_clean_not_affected() {
     let data = base_data().with_vuln(with_cvss(
         vuln(
             "CVE-2026-5",
@@ -497,9 +503,20 @@ fn not_affected_plus_unparseable_source_is_unknown() {
         ),
         8.0,
     ));
+    // The NVD bound cannot be read, so NVD says nothing; CVE.org has a clean range.
+    let r = run(&fortios_cfg("7.3.0", Exposure::Internet), &data);
+    assert_eq!(r.summary.not_affected, 1);
+    assert!(r.findings.is_empty());
+    // Without the clean source the verdict stays unknown.
+    let data = base_data().with_vuln(with_cvss(
+        vuln(
+            "CVE-2026-5",
+            vec![range(SourceId::Nvd, "fortios", vec![between("a", "b")])],
+        ),
+        8.0,
+    ));
     let r = run(&fortios_cfg("7.3.0", Exposure::Internet), &data);
     assert_eq!(r.summary.not_affected, 0);
-    assert_eq!(r.findings.len(), 1);
     assert_eq!(r.findings[0].verdict, Verdict::Unknown);
 }
 
@@ -591,7 +608,7 @@ fn latest_in_cycle_comes_from_the_longest_matching_cycle() {
     let data = base_data()
         .with_vuln(vuln(
             "CVE-1",
-            vec![range(SourceId::CveOrg, "fortios", vec![Constraint::All])],
+            vec![range(SourceId::CveOrg, "fortios", vec![open_from("7.0.0")])],
         ))
         .with_eol("fortios", vec![cycle("7.2", "7.2.5")]);
     let f = one(&fortios_cfg("7.2.5", Exposure::Internal), &data);
@@ -1150,11 +1167,14 @@ fn weak_all_versions_does_not_beat_a_specific_not_affected() {
 }
 
 #[test]
-fn weak_all_versions_alone_is_still_affected() {
+fn weak_all_versions_alone_is_unknown_never_now() {
     let (cfg, data) = ivanti_like("22.7.2", vec![]);
     let f = one(&cfg, &data);
-    assert_eq!(f.verdict, Verdict::Affected);
-    assert_eq!(f.bucket, Bucket::Now);
+    assert_eq!(f.verdict, Verdict::Unknown);
+    assert_eq!(f.bucket, Bucket::Unknown);
+    // Still visible, because it is in KEV.
+    assert_eq!(f.rules, vec![RuleId::UnknownNoRanges, RuleId::Kev]);
+    assert!(f.evidence[0].detail.contains("weak"), "{:?}", f.evidence);
 }
 
 #[test]
@@ -1208,6 +1228,14 @@ fn inclusive_end_gives_fixed_after() {
 
 // ---- item summaries ----
 
+/// Affected from `start` on, with no end (no fix known).
+fn open_from(start: &str) -> Constraint {
+    Constraint::Range {
+        start: Some(bound(start, true)),
+        end: None,
+    }
+}
+
 fn fix_vuln(id: &str, start: &str, fixed: &str) -> Vulnerability {
     vuln(
         id,
@@ -1237,7 +1265,7 @@ fn item_summary_recommends_one_upgrade() {
         .with_vuln(fix_vuln("CVE-3", "7.0.0", "7.4.2"))
         .with_vuln(vuln(
             "CVE-4",
-            vec![range(SourceId::CveOrg, "fortios", vec![Constraint::All])],
+            vec![range(SourceId::CveOrg, "fortios", vec![open_from("7.0.0")])],
         ))
         .with_signals(
             "CVE-1",
@@ -1291,4 +1319,95 @@ fn release_prefix_ignores_letter_suffixes() {
     assert!(!has_release_prefix("9.8p1", &["9", "6"]));
     assert!(has_release_prefix("29.0.17.12", &["29"]));
     assert!(!has_release_prefix("290.0", &["29"]));
+}
+
+// ---- release trains and recommendations ----
+
+fn cycle_of(c: &str) -> EolCycle {
+    EolCycle {
+        cycle: c.into(),
+        release_date: None,
+        eol: None,
+        eol_reached: false,
+        latest: None,
+        lts: false,
+    }
+}
+
+#[test]
+fn a_fix_on_another_release_train_is_marked() {
+    let data = base_data()
+        .with_eol("fortios", vec![cycle_of("7.2"), cycle_of("7.4")])
+        .with_vuln(fix_vuln("CVE-1", "7.0.0", "7.4.10"))
+        .with_vuln(fix_vuln("CVE-2", "7.0.0", "7.2.9"));
+    let r = run(&fortios_cfg("7.2.5", Exposure::Internal), &data);
+    let other = r
+        .findings
+        .iter()
+        .find(|f| f.key == "fortios/CVE-1")
+        .unwrap();
+    assert_eq!(other.fix_other_train.as_deref(), Some("7.2"));
+    assert_eq!(
+        other.advice().unwrap(),
+        "No fix on the 7.2 branch in the data; the first fixed release is 7.4.10 \
+         (another release train). Check the vendor advisory."
+    );
+    let same = r
+        .findings
+        .iter()
+        .find(|f| f.key == "fortios/CVE-2")
+        .unwrap();
+    assert_eq!(same.fix_other_train, None);
+    assert_eq!(same.advice(), None);
+    // Without cycle data there is no notion of a train, so nothing is marked.
+    let data = base_data().with_vuln(fix_vuln("CVE-1", "7.0.0", "7.4.10"));
+    let f = one(&fortios_cfg("7.2.5", Exposure::Internal), &data);
+    assert_eq!(f.fix_other_train, None);
+}
+
+#[test]
+fn upgrade_to_is_never_lower_than_the_installed_version() {
+    // A fix that sorts below the installed version (a bad range in the data)
+    // is not recommended.
+    let data = base_data()
+        .with_vuln(vuln(
+            "CVE-1",
+            vec![range(
+                SourceId::CveOrg,
+                "fortios",
+                vec![Constraint::Range {
+                    start: Some(bound("7.2.0", true)),
+                    end: Some(bound("7.2.5", true)),
+                }],
+            )],
+        ))
+        .with_vuln(fix_vuln("CVE-2", "7.0.0", "7.2.8"));
+    let r = run(&fortios_cfg("7.2.5", Exposure::Internal), &data);
+    assert_eq!(r.items[0].upgrade_to.as_deref(), Some("7.2.8"));
+}
+
+#[test]
+fn short_versions_and_hints_are_noted() {
+    let mut entry = entry("fortios", Scheme::Dotted);
+    entry.version_hint = Some("7.2.5 (three numbers; leave out 'build')".into());
+    let data = MemoryDataset::new()
+        .with_product(entry)
+        .with_info(fresh_info());
+    let r = run(&fortios_cfg("7.2", Exposure::Internal), &data);
+    assert!(
+        r.notes.iter().any(|n| n.contains("fewer parts")),
+        "{:?}",
+        r.notes
+    );
+    let r = run(&fortios_cfg("7.2.5", Exposure::Internal), &data);
+    assert!(r.notes.is_empty(), "{:?}", r.notes);
+    // A version that cannot be compared names the hint.
+    let r = run(&fortios_cfg("7.2.5 build 1517", Exposure::Internal), &data);
+    assert!(
+        r.notes
+            .iter()
+            .any(|n| n.contains("cannot be compared") && n.contains("leave out 'build'")),
+        "{:?}",
+        r.notes
+    );
 }

@@ -42,6 +42,22 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 - Error messages say what to do: a missing version points to `unpatched catalog show <id>`, a bad purl shows an example, a config file that is YAML but not the `unpatched.yml` format says so and suggests the closest field (`Did you mean `exposure`?`), and long parser messages are cut. `init` asks again when a version has spaces or cannot be read, and shows an example. Using an alias (`product: fortigate`) adds one note.
 - `search` and unknown-product errors say what to do when a product is not in the catalog (use a purl for OS packages, or ask for it), and only suggest names that are close: `search yoast` no longer suggests `cisco-asa`.
 - `cargo xtask` finds the repository root at run time, and `cargo xtask corpus new` writes a case that fails until you edit it.
+- Catalog `version_hint`: how a product writes its versions (`7.2.5` for FortiOS, `22.7R2.5` for Ivanti, `7.2.1-69057-5` for Synology). `catalog show` prints it, and the note for a version that cannot be compared repeats it. A note also warns when your version has fewer parts than the hint's example.
+- Version scheme `synology` (`major.minor[.patch]-build[-update]`, also `7.2.1-69057 Update 5`) for `synology-dsm`. Dotted read the build number as a patch number.
+- New rule `UNP-UNKNOWN-DATA`: a version in the data cannot be read; your version is fine. `UNP-UNKNOWN-VERSION` now means only your own configured version.
+- `Finding.fix_other_train` and `Finding::advice()`: when the only fix is on another release train, the advice says there is no fix on your branch, instead of "Upgrade to 7.4.10".
+- CNA keys in the catalog can have `summary_starts`, so a CNA that files every product under one name (Nextcloud's `security-advisories`) only counts for the product the description is about.
+- A database that holds a source this build does not know is refused ("needs a newer unpatched", exit code 3) instead of silently dropping the findings.
+
+### Changed
+
+- NVD ranges: the CPE `update` field is joined to the version (`8.5` + `p1` is 8.5p1, Ivanti `22.7` + `r2.4` is 22.7R2.4); other updates (`cumulative_update_23`, `update2`) are kept as unplaced, so a version that could match is `unknown`, never `not-affected`. CPE version `-` (not applicable) no longer means all versions: it gave WordPress core the flaws of its plugins.
+- An affected verdict that rests only on "all versions" evidence is `unknown` (`UNP-UNKNOWN-NO-RANGES`), and is shown only when the signals would make it `now` or `week`. It is never `now` or `week` itself.
+- `9.8p1` matches the bound `9.8` (OpenSSH has no plain 9.8): `<= 9.8` includes it.
+- A source whose data cannot be read no longer blocks another source's clean `not-affected`.
+- An item's `upgrade_to` is never lower than the installed version.
+- rpm versions made only of separators (`+_`, `_+`) compare equal, like `rpmvercmp`.
+
 - `week` needs more than exposure: an affected finding is `week` when EPSS is at or above `epss_week`, or CVSS is at or above `cvss_week`, or the item is internet-facing and CVSS is at or above `cvss_week_exposed`. An unknown CVSS score does not count. `UNP-EXPOSED` now means that. A first real run put 220 findings in `week` because of exposure alone.
 - A source that only says "all versions" (with a few unaffected versions) no longer beats a source with specific ranges that exclude your version: the verdict is `unknown` with `UNP-CONFLICT`.
 - GitHub issues are per stack item, not per CVE: one issue lists the item's findings by bucket, is updated as they change, and is closed when none of `now`, `week`, `eol` or `unknown` are left. The hidden marker is now `<!-- unpatched:item=... -->` and the delivery state tracks items for issues and findings for chat alerts.

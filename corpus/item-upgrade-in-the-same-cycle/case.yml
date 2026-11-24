@@ -72,7 +72,11 @@ data:
     - source: cve-org
       product: fortios
       constraints:
-      - kind: all
+      - kind: range
+        start:
+          version: 7.0.0
+          inclusive: true
+        end: null
       raw: ''
   signals:
     CVE-2026-0001:

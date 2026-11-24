@@ -86,8 +86,19 @@ impl CveRecord {
         let mut ranges: Vec<AffectedRange> = Vec::new();
         for a in &self.cna_affected {
             let mut products: Vec<&String> = Vec::new();
-            if let Some(ids) = index.cna.get(&(a.vendor.clone(), a.product.clone())) {
+            let cna_key = (a.vendor.clone(), a.product.clone());
+            if let Some(ids) = index.cna.get(&cna_key) {
                 products.extend(ids);
+            }
+            if let Some(described) = index.cna_described.get(&cna_key) {
+                let text = self.summary.trim_start().to_lowercase();
+                for (id, starts) in described {
+                    if starts.iter().any(|s| text.starts_with(s.as_str()))
+                        && !products.contains(&id)
+                    {
+                        products.push(id);
+                    }
+                }
             }
             for key in &a.cpe_keys {
                 if let Some(ids) = index.cpe.get(key) {
@@ -1217,6 +1228,52 @@ mod tests {
         assert!(!v.ranges.is_empty());
         assert!(v.ranges.iter().all(|r| r.product == "rhel"));
         assert!(v.ranges.iter().any(|r| !r.unaffected.is_empty()));
+    }
+
+    #[test]
+    fn cna_key_with_a_description_condition() {
+        // Nextcloud files every app under `security-advisories`. Only records
+        // about the server (by the description) count for the server product.
+        let key = |starts: &[&str]| {
+            let e = unpatched_core::CatalogEntry {
+                id: "nextcloud".into(),
+                name: "Nextcloud Server".into(),
+                vendor: "Nextcloud".into(),
+                kind: unpatched_core::ProductKind::Server,
+                versioning: unpatched_core::Scheme::Dotted,
+                keys: unpatched_core::MatchKeys {
+                    cna: vec![unpatched_core::catalog::CnaKey {
+                        vendor: "nextcloud".into(),
+                        product: "security-advisories".into(),
+                        summary_starts: starts.iter().map(|s| (*s).to_owned()).collect(),
+                    }],
+                    ..Default::default()
+                },
+                eol: None,
+                aliases: vec![],
+                homepage: None,
+                version_hint: None,
+                checked: chrono::NaiveDate::from_ymd_opt(2026, 11, 1).unwrap(),
+            };
+            CatalogIndex::from_catalog(&[e])
+        };
+        let idx = key(&["Nextcloud Server is a self hosted personal cloud system."]);
+        // CVE-2024-22212 is about the Global Site Selector app: no server range.
+        let app = rec("CVE-2024-22212");
+        assert!(app.summary.starts_with("Nextcloud Global Site Selector"));
+        assert!(app.to_vulnerability(&idx).ranges.is_empty());
+        // A record that starts like a server advisory is kept.
+        let server = parse_cve_record(
+            br#"{"cveMetadata":{"cveId":"CVE-2024-37315","state":"PUBLISHED"},
+            "containers":{"cna":{"descriptions":[{"lang":"en","value":"Nextcloud Server is a self hosted personal cloud system. An attacker can restore older versions."}],
+            "affected":[{"vendor":"nextcloud","product":"security-advisories","versions":[{"version":">= 26.0.0, < 26.0.12","status":"affected"}]}]}}}"#,
+        )
+        .unwrap();
+        let v = server.to_vulnerability(&idx);
+        assert_eq!(v.ranges.len(), 1);
+        assert_eq!(v.ranges[0].product, "nextcloud");
+        // Without a condition the old behaviour (every record counts) stays possible.
+        assert_eq!(app.to_vulnerability(&key(&[])).ranges.len(), 1);
     }
 
     #[test]

@@ -18,4 +18,5 @@ match:
 eol: fortios
 aliases: [fortigate, fortinet firewall]
 homepage: https://www.fortinet.com/products/fortigate/fortios
+version_hint: "7.2.5 (three numbers; leave out 'build 1517')"
 checked: 2026-11-23

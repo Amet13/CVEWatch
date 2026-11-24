@@ -28,6 +28,9 @@ pub(crate) fn push_unique(list: &mut Vec<Constraint>, c: Constraint) {
     }
 }
 
+/// A catalog id with the description starts that a CNA key needs.
+pub type DescribedKey = (String, Vec<String>);
+
 /// Lookup tables from names used by the sources to catalog product ids.
 /// Built from the catalog so `nvd` and `cve_org` can label ranges with the
 /// product id instead of the source's own names.
@@ -37,6 +40,10 @@ pub struct CatalogIndex {
     pub cpe: std::collections::HashMap<String, Vec<String>>,
     /// (CNA vendor, CNA product) to catalog ids.
     pub cna: std::collections::HashMap<(String, String), Vec<String>>,
+    /// (CNA vendor, CNA product) to (catalog id, lower-case description starts).
+    /// These keys only count when the CVE description starts with one of the
+    /// texts (see `CnaKey::summary_starts`).
+    pub cna_described: std::collections::HashMap<(String, String), Vec<DescribedKey>>,
 }
 
 impl CatalogIndex {
@@ -47,12 +54,18 @@ impl CatalogIndex {
                 add(idx.cpe.entry(key.to_ascii_lowercase()).or_default(), &e.id);
             }
             for k in &e.keys.cna {
-                add(
-                    idx.cna
-                        .entry((k.vendor.clone(), k.product.clone()))
-                        .or_default(),
-                    &e.id,
-                );
+                let key = (k.vendor.clone(), k.product.clone());
+                if k.summary_starts.is_empty() {
+                    add(idx.cna.entry(key).or_default(), &e.id);
+                } else {
+                    idx.cna_described.entry(key).or_default().push((
+                        e.id.clone(),
+                        k.summary_starts
+                            .iter()
+                            .map(|s| s.trim().to_lowercase())
+                            .collect(),
+                    ));
+                }
             }
         }
         idx

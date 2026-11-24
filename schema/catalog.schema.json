@@ -46,6 +46,13 @@
     "vendor": {
       "type": "string"
     },
+    "version_hint": {
+      "description": "How this product writes its versions, when that is not obvious:\n`7.2.5 (without 'build')`, `22.7R2.5`. Shown by `unpatched catalog show`\nand when a version cannot be compared.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "versioning": {
       "$ref": "#/$defs/Scheme"
     }
@@ -66,6 +73,13 @@
       "properties": {
         "product": {
           "type": "string"
+        },
+        "summary_starts": {
+          "description": "For a CNA that files every product under one name (Nextcloud uses the\nproduct `security-advisories` for the server and all its apps): the CVE\ndescription must start with one of these texts (ignoring case) for the\nrecord to count for this product. Empty means no condition.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "vendor": {
           "type": "string"
@@ -170,6 +184,11 @@
           "description": "Python PEP 440.",
           "type": "string",
           "const": "pep440"
+        },
+        {
+          "description": "Synology DSM: `major.minor[.patch]-build[-update]` (`7.2.1-69057-5`).",
+          "type": "string",
+          "const": "synology"
         }
       ]
     }

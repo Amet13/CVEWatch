@@ -1,4 +1,4 @@
-description: An all-versions constraint affects everything, with no fix known.
+description: A record that only says all versions, with nothing urgent about it, is dropped (it is not a range anyone checked).
 now: '2026-11-24T00:00:00Z'
 config: |
   version: 1
@@ -30,10 +30,4 @@ data:
     schema_version: 1
     built_at: '2026-11-23T12:00:00Z'
     sources: []
-expect:
-- key: fortios/CVE-2026-0001
-  bucket: fyi
-  verdict: affected
-  rules:
-  - UNP-AFFECTED
-  fixed_in: none
+expect: []

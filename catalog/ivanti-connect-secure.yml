@@ -20,4 +20,5 @@ match:
     - { vendorProject: Ivanti, product: Pulse Connect Secure and Pulse Policy Secure }
 aliases: [ics, pulse secure, pulse connect secure, ivanti vpn]
 homepage: https://www.ivanti.com/products/connect-secure-vpn
+version_hint: "22.7R2 or 22.7R2.5 (release, R number, and the patch number when there is one)"
 checked: 2026-11-23

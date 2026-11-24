@@ -366,3 +366,27 @@ fn copy_dir(from: &Path, to: &Path) {
         }
     }
 }
+
+#[test]
+fn unknown_source_in_a_range_is_refused() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("db.sqlite");
+    build_to(&path);
+    {
+        let c = Connection::open(&path).unwrap();
+        let n = c
+            .execute(
+                "UPDATE ranges SET source = 'future-feed' WHERE rowid = (SELECT MIN(rowid) FROM ranges)",
+                [],
+            )
+            .unwrap();
+        assert_eq!(n, 1);
+    }
+    let err = Db::open(&path).unwrap_err();
+    assert!(matches!(err, DbError::UnknownSource { .. }), "{err}");
+    let msg = err.to_string();
+    assert!(
+        msg.contains("needs a newer unpatched") && msg.contains("future-feed"),
+        "{msg}"
+    );
+}

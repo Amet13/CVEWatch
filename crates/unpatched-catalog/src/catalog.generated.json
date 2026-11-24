@@ -472,6 +472,7 @@
       "vsphere esxi"
     ],
     "homepage": "https://www.vmware.com/products/cloud-infrastructure/vsphere",
+    "version_hint": "8.0.2 (build 23305546 gives 8.0.2; leave out the build)",
     "checked": "2026-11-23"
   },
   {
@@ -548,6 +549,7 @@
       "microsoft exchange"
     ],
     "homepage": "https://learn.microsoft.com/exchange/",
+    "version_hint": "the build number, for example 15.2.1544.4 (not '2019 CU14')",
     "checked": "2026-11-23"
   },
   {
@@ -616,6 +618,7 @@
     "eol": null,
     "aliases": [],
     "homepage": "https://www.fortinet.com/products/management/fortimanager",
+    "version_hint": "7.4.3 (three numbers; leave out the build)",
     "checked": "2026-11-23"
   },
   {
@@ -667,6 +670,7 @@
       "fortinet firewall"
     ],
     "homepage": "https://www.fortinet.com/products/fortigate/fortios",
+    "version_hint": "7.2.5 (three numbers; leave out 'build 1517')",
     "checked": "2026-11-23"
   },
   {
@@ -703,6 +707,7 @@
     "eol": null,
     "aliases": [],
     "homepage": "https://www.fortinet.com/products/secure-web-gateway/fortiproxy",
+    "version_hint": "7.4.3 (three numbers; leave out the build)",
     "checked": "2026-11-23"
   },
   {
@@ -735,6 +740,7 @@
     "eol": null,
     "aliases": [],
     "homepage": "https://www.fortinet.com/products/web-application-firewall/fortiweb",
+    "version_hint": "7.4.2 (three numbers; leave out the build)",
     "checked": "2026-11-23"
   },
   {
@@ -897,6 +903,7 @@
       "hassio"
     ],
     "homepage": "https://www.home-assistant.io/",
+    "version_hint": "2024.10.1 (year.month.patch)",
     "checked": "2026-11-23"
   },
   {
@@ -959,6 +966,7 @@
       "ivanti vpn"
     ],
     "homepage": "https://www.ivanti.com/products/connect-secure-vpn",
+    "version_hint": "22.7R2 or 22.7R2.5 (release, R number, and the patch number when there is one)",
     "checked": "2026-11-23"
   },
   {
@@ -1244,6 +1252,7 @@
       "kernel"
     ],
     "homepage": "https://www.kernel.org/",
+    "version_hint": "6.1.55 (the numbers `uname -r` starts with, without the distro suffix)",
     "checked": "2026-11-23"
   },
   {
@@ -1428,6 +1437,7 @@
       "netscaler gateway"
     ],
     "homepage": "https://www.netscaler.com/",
+    "version_hint": "13.1-49.13 (release-build, as `show version` prints it)",
     "checked": "2026-11-23"
   },
   {
@@ -1452,7 +1462,11 @@
         },
         {
           "vendor": "nextcloud",
-          "product": "security-advisories"
+          "product": "security-advisories",
+          "summary_starts": [
+            "Nextcloud Server is a self hosted personal cloud system.",
+            "Nextcloud is an open source content collaboration platform. In Nextcloud Server"
+          ]
         }
       ],
       "kev": []
@@ -1463,6 +1477,7 @@
       "nextcloud hub"
     ],
     "homepage": "https://nextcloud.com/",
+    "version_hint": "29.0.3, or 29.0.3.4 with the fourth number (Settings > Overview)",
     "checked": "2026-11-23"
   },
   {
@@ -1550,6 +1565,7 @@
       "openssh server"
     ],
     "homepage": "https://www.openssh.com/",
+    "version_hint": "9.6p1 (as printed by `ssh -V`)",
     "checked": "2026-11-23"
   },
   {
@@ -1578,6 +1594,7 @@
     "eol": "openssl",
     "aliases": [],
     "homepage": "https://www.openssl.org/",
+    "version_hint": "3.0.11, or 1.1.1w (a letter for old 1.x releases)",
     "checked": "2026-11-23"
   },
   {
@@ -1637,6 +1654,7 @@
       "globalprotect"
     ],
     "homepage": "https://www.paloaltonetworks.com/network-security/pan-os",
+    "version_hint": "10.2.8, or 10.2.8-h3 for a hotfix",
     "checked": "2026-11-23"
   },
   {
@@ -1822,6 +1840,7 @@
       "pg"
     ],
     "homepage": "https://www.postgresql.org/",
+    "version_hint": "13.4 (major.minor; two numbers since version 10)",
     "checked": "2026-11-23"
   },
   {
@@ -2159,7 +2178,7 @@
     "name": "Synology DiskStation Manager (DSM)",
     "vendor": "Synology",
     "kind": "os",
-    "versioning": "dotted",
+    "versioning": "synology",
     "match": {
       "cpe": [
         "synology:diskstation_manager"
@@ -2185,6 +2204,7 @@
       "synology nas"
     ],
     "homepage": "https://www.synology.com/dsm",
+    "version_hint": "7.2.1-69057, or 7.2.1-69057-5 for Update 5 (DSM Control Panel > Info Center)",
     "checked": "2026-11-23"
   },
   {
@@ -2349,6 +2369,7 @@
       "vcenter server"
     ],
     "homepage": "https://www.vmware.com/products/cloud-infrastructure/vsphere",
+    "version_hint": "8.0.2 (build 23319993 gives 8.0.2; leave out the build)",
     "checked": "2026-11-23"
   },
   {

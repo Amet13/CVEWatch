@@ -24,7 +24,11 @@ data:
     - source: cve-org
       product: fortios
       constraints:
-      - kind: all
+      - kind: range
+        start:
+          version: 7.0.0
+          inclusive: true
+        end: null
       raw: ''
   - id: CVE-2026-0002
     summary: Flaw

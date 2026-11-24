@@ -150,7 +150,11 @@ pub(super) fn parse(input: &str) -> Result<Rpm, String> {
         Some(i) => (&rest[..i], &rest[i + 1..]),
         None => (rest, ""),
     };
-    if version.is_empty() || !version.bytes().any(|c| c.is_ascii_alphanumeric()) {
+    // Separators alone (`+_`) are a valid, empty-looking version for rpmvercmp.
+    let only_separators = version.bytes().all(|c| matches!(c, b'.' | b'_' | b'+'));
+    if version.is_empty()
+        || !(only_separators || version.bytes().any(|c| c.is_ascii_alphanumeric()))
+    {
         return Err("the version part needs at least one letter or digit".into());
     }
     if rest.contains('-') && release.is_empty() {
@@ -178,6 +182,15 @@ mod tests {
 
     fn cmp(a: &str, b: &str) -> std::cmp::Ordering {
         Scheme::Rpm.compare(a, b).unwrap()
+    }
+
+    #[test]
+    fn separator_only_versions_are_equal() {
+        // rpmvercmp skips separators, so these are all the same (empty) version.
+        assert_eq!(cmp("+_", "_+"), Equal);
+        assert_eq!(cmp("+", "_"), Equal);
+        assert_eq!(cmp("1.0-+_", "1.0-_+"), Equal);
+        assert!(Scheme::Rpm.compare("", "1").is_err());
     }
 
     #[test]

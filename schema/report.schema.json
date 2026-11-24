@@ -283,6 +283,13 @@
         "exposure": {
           "$ref": "#/$defs/Exposure"
         },
+        "fix_other_train": {
+          "description": "Set to the installed release branch (for example `7.2`) when `fixed_in`\nis on another branch: this branch has no fix in the data, and the fix\nmeans moving to another release train.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "fixed_after": {
           "description": "Set when `fixed_in` is unknown and a source says every version up to\nand including this one is affected: the fix is a later release.",
           "type": [
@@ -551,6 +558,11 @@
           "description": "The configured version does not parse under the product's scheme.",
           "type": "string",
           "const": "UNP-UNKNOWN-VERSION"
+        },
+        {
+          "description": "A version in a source's data does not parse; the configured version does.",
+          "type": "string",
+          "const": "UNP-UNKNOWN-DATA"
         },
         {
           "description": "Sources disagree.",

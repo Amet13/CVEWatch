@@ -30,6 +30,23 @@ pub enum SourceId {
     Metasploit,
 }
 
+impl SourceId {
+    /// The source's name as people know it.
+    pub fn label(self) -> &'static str {
+        match self {
+            SourceId::CveOrg => "CVE.org",
+            SourceId::CisaAdp => "CISA Vulnrichment",
+            SourceId::Nvd => "NVD",
+            SourceId::Osv => "OSV",
+            SourceId::Kev => "CISA KEV",
+            SourceId::Epss => "EPSS",
+            SourceId::Endoflife => "endoflife.date",
+            SourceId::ExploitDb => "Exploit-DB",
+            SourceId::Metasploit => "Metasploit",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum VulnStatus {
@@ -63,6 +80,11 @@ pub enum Constraint {
     All,
     /// Exactly this version.
     Exact { version: String },
+    /// A release named together with an update that cannot be placed in the
+    /// version order (`8.0` and `update2`, `2019` and `cumulative_update_14`).
+    /// A version that could be that release is `unknown`; one that clearly is
+    /// another release is not matched.
+    Unplaced { version: String, update: String },
     /// `start <= v < end` style, either end optional.
     Range {
         start: Option<Bound>,
