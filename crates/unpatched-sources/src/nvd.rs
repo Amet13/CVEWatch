@@ -100,7 +100,9 @@ pub struct CpeRange {
     pub vendor_product: String,
     /// CPE part: `a` (application), `o` (operating system) or `h` (hardware).
     pub part: String,
-    pub constraint: Constraint,
+    /// `None` when the statement has no usable version (CPE version `-`, "not
+    /// applicable"): the product is named, but no version is said to be affected.
+    pub constraint: Option<Constraint>,
     /// The CPE name and bounds as NVD wrote them, for `explain`.
     pub raw: String,
 }
@@ -147,7 +149,9 @@ impl NvdRecord {
                     ranges.len() - 1
                 };
                 let a = &mut ranges[idx];
-                push_unique(&mut a.constraints, r.constraint.clone());
+                if let Some(c) = &r.constraint {
+                    push_unique(&mut a.constraints, c.clone());
+                }
                 if !a.raw.is_empty() {
                     a.raw.push('\n');
                 }
@@ -347,21 +351,34 @@ fn cpe_range(m: &RawMatch) -> Option<CpeRange> {
     }
 
     let constraint = if start.is_some() || end.is_some() {
-        Constraint::Range { start, end }
-    } else if version == "*" {
-        Constraint::All
-    } else if version == "-" {
-        raw.push_str(" (version '-' means not applicable; treated as all versions)");
-        Constraint::All
-    } else if version.is_empty() {
-        Constraint::All
-    } else {
-        if update != "*" && update != "-" && !update.is_empty() {
+        if has_update(update) {
             let _ = write!(raw, " (update '{update}' ignored)");
         }
-        Constraint::Exact {
+        Some(Constraint::Range { start, end })
+    } else if version == "*" && has_update(update) {
+        // `*` with an update (`*:p1`) names no version we can compare.
+        let _ = write!(
+            raw,
+            " (update '{update}' has no version to join to, so this statement is unreadable)"
+        );
+        Some(Constraint::Exact {
+            version: format!("*:{update}"),
+        })
+    } else if version == "*" || version.is_empty() {
+        Some(Constraint::All)
+    } else if version == "-" {
+        raw.push_str(
+            " (version '-' means not applicable: it names no affected version, so it is not used)",
+        );
+        None
+    } else if has_update(update) {
+        Some(Constraint::Exact {
+            version: fold_update(version, update, &mut raw),
+        })
+    } else {
+        Some(Constraint::Exact {
             version: version.to_owned(),
-        }
+        })
     };
     Some(CpeRange {
         vendor_product: format!("{}:{}", parts[3], parts[4]).to_ascii_lowercase(),
@@ -369,6 +386,45 @@ fn cpe_range(m: &RawMatch) -> Option<CpeRange> {
         constraint,
         raw,
     })
+}
+
+/// The CPE `update` field names something (it is not `*`, `-` or empty).
+fn has_update(update: &str) -> bool {
+    !matches!(update, "*" | "-" | "")
+}
+
+/// Join a CPE version and its `update` into one version text.
+///
+/// NVD spreads one release over two fields: OpenSSH 8.5p1 is `8.5` and `p1`,
+/// Ivanti Connect Secure 22.7R2.4 is `22.7` and `r2.4`. Dropping the update
+/// turns 8.5p1 into 8.5. Short patch or release tokens (`p1`, `r2.4`, `rc1`,
+/// `beta2`) are joined to the version. Any other update (`cumulative_update_23`,
+/// `sp1`) cannot be placed in the product's version order, so the joined text
+/// `2019:cumulative_update_23` is kept: it does not parse as a version, and the
+/// verdict is `unknown` instead of a wrong `not-affected`.
+fn fold_update(version: &str, update: &str, raw: &mut String) -> String {
+    let u = update.to_ascii_lowercase();
+    let number = |s: &str| {
+        s.starts_with(|c: char| c.is_ascii_digit())
+            && !s.ends_with('.')
+            && s.bytes().all(|c| c.is_ascii_digit() || c == b'.')
+    };
+    let foldable = ["p", "r", "rc"]
+        .iter()
+        .any(|p| u.strip_prefix(p).is_some_and(number))
+        || ["alpha", "beta"]
+            .iter()
+            .any(|p| u.strip_prefix(p).is_some_and(|r| r.is_empty() || number(r)));
+    if foldable {
+        let _ = write!(raw, " (read as version {version}{u})");
+        format!("{version}{u}")
+    } else {
+        let _ = write!(
+            raw,
+            " (update '{update}' cannot be placed in the version order, so this statement is unreadable)"
+        );
+        format!("{version}:{update}")
+    }
 }
 
 fn pick_cvss(m: &RawMetrics) -> Option<Cvss> {
@@ -672,7 +728,7 @@ mod tests {
         assert!(fortios.len() >= 6);
         assert_eq!(fortios[0].part, "o");
         assert_eq!(
-            fortios[0].constraint,
+            fortios[0].constraint.clone().unwrap(),
             range(Some(("6.0.0", true)), Some(("6.0.18", false)))
         );
         assert!(fortios[0].raw.starts_with("cpe:2.3:o:fortinet:fortios:"));
@@ -706,7 +762,7 @@ mod tests {
         assert_eq!(r.cpe_ranges.len(), 1);
         assert_eq!(r.cpe_ranges[0].vendor_product, "totolink:lr1200gb_firmware");
         assert_eq!(
-            r.cpe_ranges[0].constraint,
+            r.cpe_ranges[0].constraint.clone().unwrap(),
             Constraint::Exact {
                 version: "9.1.0u.6619_b20230130".into()
             }
@@ -720,7 +776,11 @@ mod tests {
     fn mixed_range_and_exact_in_one_record() {
         let recs = slice();
         let r = get(&recs, "CVE-2024-0204");
-        let ranges: Vec<_> = r.cpe_ranges.iter().map(|c| &c.constraint).collect();
+        let ranges: Vec<_> = r
+            .cpe_ranges
+            .iter()
+            .filter_map(|c| c.constraint.as_ref())
+            .collect();
         assert!(ranges.contains(&&range(Some(("7.0.0", true)), Some(("7.4.1", false)))));
         assert!(ranges.contains(&&Constraint::Exact {
             version: "6.0.0".into()
@@ -752,18 +812,116 @@ mod tests {
         assert_eq!(
             c,
             vec![
-                Constraint::All,
-                Constraint::All,
-                range(Some(("1.0", false)), Some(("1.5", true))),
-                range(None, Some(("0.9", false))),
-                Constraint::Exact {
-                    version: "2.0:rc1".into()
-                },
+                Some(Constraint::All),
+                // version '-' (not applicable) names no version
+                None,
+                Some(range(Some(("1.0", false)), Some(("1.5", true)))),
+                Some(range(None, Some(("0.9", false)))),
+                // a short release token (`beta`) is joined to the version
+                Some(Constraint::Exact {
+                    version: "2.0:rc1beta".into()
+                }),
             ]
         );
         assert!(r.cpe_ranges[1].raw.contains("not applicable"));
-        assert!(r.cpe_ranges[4].raw.contains("update 'beta' ignored"));
+        assert!(r.cpe_ranges[4].raw.contains("read as version 2.0:rc1beta"));
         assert_eq!(r.cpe_ranges[1].part, "o");
+    }
+
+    fn versions() -> Vec<NvdRecord> {
+        let mut v = Vec::new();
+        parse_nvd_feed(fixture("nvd/nvdcve-2.0-versions.json").as_slice(), |r| {
+            v.push(r)
+        })
+        .unwrap();
+        v
+    }
+
+    fn exact(v: &str) -> Option<Constraint> {
+        Some(Constraint::Exact { version: v.into() })
+    }
+
+    #[test]
+    fn update_is_joined_to_the_version() {
+        let recs = versions();
+        // Ivanti Connect Secure: `22.7` + `r2.4` is release 22.7R2.4.
+        let r = get(&recs, "CVE-2024-21887");
+        let c: Vec<_> = r.cpe_ranges.iter().map(|c| c.constraint.clone()).collect();
+        assert!(c.contains(&exact("22.6r2")), "{c:?}");
+        assert!(c.contains(&exact("9.1r17.1")), "{c:?}");
+        // `22.2:-` is plain 22.2 (update '-' means no update)
+        assert!(c.contains(&exact("22.2")), "{c:?}");
+        assert!(
+            !c.contains(&exact("22.6")) || r.cpe_ranges.iter().any(|x| x.raw.contains("22.6:-"))
+        );
+        assert!(
+            r.cpe_ranges
+                .iter()
+                .any(|x| x.raw.contains("(read as version 22.6r2)"))
+        );
+        // OpenSSH: `8.5` + `p1` is 8.5p1, and `4.4:-` is 4.4.
+        let r = get(&recs, "CVE-2024-6387");
+        let c: Vec<_> = r.cpe_ranges.iter().map(|c| c.constraint.clone()).collect();
+        assert!(c.contains(&exact("8.5p1")), "{c:?}");
+        assert!(c.contains(&exact("4.4")), "{c:?}");
+        assert!(c.contains(&Some(range(Some(("8.6", true)), Some(("9.8", true))))));
+        assert!(!c.contains(&exact("8.5")), "{c:?}");
+    }
+
+    #[test]
+    fn update_that_cannot_be_placed_is_unreadable() {
+        let recs = versions();
+        let r = get(&recs, "CVE-2023-21529");
+        let c: Vec<_> = r.cpe_ranges.iter().map(|c| c.constraint.clone()).collect();
+        assert!(c.contains(&exact("2013:cumulative_update_23")), "{c:?}");
+        assert!(!c.contains(&exact("2013")), "{c:?}");
+        assert!(
+            r.cpe_ranges
+                .iter()
+                .any(|x| x.raw.contains("cannot be placed in the version order"))
+        );
+    }
+
+    #[test]
+    fn version_dash_gives_no_constraint() {
+        let recs = versions();
+        // CVE-2012-6527 names WordPress only as `wordpress:-` (a plugin flaw).
+        let r = get(&recs, "CVE-2012-6527");
+        let wp: Vec<_> = r
+            .cpe_ranges
+            .iter()
+            .filter(|c| c.vendor_product == "wordpress:wordpress")
+            .collect();
+        assert!(!wp.is_empty());
+        assert!(wp.iter().all(|c| c.constraint.is_none()));
+        let mut map = HashMap::new();
+        map.insert(
+            "wordpress:wordpress".to_owned(),
+            vec!["wordpress".to_owned()],
+        );
+        let v = r.to_vulnerability(&map);
+        assert_eq!(v.ranges.len(), 1);
+        assert!(v.ranges[0].constraints.is_empty(), "no usable version data");
+        // CVE-2012-3414 mixes `-` with real versions: only the real ones count.
+        let r = get(&recs, "CVE-2012-3414");
+        let v = r.to_vulnerability(&map);
+        assert!(!v.ranges[0].constraints.contains(&Constraint::All));
+        assert!(v.ranges[0].constraints.contains(&Constraint::Exact {
+            version: "3.0.1".into()
+        }));
+    }
+
+    #[test]
+    fn bare_star_is_all_versions() {
+        let recs = versions();
+        let r = get(&recs, "CVE-2007-2768");
+        let ssh: Vec<_> = r
+            .cpe_ranges
+            .iter()
+            .filter(|c| c.vendor_product == "openbsd:openssh")
+            .collect();
+        assert_eq!(ssh.len(), 1);
+        assert_eq!(ssh[0].constraint, Some(Constraint::All));
     }
 
     #[test]
