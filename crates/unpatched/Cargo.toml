@@ -8,10 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
-readme = "README.md"
-keywords = ["vulnerability", "cve", "security", "homelab", "cli"]
-categories = ["command-line-utilities", "development-tools"]
-include = ["src/**/*", "templates/**/*", "README.md", "LICENSE"]
+publish.workspace = true
 
 [dependencies]
 unpatched-core.workspace = true
@@ -28,7 +25,6 @@ chrono.workspace = true
 clap.workspace = true
 miette.workspace = true
 thiserror.workspace = true
-anyhow.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 
@@ -44,3 +40,8 @@ workspace = true
 [[bin]]
 name = "unpatched"
 path = "src/main.rs"
+
+# The workspace has `publish = false` (nothing goes to crates.io); dist would then skip
+# this package, so ask for it explicitly: the binary is what a release ships.
+[package.metadata.dist]
+dist = true

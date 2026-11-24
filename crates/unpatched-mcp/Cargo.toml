@@ -8,10 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
-readme = "README.md"
-keywords = ["mcp", "vulnerability", "cve", "security", "ai"]
-categories = ["development-tools", "command-line-utilities"]
-include = ["src/**/*", "README.md", "LICENSE"]
+publish.workspace = true
 
 [dependencies]
 unpatched-core.workspace = true

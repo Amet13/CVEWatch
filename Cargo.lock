@@ -2228,7 +2228,6 @@ checksum = "ca718471876992059f251e33aafc334346ada08042b7661dd1fe313a9bced557"
 name = "unpatched"
 version = "3.0.0"
 dependencies = [
- "anyhow",
  "assert_cmd",
  "chrono",
  "clap",
@@ -2256,9 +2255,7 @@ name = "unpatched-catalog"
 version = "3.0.0"
 dependencies = [
  "chrono",
- "serde",
  "serde_json",
- "thiserror",
  "unpatched-core",
 ]
 
@@ -2710,7 +2707,6 @@ name = "xtask"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "chrono",
  "regex",
  "reqwest",
  "schemars",

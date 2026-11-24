@@ -8,7 +8,6 @@
   <a href="https://github.com/Amet13/unpatched/actions/workflows/ci.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml/badge.svg?branch=main" alt="Daily database"></a>
   <a href="https://github.com/Amet13/unpatched/releases"><img src="https://img.shields.io/github/v/release/Amet13/unpatched?filter=v3*&amp;sort=semver&amp;label=release" alt="Latest release"></a>
-  <a href="https://crates.io/crates/unpatched"><img src="https://img.shields.io/crates/v/unpatched?label=crates.io" alt="crates.io"></a>
   <a href="https://amet13.github.io/unpatched/"><img src="https://img.shields.io/badge/docs-guide-111111" alt="Docs"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/Amet13/unpatched"><img src="https://api.scorecard.dev/projects/github.com/Amet13/unpatched/badge" alt="OpenSSF Scorecard"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-111111" alt="MIT license"></a>
@@ -138,7 +137,7 @@ Telegram, Slack and the others, is in
 | Shell (Linux, macOS) | `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.sh \| sh` |
 | PowerShell (Windows) | `powershell -ExecutionPolicy Bypass -c "irm https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.ps1 \| iex"` |
 | Homebrew | Download `unpatched.rb` from the [latest release](https://github.com/Amet13/unpatched/releases/latest), then `brew install --formula ./unpatched.rb` (there is no tap) |
-| Cargo | `cargo install unpatched --locked` |
+| From source | `cargo install --git https://github.com/Amet13/unpatched unpatched --locked` |
 | Docker | `docker run --rm -v "$PWD:/work" ghcr.io/amet13/unpatched` |
 
 Release archives for Linux, macOS and Windows have a `.sha256` file each and a
