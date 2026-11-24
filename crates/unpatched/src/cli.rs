@@ -18,6 +18,7 @@ Docs: https://amet13.github.io/unpatched/";
 #[derive(Debug, Parser)]
 #[command(
     name = "unpatched",
+    bin_name = "unpatched",
     version,
     about = "Tells you when software you run has a vulnerability you need to act on",
     after_help = AFTER_HELP,
