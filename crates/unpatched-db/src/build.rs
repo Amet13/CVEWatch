@@ -233,27 +233,30 @@ pub fn build(opts: &BuildOptions, catalog: &[CatalogEntry], http: &Http) -> Resu
     // endoflife.date (optional, per product).
     tracing::info!("reading endoflife.date");
     let mut eol_failed = Vec::new();
-    let mut slug_cache: HashMap<String, Vec<EolCycle>> = HashMap::new();
-    for entry in catalog {
-        let Some(slug) = entry.eol.as_deref().filter(|s| !s.is_empty()) else {
-            continue;
-        };
-        let cycles = if let Some(c) = slug_cache.get(slug) {
-            c.clone()
-        } else {
-            match src.eol(slug) {
-                Ok(c) => {
-                    slug_cache.insert(slug.to_owned(), c.clone());
-                    c
-                }
-                Err(e) => {
-                    tracing::warn!("endoflife.date {slug}: {e}");
-                    eol_failed.push(format!("{slug}: {e}"));
-                    continue;
-                }
+    // One request per slug, several at a time.
+    let mut slugs: Vec<&str> = catalog
+        .iter()
+        .filter_map(|e| e.eol.as_deref().filter(|s| !s.is_empty()))
+        .collect();
+    slugs.sort_unstable();
+    slugs.dedup();
+    let fetched = unpatched_sources::par::map(&slugs, EOL_WORKERS, |slug| src.eol(slug));
+    let mut by_slug: HashMap<&str, Vec<EolCycle>> = HashMap::new();
+    for (slug, r) in slugs.iter().zip(fetched) {
+        match r {
+            Ok(c) => {
+                by_slug.insert(slug, c);
             }
-        };
-        data.eol.insert(entry.id.clone(), cycles);
+            Err(e) => {
+                tracing::warn!("endoflife.date {slug}: {e}");
+                eol_failed.push(format!("{slug}: {e}"));
+            }
+        }
+    }
+    for entry in catalog {
+        if let Some(c) = entry.eol.as_deref().and_then(|s| by_slug.get(s)) {
+            data.eol.insert(entry.id.clone(), c.clone());
+        }
     }
     let mut s = status(
         SourceId::Endoflife,
@@ -271,9 +274,17 @@ pub fn build(opts: &BuildOptions, catalog: &[CatalogEntry], http: &Http) -> Resu
 
     // Exploits (optional, each on its own).
     tracing::info!("reading exploit indexes");
+    let (exploitdb, metasploit) = std::thread::scope(|s| {
+        let edb = s.spawn(|| src.exploitdb());
+        let msf = src.metasploit();
+        (
+            edb.join().unwrap_or_else(|p| std::panic::resume_unwind(p)),
+            msf,
+        )
+    });
     for (id, result) in [
-        (SourceId::ExploitDb, src.exploitdb()),
-        (SourceId::Metasploit, src.metasploit()),
+        (SourceId::ExploitDb, exploitdb),
+        (SourceId::Metasploit, metasploit),
     ] {
         match result {
             Ok(list) => {
@@ -393,6 +404,10 @@ fn compress(raw: &Path, out: &Path) -> Result<()> {
     if let Ok(n) = u32::try_from(threads) {
         enc.multithread(n).map_err(io_err(out))?;
     }
+    // A 128 MiB window finds the repeats between far-apart rows (5% smaller). It is
+    // zstd's default decoder limit, so every reader can still unpack it.
+    enc.long_distance_matching(true).map_err(io_err(out))?;
+    enc.window_log(27).map_err(io_err(out))?;
     enc.include_checksum(true).map_err(io_err(out))?;
     std::io::copy(&mut BufReader::new(input), &mut enc).map_err(io_err(out))?;
     let mut w = enc.finish().map_err(io_err(out))?;
@@ -462,15 +477,32 @@ fn read_nvd(opts: &BuildOptions, src: &Src, index: &CatalogIndex) -> Result<NvdR
     if let Some(dir) = &opts.nvd_cache_dir {
         std::fs::create_dir_all(dir).map_err(io_err(dir))?;
     }
-    for year in years {
-        let feed = NvdFeed::Year(year);
-        tracing::info!(%feed, "reading NVD feed");
-        let (recs, info) = nvd_year(src.http, feed, opts.nvd_cache_dir.as_deref(), &keys)?;
-        tracing::info!(%feed, scanned = info.records, kept = recs.len(), "NVD feed done");
+    // Feeds are downloaded and parsed a few at a time (most of the build's time), then
+    // taken in year order so the database does not depend on which finished first.
+    let years: Vec<u16> = years.collect();
+    let feeds = unpatched_sources::par::map(
+        &years,
+        unpatched_sources::par::threads(NVD_WORKERS),
+        |&year| {
+            let feed = NvdFeed::Year(year);
+            tracing::info!(%feed, "reading NVD feed");
+            let r = nvd_year(src.http, feed, opts.nvd_cache_dir.as_deref(), &keys);
+            if let Ok((recs, info)) = &r {
+                tracing::info!(%feed, scanned = info.records, kept = recs.len(), "NVD feed done");
+            }
+            r
+        },
+    );
+    for r in feeds {
+        let (recs, info) = r?;
         take(recs, info.records);
     }
     Ok(out)
 }
+
+/// NVD feeds read at the same time. Each holds a compressed feed in memory while it
+/// is parsed, so this stays small.
+const NVD_WORKERS: usize = 4;
 
 fn nvd_year(
     http: &Http,
@@ -573,6 +605,13 @@ fn merge_cna(base: &mut Vulnerability, cna: Vulnerability) {
     base.ranges.extend(cna.ranges);
 }
 
+/// endoflife.date requests at the same time.
+const EOL_WORKERS: usize = 8;
+/// Threads that parse CVE records.
+const CVELIST_WORKERS: usize = 8;
+/// Files parsed per round.
+const CVELIST_CHUNK: usize = 4096;
+
 /// Returns (records walked, unreadable files).
 fn read_cvelist(
     dir: &Path,
@@ -588,30 +627,44 @@ fn read_cvelist(
     }
     tracing::info!(dir = %dir.display(), "walking the CVE list");
     let (mut walked, mut bad) = (0usize, 0usize);
-    for rec in cve_org::walk_cvelist_dir(dir) {
-        let rec = match rec {
-            Ok(r) => r,
-            Err(e) => {
-                tracing::warn!("{e}");
-                bad += 1;
+    // Files are read and parsed in parallel, a chunk at a time (so only one chunk of
+    // records is in memory), then merged in path order, as a plain walk would.
+    let workers = unpatched_sources::par::threads(CVELIST_WORKERS);
+    let mut files = cve_org::cvelist_files(dir).peekable();
+    while files.peek().is_some() {
+        let chunk: Vec<_> = files.by_ref().take(CVELIST_CHUNK).collect();
+        let parsed = unpatched_sources::par::map(&chunk, workers, |f| {
+            let rec = match f {
+                Ok(path) => cve_org::read_record_file(path).map_err(|e| e.to_string())?,
+                Err(e) => return Err(e.to_string()),
+            };
+            let ssvc = (rec.ssvc_exploitation.is_some() || rec.ssvc_automatable.is_some())
+                .then_some((rec.ssvc_exploitation, rec.ssvc_automatable));
+            let v = rec.to_vulnerability(index);
+            let keep = !v.ranges.is_empty() || nvd_ids.contains(&v.id);
+            Ok((v, ssvc, keep))
+        });
+        for r in parsed {
+            let (v, ssvc, keep) = match r {
+                Ok(x) => x,
+                Err(e) => {
+                    tracing::warn!("{e}");
+                    bad += 1;
+                    continue;
+                }
+            };
+            walked += 1;
+            if let Some(ssvc) = ssvc {
+                data.ssvc.insert(v.id.clone(), ssvc);
+            }
+            if !keep {
                 continue;
             }
-        };
-        walked += 1;
-        if rec.ssvc_exploitation.is_some() || rec.ssvc_automatable.is_some() {
-            data.ssvc.insert(
-                rec.id.clone(),
-                (rec.ssvc_exploitation, rec.ssvc_automatable),
-            );
-        }
-        let v = rec.to_vulnerability(index);
-        if v.ranges.is_empty() && !nvd_ids.contains(&v.id) {
-            continue;
-        }
-        match data.vulns.get_mut(&v.id) {
-            Some(base) => merge_cna(base, v),
-            None => {
-                data.vulns.insert(v.id.clone(), v);
+            match data.vulns.get_mut(&v.id) {
+                Some(base) => merge_cna(base, v),
+                None => {
+                    data.vulns.insert(v.id.clone(), v);
+                }
             }
         }
     }

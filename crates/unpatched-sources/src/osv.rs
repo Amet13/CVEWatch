@@ -14,6 +14,9 @@ use crate::util::{date_prefix, normalize_cve, push_unique};
 
 pub const OSV_API: &str = "https://api.osv.dev/v1";
 
+/// How many vulnerability records are fetched from OSV at the same time.
+const DETAIL_WORKERS: usize = 8;
+
 /// The most queries OSV takes in one `querybatch` call.
 const BATCH_SIZE: usize = 1000;
 
@@ -675,22 +678,34 @@ pub(crate) fn query_batch_at(
         }
     }
 
-    let mut details: HashMap<String, Option<OsvVuln>> = HashMap::new();
-    let mut out = HashMap::new();
-    for ((purl, parsed_purl), found) in parsed.iter().zip(&ids) {
-        let mut vulns = Vec::new();
-        for id in found {
-            if !details.contains_key(id) {
-                let rec = fetch_vuln_at(http, base, id)?;
-                if rec.is_none() {
-                    tracing::warn!(%id, "OSV listed this id but has no record for it; skipping");
-                }
-                details.insert(id.clone(), rec);
+    // Each record is fetched once, several at a time: one request per id is most of
+    // the time a check with packages takes.
+    let mut unique: Vec<&String> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for id in ids.iter().flatten() {
+        if seen.insert(id) {
+            unique.push(id);
+        }
+    }
+    let fetched = crate::par::map(&unique, DETAIL_WORKERS, |id| fetch_vuln_at(http, base, id));
+    let mut details: HashMap<&String, OsvVuln> = HashMap::new();
+    for (id, rec) in unique.into_iter().zip(fetched) {
+        match rec? {
+            Some(rec) => {
+                details.insert(id, rec);
             }
-            if let Some(rec) = &details[id] {
-                vulns.push(vuln_to_core(rec, parsed_purl));
+            None => {
+                tracing::warn!(%id, "OSV listed this id but has no record for it; skipping");
             }
         }
+    }
+    let mut out = HashMap::new();
+    for ((purl, parsed_purl), found) in parsed.iter().zip(&ids) {
+        let vulns = found
+            .iter()
+            .filter_map(|id| details.get(id))
+            .map(|rec| vuln_to_core(rec, parsed_purl))
+            .collect();
         out.insert((*purl).clone(), vulns);
     }
     Ok(out)

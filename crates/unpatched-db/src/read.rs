@@ -45,6 +45,13 @@ impl Db {
             &file,
             OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
         )?;
+        // Keep one query plan per statement. Without it, the bundled SQLite (built with
+        // STAT4) prepares some statements again every time a new value is bound: a third
+        // of a large check's time went there.
+        conn.set_db_config(
+            rusqlite::config::DbConfig::SQLITE_DBCONFIG_ENABLE_QPSG,
+            true,
+        )?;
         let not_db = |reason: String| DbError::NotADatabase {
             path: path.to_path_buf(),
             reason,
@@ -202,9 +209,8 @@ impl Db {
 
 fn load_vuln(conn: &Connection, id: &str) -> Result<Option<Vulnerability>> {
     let Some(json) = conn
-        .query_row("SELECT json FROM vulns WHERE id = ?1", [id], |r| {
-            r.get::<_, String>(0)
-        })
+        .prepare_cached("SELECT json FROM vulns WHERE id = ?1")?
+        .query_row([id], |r| r.get::<_, String>(0))
         .optional()?
     else {
         return Ok(None);
@@ -236,17 +242,29 @@ impl Dataset for Db {
 
     fn vulns_for_product(&self, product_id: &str) -> Vec<Vulnerability> {
         let conn = self.conn();
+        // One query for the product: every vulnerability with a range for it, with all
+        // its ranges (other products' too, as `load_vuln` gives), in id then range order.
         let run = || -> Result<Vec<Vulnerability>> {
-            let mut ids = conn.prepare_cached(
-                "SELECT DISTINCT vuln_id FROM ranges WHERE product = ?1 ORDER BY vuln_id",
+            let mut st = conn.prepare_cached(
+                "SELECT v.id, v.json, r.json \
+                 FROM (SELECT DISTINCT vuln_id FROM ranges WHERE product = ?1) p \
+                 JOIN vulns v ON v.id = p.vuln_id \
+                 JOIN ranges r ON r.vuln_id = p.vuln_id \
+                 ORDER BY v.id, r.rowid",
             )?;
-            let ids: Vec<String> = ids
-                .query_map([product_id], |r| r.get(0))?
-                .collect::<rusqlite::Result<_>>()?;
-            let mut out = Vec::with_capacity(ids.len());
-            for id in ids {
-                if let Some(v) = load_vuln(&conn, &id)? {
-                    out.push(v);
+            let mut rows = st.query([product_id])?;
+            let mut out: Vec<Vulnerability> = Vec::new();
+            let text =
+                |row: &rusqlite::Row<'_>, i: usize| -> rusqlite::Result<String> { row.get(i) };
+            while let Some(row) = rows.next()? {
+                let range: AffectedRange = serde_json::from_str(&text(row, 2)?)?;
+                match out.last_mut() {
+                    Some(v) if v.id == text(row, 0)? => v.ranges.push(range),
+                    _ => {
+                        let mut v: Vulnerability = serde_json::from_str(&text(row, 1)?)?;
+                        v.ranges.push(range);
+                        out.push(v);
+                    }
                 }
             }
             Ok(out)

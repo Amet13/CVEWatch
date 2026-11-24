@@ -19,11 +19,14 @@
 /// The major schema version this crate writes and reads.
 pub const SCHEMA_VERSION: u32 = 1;
 
+// `vulns` and `ranges` hold JSON of a few KB per row: they are rowid tables, since
+// WITHOUT ROWID stores large rows in overflow pages (twice the size on disk). The
+// small lookup tables stay WITHOUT ROWID.
 pub(crate) const CREATE: &str = "
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID;
 CREATE TABLE products (id TEXT PRIMARY KEY, entry TEXT NOT NULL, verified INTEGER NOT NULL) WITHOUT ROWID;
 CREATE TABLE product_names (name TEXT PRIMARY KEY, product_id TEXT NOT NULL) WITHOUT ROWID;
-CREATE TABLE vulns (id TEXT PRIMARY KEY, json TEXT NOT NULL) WITHOUT ROWID;
+CREATE TABLE vulns (id TEXT PRIMARY KEY, json TEXT NOT NULL);
 CREATE TABLE aliases (alias TEXT NOT NULL, vuln_id TEXT NOT NULL, PRIMARY KEY (alias, vuln_id)) WITHOUT ROWID;
 CREATE TABLE ranges (vuln_id TEXT NOT NULL, product TEXT NOT NULL, source TEXT NOT NULL, json TEXT NOT NULL);
 CREATE INDEX ranges_product ON ranges (product);
