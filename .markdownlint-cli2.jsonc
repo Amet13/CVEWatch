@@ -8,5 +8,5 @@
     "MD024": { "siblings_only": true },
     "MD060": false
   },
-  "ignores": ["node_modules", "target", "book", "CHANGELOG.md", "PLAN.md"]
+  "ignores": ["node_modules", "target", "book", "CHANGELOG.md", "PLAN.md", "docs/guide/SUMMARY.md"]
 }

@@ -2720,10 +2720,12 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "regex",
  "reqwest",
  "schemars",
  "serde_json",
  "serde_norway",
+ "tempfile",
  "unpatched-catalog",
  "unpatched-core",
 ]
