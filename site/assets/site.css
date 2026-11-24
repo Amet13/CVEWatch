@@ -63,8 +63,8 @@ section { padding: 56px 0; }
 section + section { border-top: 1px solid var(--rule); }
 
 h1, h2 { font-family: var(--text); font-weight: 800; letter-spacing: -.025em; }
-h1 { font-size: clamp(42px, 5.6vw, 76px); line-height: 1.02; margin: 0 0 28px; }
-h2 { font-size: 34px; line-height: 1.15; margin: 0 0 18px; }
+h1 { font-size: clamp(30px, 3.2vw, 42px); line-height: 1.15; font-weight: 750; letter-spacing: -.02em; margin: 0 0 22px; }
+h2 { font-size: 28px; line-height: 1.15; margin: 0 0 18px; }
 
 /* Opening: text on the left, the real issue on the right, wider. */
 .opening { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; padding-top: 64px; }
