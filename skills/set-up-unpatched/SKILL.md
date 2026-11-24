@@ -28,7 +28,10 @@ lives in `unpatched.yml` in a private repository.
    use the `id` it prints. If nothing matches, the product is not in the
    catalog yet: tell the user. For an operating system package or a library,
    use a `purl` instead (see the `inventory-from-notes` skill).
-5. Write `unpatched.yml`:
+5. Write `unpatched.yml`. The quickest route is `unpatched init --github`: it
+   asks the same questions and writes `unpatched.yml` and the workflow together,
+   and it is what to prefer in a terminal. Without a terminal, write the file by
+   hand:
 
    ```yaml
    version: 1
@@ -53,7 +56,8 @@ lives in `unpatched.yml` in a private repository.
    `UNPATCHED_DISCORD_WEBHOOK`, `UNPATCHED_WEBHOOK_URL`) in the GitHub
    settings. Do not ask them to paste a secret into the chat.
 7. Write `.github/workflows/unpatched.yml`. Prefer `unpatched init --github`,
-   which writes the current template. By hand, it is:
+   which writes the current template (and step 5 with it). By hand, it is the
+   template, with the same pinned checkout:
 
    ```yaml
    on:
@@ -64,7 +68,7 @@ lives in `unpatched.yml` in a private repository.
      check:
        runs-on: ubuntu-latest
        steps:
-         - uses: actions/checkout@v5
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
            with: { persist-credentials: false }
          - uses: amet13/unpatched@v3
            env:
@@ -74,9 +78,10 @@ lives in `unpatched.yml` in a private repository.
    Secrets go in `env:`, only for the channels turned on in `unpatched.yml`.
    Drop the `env:` block when no channel needs a secret. The Action never
    commits to the repository, so it needs no `contents: write`.
-8. Validate offline: `unpatched check --offline --format json`. If it fails
-   with an unknown product or a bad version, fix `unpatched.yml` and run it
-   again. If the database is missing, run `unpatched db update` first.
+8. Validate offline: `unpatched check --offline --format json`. `--offline`
+   needs a database that is already downloaded: run `unpatched db update` first
+   (without it, the command fails with a data error). If it fails with an
+   unknown product or a bad version, fix `unpatched.yml` and run it again.
 9. Read the result (see the `explain-a-finding` skill for the fields). Tell the
    user the count per bucket, and the most urgent findings first.
 10. Tell the user to commit both files, push, and start the workflow once from

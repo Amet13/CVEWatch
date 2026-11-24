@@ -187,7 +187,22 @@ note. Closing an issue yourself means "I know"; unpatched does not reopen it,
 and lists it under "Closed but still affected" in the status issue.
 
 If the first run reports `unknown product`, the id in `unpatched.yml` is not in
-the catalog. Read the message: it suggests close matches.
+the catalog. Read the message: it suggests close matches, and says what to do for
+an operating-system package (use a purl).
+
+**Accept a risk you know about.** Every issue ends with the lines to add to
+`unpatched.yml`; the next run moves the finding out of the issue and lists it as
+ignored until the date you set:
+
+```yaml
+ignore:
+  - cve: CVE-2024-21762
+    reason: "The SSL VPN is switched off"
+    until: 2027-01-31
+```
+
+The report notes an entry that matches nothing or has expired. More in
+[the config](config.md#ignore-entries).
 
 ## Private repository, secrets and settings
 
@@ -213,7 +228,8 @@ run the workflow by hand again, or run `unpatched check` on your machine
 
 ## Test without side effects
 
-Run the Action with `dry-run: true` to print what would happen and send nothing:
+Run the Action with `dry-run: true` to print what would happen (each message
+once, with its channel) and send nothing:
 
 ```yaml
       - uses: amet13/unpatched@v3

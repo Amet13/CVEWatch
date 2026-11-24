@@ -1,11 +1,10 @@
 //! `cargo xtask corpus new <name>`: start a corpus case.
 
 use std::fs;
-use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
 
-const TEMPLATE: &str = r#"description: What this case shows, in one sentence.
+const TEMPLATE: &str = r#"description: TODO say in one sentence what this case shows. The corpus test fails until you do.
 now: 2026-11-24T00:00:00Z
 config: |
   version: 1
@@ -57,18 +56,14 @@ pub fn new(name: &str) -> Result<()> {
     {
         bail!("{name:?}: use lowercase letters, digits and dashes, like `fortios-eol-with-latest`");
     }
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("xtask lives one level below the workspace root")
-        .join("corpus")
-        .join(name);
+    let dir = crate::repo_root().join("corpus").join(name);
     if dir.exists() {
         bail!("{} already exists", dir.display());
     }
     fs::create_dir_all(&dir).with_context(|| format!("cannot create {}", dir.display()))?;
     fs::write(dir.join("case.yml"), TEMPLATE)?;
     eprintln!(
-        "wrote corpus/{name}/case.yml. Edit it, then run `cargo test -p unpatched --test corpus`."
+        "wrote corpus/{name}/case.yml. It fails on purpose until you replace the TODO description and write what should come out. Then run `cargo test -p unpatched --test corpus`."
     );
     Ok(())
 }

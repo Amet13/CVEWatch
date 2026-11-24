@@ -5,7 +5,7 @@ description: Add a new data source to unpatched (a vendor feed, a mirror, anothe
 
 # Add a source
 
-Read `AGENTS.md`, `CONTEXT.md`, `PLAN.md` §4 and `docs/adr/0003-keyless-open-data.md`
+Read `AGENTS.md`, `CONTEXT.md` and `docs/guide/data.md`
 first. A source must work without an account or an API key. If it needs one,
 stop and say so: it does not fit the product.
 
@@ -42,7 +42,7 @@ stop and say so: it does not fit the product.
    incompatible change), the reader in `read.rs`, and `sources_health` in
    `health.rs` (one live probe for a known item).
 6. **Use it in matching only through core.** `evaluate` treats every source
-   on its own and combines verdicts (`docs/adr/0006-verdict-combination.md`).
+   on its own and combines verdicts (see the comments at the top of `crates/unpatched-core/src/matching.rs`).
    Do not add a precedence. A source with no data for an item says nothing
    about it; that is never "not affected".
 7. **Corpus.** Add a case where the new source changes a verdict or a signal.

@@ -15,7 +15,27 @@ mod corpus;
 mod docs;
 mod schema;
 
+use std::path::PathBuf;
+
 use anyhow::{Result, bail};
+
+/// The workspace root, found at run time: walk up from the current folder to
+/// the first `Cargo.toml` that has a `[workspace]` table. (Not the compile-time
+/// path, which is wrong when the binary was built elsewhere or moved.)
+pub fn repo_root() -> PathBuf {
+    let start = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    for dir in start.ancestors() {
+        let manifest = dir.join("Cargo.toml");
+        if std::fs::read_to_string(&manifest).is_ok_and(|t| t.contains("[workspace]")) {
+            return dir.to_path_buf();
+        }
+    }
+    eprintln!(
+        "error: run `cargo xtask` from inside the unpatched repository (no workspace Cargo.toml found above {}).",
+        start.display()
+    );
+    std::process::exit(1);
+}
 
 const USAGE: &str = "usage: cargo xtask <task>
 

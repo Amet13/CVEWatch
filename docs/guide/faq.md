@@ -60,7 +60,9 @@ template and the entry will be checked. See [Catalog](catalog.md).
 
 The catalog is checked by hand, so it grows by request. See
 [Ask for a product](catalog.md#ask-for-a-product). For a library or an operating
-system package you can use a `purl` today.
+system package you can use a `purl` today, like
+`pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`. WordPress plugins and
+themes are not covered.
 
 ## Why did it flag something that does not apply to me?
 

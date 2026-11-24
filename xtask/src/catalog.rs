@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -15,10 +15,7 @@ const EOL_URL: &str = "https://endoflife.date/api/all.json";
 const NVD_URL: &str = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 
 fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("xtask lives one level below the workspace root")
-        .to_path_buf()
+    crate::repo_root()
 }
 
 /// Read, parse and validate `catalog/*.yml`. Sorted by id.

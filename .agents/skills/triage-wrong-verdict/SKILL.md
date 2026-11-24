@@ -7,7 +7,7 @@ description: Turn a "wrong verdict" issue (unpatched says affected, not-affected
 
 The corpus is the spec. A verdict is never fixed without a failing case first,
 and a case is never loosened to make a fix pass. Read `AGENTS.md`,
-`docs/adr/0006-verdict-combination.md` and `CONTEXT.md` first.
+the comments at the top of `crates/unpatched-core/src/matching.rs` and `CONTEXT.md` first.
 
 ## Steps
 

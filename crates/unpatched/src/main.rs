@@ -11,6 +11,37 @@ use std::process::ExitCode;
 use clap::Parser;
 use miette::MietteHandlerOpts;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::fmt::{FmtContext, FormatEvent, FormatFields};
+use tracing_subscriber::registry::LookupSpan;
+
+/// Log lines read like the rest of the output: `warning: ...`, `error: ...`,
+/// plain text for info, `debug: ...` and `trace: ...` below that.
+struct Plain;
+
+impl<S, N> FormatEvent<S, N> for Plain
+where
+    S: tracing::Subscriber + for<'a> LookupSpan<'a>,
+    N: for<'a> FormatFields<'a> + 'static,
+{
+    fn format_event(
+        &self,
+        ctx: &FmtContext<'_, S, N>,
+        mut writer: Writer<'_>,
+        event: &tracing::Event<'_>,
+    ) -> std::fmt::Result {
+        let prefix = match *event.metadata().level() {
+            tracing::Level::ERROR => "error: ",
+            tracing::Level::WARN => "warning: ",
+            tracing::Level::INFO => "",
+            tracing::Level::DEBUG => "debug: ",
+            tracing::Level::TRACE => "trace: ",
+        };
+        write!(writer, "{prefix}")?;
+        ctx.field_format().format_fields(writer.by_ref(), event)?;
+        writeln!(writer)
+    }
+}
 
 use cli::{Cli, ColorArg};
 use ctx::Ctx;
@@ -83,9 +114,8 @@ fn main() -> ExitCode {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .with_writer(std::io::stderr)
-        .with_ansi(err_color)
-        .without_time()
-        .with_target(false)
+        .with_ansi(false)
+        .event_format(Plain)
         .try_init();
 
     let unicode = std::io::stderr().is_terminal();

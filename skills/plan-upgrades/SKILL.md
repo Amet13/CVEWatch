@@ -12,9 +12,14 @@ network or only uses catalog products). If the user pasted a report, use that.
 Check `db.built_at`: if the data is older than 3 days, say so and suggest
 `unpatched db update`.
 
-Read `findings` (open). Ignore `ignored` unless the user asks. Each finding
-has: `item`, `product`, `version`, `exposure`, `vuln`, `title`, `verdict`,
-`bucket`, `rules`, `fixed_in`, `latest_in_cycle`, `signals`, `evidence`.
+Read `findings` (open) and `items`. Ignore `ignored` unless the user asks.
+`findings` holds only what needs a look: each has a `verdict` of `affected` or
+`unknown`, never `not-affected` (those are only counted in `summary`). Each
+finding has: `item`, `product`, `version`, `exposure`, `vuln`, `title`,
+`verdict`, `bucket`, `rules`, `fixed_in`, `latest_in_cycle`, `signals`,
+`evidence`. Each entry of `items` is one stack item with `counts` per bucket,
+`upgrade_to`, `fixes` (how many affected findings that upgrade clears), `of`
+(how many are affected), `unfixed` and `eol`.
 
 ## Order
 
@@ -31,14 +36,18 @@ Inside a bucket, put internet-facing items (`exposure: internet`) first.
 
 ## One step per item, not per finding
 
-Several findings often hit the same item. Group by `item`. The target version
-for an item is the highest `fixed_in` among its findings. If `latest_in_cycle`
-is set, it is the newest release in the same cycle: prefer it, since it also
-holds later fixes, and say that it is newer than the minimum. If an item has an
-`eol` finding, the target is a supported release cycle. Take it from the
-vendor's support page; do not invent one.
+Several findings often hit the same item. Use `items`, one entry per stack
+item: the target version is `items[].upgrade_to`. Do not work it out again from
+`fixed_in`: unpatched already chose the smallest version that fixes the most
+findings in the item's release cycle. `fixes` of `of` says how much it clears;
+`of - fixes` findings stay open (see `unfixed` for the ones with no known fix).
+If a finding has `latest_in_cycle`, it is the newest release in the same cycle:
+mention it as an option, since it also holds later fixes. If an item has `eol`
+set (or an `eol` finding), the target is a supported release cycle. Take it from
+the vendor's support page; do not invent one.
 
-Never invent a version. If `fixed_in` is empty, say that no fix is known. Name a
+Never invent a version. If `upgrade_to` is empty and `fixed_in` is empty, say
+that no fix is known. Name a
 mitigation only if the finding's `evidence` or `references` name one.
 
 ## Write the plan

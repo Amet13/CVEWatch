@@ -8,7 +8,9 @@ diff for each wrong result.
 **Every wrong verdict starts as a failing case here.** When `unpatched` says
 `not-affected` for something that is affected (or the other way round, or puts a
 finding in the wrong bucket), add a case that shows it, see it fail, then fix the
-code. `cargo xtask corpus new <name>` writes a starting file.
+code. `cargo xtask corpus new <name>` writes a starting file. It fails on purpose
+(its `description` starts with `TODO`) until you say what the case proves and
+write what should come out.
 
 ## Format
 

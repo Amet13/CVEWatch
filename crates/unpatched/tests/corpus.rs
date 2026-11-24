@@ -242,6 +242,12 @@ fn every_case_gives_the_expected_findings() {
             if c.description.trim().is_empty() {
                 return Err("description is empty".into());
             }
+            if c.description.trim_start().starts_with("TODO") {
+                return Err(
+                    "description still starts with TODO: say in one sentence what the case proves"
+                        .into(),
+                );
+            }
             run_case(&c)
         }) {
             Ok(problems) => failures.extend(problems.into_iter().map(|p| format!("{name}: {p}"))),
