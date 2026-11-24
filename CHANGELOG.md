@@ -15,6 +15,7 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 - The GitHub Action (`uses: amet13/unpatched@v0`): downloads the release binary, checks its SHA-256, caches it, and writes the run summary to the job. Inputs: `version`, `binary`, `config`, `db`, `dry-run`, `args`. `templates/github/` has a starting `unpatched.yml` and workflow.
 - The end-to-end corpus (`corpus/`, 70+ cases) and `cargo xtask corpus new <name>`; `cargo xtask schema` writes `schema/unpatched.schema.json` and `schema/report.schema.json`.
 - Findings and reports show the product's display name (`FortiOS 7.2.5`) instead of its id, and `Finding` has a new `product_name` field.
+- The user guide (mdBook, `docs/guide/`, published at https://amet13.github.io/unpatched/), a new README, and `llms.txt` and `llms-full.txt`. `cargo xtask docs` regenerates the parts that come from the code (config reference, rules, catalog, command help, examples), and `cargo xtask check` fails when they are out of date.
 - Repository automation: CI on three operating systems, the daily database build, releases with `dist`, a Docker image, and weekly and monthly upkeep (see MAINTAINING.md).
 
 ### Changed

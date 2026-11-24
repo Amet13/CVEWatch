@@ -12,6 +12,8 @@ serde_norway.workspace = true
 schemars.workspace = true
 chrono.workspace = true
 reqwest.workspace = true
+regex.workspace = true
+tempfile.workspace = true
 unpatched-core.workspace = true
 unpatched-catalog.workspace = true
 
