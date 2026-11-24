@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="unpatched">
+  <defs>
+    <linearGradient id="u-shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff7a3d"/>
+      <stop offset="1" stop-color="#e8430f"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#14161f"/>
+  <path d="M64 18 L100 31 V61 C100 85 84 102 64 110 C44 102 28 85 28 61 V31 Z" fill="url(#u-shield)"/>
+  <path d="M64 18 L100 31 V61 C100 85 84 102 64 110 Z" fill="#000" opacity=".12"/>
+  <g transform="rotate(-38 64 64)">
+    <rect x="24" y="53" width="80" height="22" rx="11" fill="#fff3e6"/>
+    <rect x="51" y="55" width="26" height="18" rx="4" fill="#ffc9a8"/>
+    <circle cx="57" cy="60" r="1.6" fill="#e8430f"/>
+    <circle cx="64" cy="60" r="1.6" fill="#e8430f"/>
+    <circle cx="71" cy="60" r="1.6" fill="#e8430f"/>
+    <circle cx="57" cy="68" r="1.6" fill="#e8430f"/>
+    <circle cx="64" cy="68" r="1.6" fill="#e8430f"/>
+    <circle cx="71" cy="68" r="1.6" fill="#e8430f"/>
+  </g>
+</svg>

@@ -15,6 +15,9 @@ git-repository-url = "https://github.com/Amet13/unpatched"
 edit-url-template = "https://github.com/Amet13/unpatched/edit/main/docs/guide/{path}"
 default-theme = "light"
 preferred-dark-theme = "navy"
+theme = "docs/theme"
+additional-css = ["docs/theme/unpatched.css"]
+smart-punctuation = true
 
 [output.html.search]
 enable = true
