@@ -354,8 +354,12 @@ fn check_stack_only_reads_allowed_files() {
     let evil = dir.path().join("unpatched-link.yml");
     #[cfg(unix)]
     std::os::unix::fs::symlink(&secret, &evil).unwrap();
+    // A path that does not exist on any platform: it must be refused for its
+    // name, not reported as missing (that would tell a caller which files exist).
+    let missing = dir.path().join("no-such-dir").join("passwd");
     for target in [
         "/etc/passwd",
+        missing.to_str().unwrap(),
         secret.to_str().unwrap(),
         evil.to_str().unwrap(),
     ] {

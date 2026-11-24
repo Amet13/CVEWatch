@@ -31,6 +31,7 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 
 ### Security
 
+- The MCP server refuses a `config_path` by its name before looking at the file system, so a caller cannot learn which other files exist.
 - MCP `check_stack` only reads the server's own config file, or a file named `unpatched*.yml` or `unpatched*.yaml` under the server's working directory (links are resolved first). Before, any readable file could be named, and a YAML error could echo its content. Errors about a config file now give only the line and column.
 
 ### Changed

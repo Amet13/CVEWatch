@@ -241,36 +241,38 @@ impl Tools {
         let Some(requested) = requested.map(str::trim).filter(|p| !p.is_empty()) else {
             return Ok(self.ctx.config_path.clone());
         };
-        let own = std::fs::canonicalize(&self.ctx.config_path).ok();
+        let cwd = std::env::current_dir()
+            .and_then(std::fs::canonicalize)
+            .map_err(|e| format!("Cannot find the server's working directory: {e}"))?;
+        let not_allowed = || {
+            format!(
+                "`config_path` is not allowed. Use the server's configured file ({}), or a file named unpatched*.yml or unpatched*.yaml under {}. Leave out `config_path` to use the server's file.",
+                self.ctx.config_path.display(),
+                cwd.display()
+            )
+        };
+        // Refuse by name before touching the file system, so a caller cannot
+        // learn which other files exist.
+        let is_own = Path::new(requested) == self.ctx.config_path;
+        if !is_own && !named_like_a_config(Path::new(requested)) {
+            return Err(not_allowed());
+        }
         let Ok(wanted) = std::fs::canonicalize(requested) else {
             return Err(format!(
                 "Cannot read {requested}: no such file. Leave out `config_path` to use the server's file ({}), or create it first.",
                 self.ctx.config_path.display()
             ));
         };
+        let own = std::fs::canonicalize(&self.ctx.config_path).ok();
         if own.as_ref() == Some(&wanted) {
             return Ok(wanted);
         }
-        let cwd = std::env::current_dir()
-            .and_then(std::fs::canonicalize)
-            .map_err(|e| format!("Cannot find the server's working directory: {e}"))?;
-        let name = wanted
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or_default()
-            .to_ascii_lowercase();
-        let named_right = name.starts_with("unpatched")
-            && Path::new(&name)
-                .extension()
-                .is_some_and(|e| e.eq_ignore_ascii_case("yml") || e.eq_ignore_ascii_case("yaml"));
-        if named_right && wanted.starts_with(&cwd) {
+        // Check the resolved path again: a link named unpatched.yml must not
+        // lead to another file or out of the working directory.
+        if named_like_a_config(&wanted) && wanted.starts_with(&cwd) {
             return Ok(wanted);
         }
-        Err(format!(
-            "`config_path` is not allowed. Use the server's configured file ({}), or a file named unpatched*.yml or unpatched*.yaml under {}. Leave out `config_path` to use the server's file.",
-            self.ctx.config_path.display(),
-            cwd.display()
-        ))
+        Err(not_allowed())
     }
 
     /// Read the config, check the stack, and give back the report.
@@ -1035,4 +1037,16 @@ fn parse_args<T: for<'de> Deserialize<'de>>(args: &Value) -> Result<T, String> {
 
 fn to_value<T: serde::Serialize>(v: &T) -> Result<Value, String> {
     serde_json::to_value(v).map_err(|e| format!("Cannot encode the result: {e}"))
+}
+
+/// A file named `unpatched*.yml` or `unpatched*.yaml` (any case).
+fn named_like_a_config(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    let name = name.to_ascii_lowercase();
+    name.starts_with("unpatched")
+        && Path::new(&name)
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("yml") || e.eq_ignore_ascii_case("yaml"))
 }
