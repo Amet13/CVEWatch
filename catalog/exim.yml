@@ -1,0 +1,17 @@
+id: exim
+name: Exim
+vendor: Exim
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "exim:exim"
+  cna:
+    - { vendor: exim, product: exim }
+  kev:
+    - { vendorProject: Exim, product: Exim }
+    - { vendorProject: Exim, product: Exim Internet Mailer }
+    - { vendorProject: Exim, product: Mail Transfer Agent (MTA) }
+eol: exim
+homepage: https://www.exim.org/
+checked: 2026-11-23

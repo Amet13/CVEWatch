@@ -1,361 +1,202 @@
-<div align="center">
-  <img src="logo.png" alt="CVEWatch Logo" width="200" style="border-radius: 20px;">
-  <h1>CVEWatch</h1>
-  <p><strong>A modern, fast, and efficient CVE monitoring tool</strong></p>
-  <p>
-    <a href="https://github.com/Amet13/CVEWatch/actions/workflows/ci.yml">
-      <img src="https://github.com/Amet13/CVEWatch/actions/workflows/ci.yml/badge.svg" alt="CI/CD Status">
-    </a>
-    <a href="https://github.com/Amet13/CVEWatch/releases">
-      <img src="https://img.shields.io/github/v/release/Amet13/CVEWatch?label=version" alt="Latest Release">
-    </a>
-    <a href="https://github.com/Amet13/CVEWatch/blob/main/LICENSE">
-      <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
-    </a>
-    <a href="https://goreportcard.com/report/github.com/Amet13/CVEWatch">
-      <img src="https://goreportcard.com/badge/github.com/Amet13/CVEWatch" alt="Go Report Card">
-    </a>
-  </p>
-</div>
+<p align="center"><img src="docs/guide/assets/logo.svg" alt="unpatched logo" width="112"></p>
 
-CVEWatch provides real-time vulnerability monitoring using the official National Vulnerability Database (NVD) API with advanced filtering, multiple output formats, and comprehensive product monitoring.
+<h1 align="center">unpatched</h1>
 
-## ✨ Features
+<p align="center"><strong>Hear about vulnerabilities only when something you run is affected.</strong></p>
 
-- **🔍 Real-time CVE Monitoring**: Search and monitor vulnerabilities using the official NVD API
-- **👁️ Watch Mode**: Continuous monitoring with configurable intervals for new CVEs
-- **💾 Caching Layer**: File-based caching to reduce API calls and improve performance
-- **📊 Multiple Output Formats**: Support for JSON, YAML, CSV, table, and simple text formats
-- **🎯 Advanced Filtering**: Filter by CVSS score, date range, and product keywords
-- **🏗️ Product-based Monitoring**: Monitor specific software products with keyword and CPE pattern matching
-- **⚡ High Performance**: Built in Go for speed and efficiency
-- **🔄 Retry Logic**: Robust API interaction with automatic retry, exponential backoff, and jitter
-- **📝 YAML Configuration**: Modern YAML-based configuration with environment variable support
-- **🔒 Security Focused**: Built-in security checks and SSL verification
-- **📱 Cross-platform**: Runs on Linux, macOS, and Windows
-- **🏥 Health Check**: Built-in API connectivity verification
+<p align="center">
+  <a href="https://github.com/Amet13/unpatched/actions/workflows/ci.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml/badge.svg?branch=main" alt="Daily database"></a>
+  <a href="https://github.com/Amet13/unpatched/releases"><img src="https://img.shields.io/github/v/release/Amet13/unpatched?filter=v3*&amp;sort=semver&amp;label=release" alt="Latest release"></a>
+  <a href="https://crates.io/crates/unpatched"><img src="https://img.shields.io/crates/v/unpatched?label=crates.io" alt="crates.io"></a>
+  <a href="https://amet13.github.io/unpatched/"><img src="https://img.shields.io/badge/docs-guide-111111" alt="Docs"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/Amet13/unpatched"><img src="https://api.scorecard.dev/projects/github.com/Amet13/unpatched/badge" alt="OpenSSF Scorecard"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-111111" alt="MIT license"></a>
+</p>
 
-## 🚀 Quick Start
+<p align="center">
+  <a href="https://amet13.github.io/unpatched/guide/start-github.html">Quick start</a> ·
+  <a href="https://amet13.github.io/unpatched/">Guide</a> ·
+  <a href="https://amet13.github.io/unpatched/guide/catalog.html">Supported products</a> ·
+  <a href="https://amet13.github.io/unpatched/guide/with-an-agent.html">AI agents (MCP)</a>
+</p>
 
-### Prerequisites
+You run software you did not write: a firewall, a VPN, a NAS, Nextcloud,
+PostgreSQL, Home Assistant. Dependabot and Trivy scan code and containers, not
+those. A CVE feed lists every CVE for a vendor and leaves the sorting to you.
 
-- Go 1.26 or later
-- Internet connection for NVD API access
-- NVD API key (optional, but recommended for higher rate limits)
+Write down what you run and its version, once. Every day a GitHub Action checks
+it against open vulnerability data. It opens an issue only when something you
+run is affected, says which version to upgrade to, and ranks the issues by
+whether the bug is being exploited, not by CVSS. A quiet week says so.
 
-### Installation
+No account, no API key, no server. The list of what you run stays in your own
+private repository.
 
-#### Option 1: Download Latest Release (Recommended)
+## What you get
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/Amet13/CVEWatch/releases/latest)
+The summary of a run, from the sample database in this repository (the
+[guide](https://amet13.github.io/unpatched/guide/findings.html) shows the issue it
+opens and the same report as JSON):
 
-#### Option 2: Build from source
+<!-- generated:start example-check-markdown -->
 
-```bash
-git clone https://github.com/Amet13/CVEWatch.git
-cd cvewatch
-task build
+```text
+$ unpatched check --format markdown
+## unpatched
+
+2 to act on (1 today, 1 end of life). 🟢 1 vulnerability checked against your versions: not affected
+
+- 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+- ⚫ Nextcloud 29.0.3  1 end of life  →  upgrade to a supported release
+
+| Bucket | Findings |
+| --- | ---: |
+| 🔴 Fix today | 1 |
+| 🟡 This week | 0 |
+| ⚫ End of life | 1 |
+| ❔ Unknown | 0 |
+| ⚪ FYI | 0 |
+
+### 🔴 Fix today
+
+- **FortiOS 7.2.5 (Office firewall)**: CVE-2024-21762
+  - Why: In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 84.6% (percentile 100) · CVSS 9.6 · internet-facing
+  - Do: Upgrade to 7.2.7 or later.
+  - Rules: `UNP-KEV`, `UNP-SSVC-ACTIVE`, `UNP-EPSS`, `UNP-CVSS`, `UNP-EXPOSED`
+
+### ⚫ End of life
+
+- **Nextcloud 29.0.3**: past end of life
+  - Why: End of life · internet-facing
+  - Do: Upgrade to a supported release.
+  - Rules: `UNP-EOL`
+
+Database: built 2026-11-23 12:00 UTC, 0 days old
+
+### Notes
+
+- stack[2]: the database has no data for product "postgresql" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
+- stack[3]: the database has no data for product "home-assistant" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
 ```
 
-#### Option 3: Install directly
+<!-- generated:end -->
 
-```bash
-task install
-```
+The two notes at the end are because the sample database holds only a few
+products. The real database has all of the [catalog](https://amet13.github.io/unpatched/guide/catalog.html).
 
-### Verify Installation
+## Start in two files
 
-After installation, verify CVEWatch is working:
-
-```bash
-cvewatch version
-```
-
-### First Run
-
-1. **Initialize configuration**:
-
-   ```bash
-   cvewatch init
-   ```
-
-2. **Search for vulnerabilities**:
-
-   ```bash
-   cvewatch search --date 2024-01-01 --min-cvss 7.0
-   ```
-
-3. **Get CVE details**:
-   ```bash
-   cvewatch info CVE-2023-1234
-   ```
-
-4. **Check API health**:
-   ```bash
-   cvewatch health
-   ```
-
-5. **Watch for new CVEs**:
-   ```bash
-   cvewatch watch --interval 5m
-   ```
-
-## 📖 Usage
-
-### Commands
-
-#### `cvewatch init`
-
-Creates a default configuration file with predefined product monitoring rules.
-
-#### `cvewatch search [flags]`
-
-Search for CVEs based on specified criteria.
-
-**Flags:**
-
-- `--date, -d`: Date in YYYY-MM-DD format (default: today)
-- `--start-date`: Start date for range search (YYYY-MM-DD)
-- `--end-date`: End date for range search (YYYY-MM-DD)
-- `--min-cvss, -m`: Minimum CVSS score (0-10)
-- `--max-cvss, -M`: Maximum CVSS score (0-10)
-- `--max-results, -r`: Maximum number of results (1-2000)
-- `--output, -o`: Output format (simple, json, yaml, table, csv)
-- `--api-key, -k`: NVD API key (optional, increases rate limits)
-
-#### `cvewatch info [CVE-ID]`
-
-Get detailed information about a specific CVE.
-
-#### `cvewatch config`
-
-Display current configuration and product information.
-
-#### `cvewatch version`
-
-Show version and build information.
-
-#### `cvewatch health`
-
-Check NVD API connectivity and display status information.
-
-#### `cvewatch watch [flags]`
-
-Continuously monitor for new CVEs at specified intervals.
-
-**Flags:**
-
-- `--interval, -i`: Check interval (e.g., 5m, 1h) (default: 5m)
-- `--min-cvss, -m`: Minimum CVSS score (0-10)
-- `--max-cvss, -M`: Maximum CVSS score (0-10)
-- `--output, -o`: Output format (simple, json, yaml, table, csv)
-
-#### `cvewatch cache [flags]`
-
-Inspect local cache statistics and optionally clean expired entries.
-
-**Flags:**
-
-- `--clean`: Remove expired cache entries before showing stats
-
-### Examples
-
-```bash
-# Search for high-severity vulnerabilities from yesterday
-cvewatch search --date 2024-01-01 --min-cvss 7.0 --max-results 10
-
-# Search with date range
-cvewatch search --start-date 2024-01-01 --end-date 2024-06-30 --min-cvss 7.0
-
-# Search for vulnerabilities affecting Linux kernel
-cvewatch search --min-cvss 5.0 --output json
-
-# Get detailed information about a specific CVE
-cvewatch info CVE-2023-1234
-
-# Check NVD API health
-cvewatch health
-
-# Watch for new critical CVEs every 5 minutes
-cvewatch watch --interval 5m --min-cvss 9.0
-
-# Show cache stats and clean expired entries
-cvewatch cache --clean
-
-# Search with custom date range and output format
-cvewatch search --date 2024-01-01 --min-cvss 8.0 --output table
-```
-
-## ⚙️ Configuration
-
-CVEWatch uses a YAML configuration file located at `~/.cvewatch/config.yaml`. The configuration includes:
-
-### Application Settings
-
-- Application name and version
-- Log level and timeout settings
-- Security configuration
-
-### NVD API Settings
-
-- Base URL and rate limiting
-- Timeout and retry configuration
-- API key configuration
-
-### Cache Settings
-
-- Enable/disable local response caching
-- Cache directory configuration
-- Cache TTL tuning for freshness vs API load
-
-### Product Monitoring
-
-- Product names and descriptions
-- Keyword matching rules
-- CPE pattern matching
-- Priority levels
-
-### Output Settings
-
-- Default output format
-- Color and truncation settings
-- Available output formats
-
-### Example Configuration
+In a new **private** repository, add `unpatched.yml` with what you run:
 
 ```yaml
-app:
-  name: CVEWatch
-  version: 2.0.0
-  logLevel: info
-  timeout: 60
-
-nvd:
-  baseUrl: https://services.nvd.nist.gov/rest/json/cves/2.0
-  rateLimit: 1000
-  timeout: 30
-  retryAttempts: 3
-  retryDelay: 5
-
-cache:
-  enabled: true
-  dir: ""
-  ttl: 15
-
-products:
-  - name: Linux Kernel
-    keywords: [linux, kernel, linux kernel]
-    cpePatterns: [cpe:2.3:o:*:linux:*:*:*:*:*:*:*]
-    description: Linux operating system kernel
-    priority: high
-
-output:
-  defaultFormat: simple
-  formats: [simple, json, table, csv, yaml]
-  colors: true
-  truncateLength: 100
+version: 1
+stack:
+  - product: fortios
+    version: 7.2.5
+    exposure: internet
+    name: Office firewall
+  - product: nextcloud
+    version: 29.0.3
+    exposure: internet
+  - product: postgresql
+    version: "15.4"
 ```
 
-## 🧪 Development
+and `.github/workflows/unpatched.yml`:
 
-### Prerequisites
-
-- Go 1.25+
-- Task (https://taskfile.dev)
-- golangci-lint
-- pre-commit hooks (optional)
-
-### Setup Development Environment
-
-```bash
-task dev-setup
+```yaml
+name: unpatched
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: amet13/unpatched@v3
 ```
 
-### Common Commands
+Push, then run the workflow once from the Actions tab. Find product ids with
+`unpatched search <name>`. To accept a risk you know about, add an `ignore:`
+entry (a `cve`, a `reason` and an `until` date) to `unpatched.yml`; every issue
+shows the lines to copy. The full walk-through, including secrets for
+Telegram, Slack and the others, is in
+[Start with GitHub](https://amet13.github.io/unpatched/guide/start-github.html).
+`unpatched init --github` writes both files for you.
 
-```bash
-task build          # Build the application
-task test           # Run all tests
-task test-coverage  # Run tests with coverage
-task lint           # Run linters
-task format         # Format code
-task clean          # Clean build artifacts
-task release        # Build for multiple platforms
-task security-scan  # Run security scanning
-task vuln-check     # Check dependencies for known vulnerabilities
-task pre-commit     # Run all pre-commit checks
-```
+## Install
 
-## 🔧 API Integration
+| How | Command |
+| --- | --- |
+| GitHub Action | `uses: amet13/unpatched@v3` (downloads the release binary and checks its SHA-256) |
+| Shell (Linux, macOS) | `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.sh \| sh` |
+| PowerShell (Windows) | `powershell -ExecutionPolicy Bypass -c "irm https://github.com/Amet13/unpatched/releases/latest/download/unpatched-installer.ps1 \| iex"` |
+| Homebrew | Download `unpatched.rb` from the [latest release](https://github.com/Amet13/unpatched/releases/latest), then `brew install --formula ./unpatched.rb` (there is no tap) |
+| Cargo | `cargo install unpatched --locked` |
+| Docker | `docker run --rm -v "$PWD:/work" ghcr.io/amet13/unpatched` |
 
-CVEWatch integrates with the NVD API v2.0 to fetch vulnerability data. The API provides:
+Release archives for Linux, macOS and Windows have a `.sha256` file each and a
+GitHub build attestation. Details: [Start with the command line](https://amet13.github.io/unpatched/guide/start-cli.html)
+and [Start with Docker](https://amet13.github.io/unpatched/guide/start-docker.html).
 
-- Real-time CVE information
-- CVSS scoring data
-- CPE configuration details
-- Reference links and descriptions
-- Publication and modification dates
+## What it is not
 
-### Rate Limiting
+- **Not a catalog of everything.** It knows named products (see the
+  [catalog](https://amet13.github.io/unpatched/guide/catalog.html)). WordPress plugins
+  and themes are not covered, and neither are operating-system packages unless
+  you name them with a `purl`, like
+  `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`.
+- **Not a dependency or container scanner.** It does not read your code, lock
+  files or images. For those use [OSV-Scanner](https://google.github.io/osv-scanner/)
+  or [Trivy](https://trivy.dev/). unpatched can check a single package you name
+  by `purl`, but it does not find packages for you.
+- **Not a network scanner.** It never looks at your hosts. You tell it what runs
+  and in which version.
+- **Not a guarantee.** A quiet report means no source it reads says you are
+  affected. See [How accurate is it](https://amet13.github.io/unpatched/guide/accuracy.html).
 
-- Without API key: 100 requests per hour
-- With API key: 1000 requests per hour
+## Data
 
-### API Endpoints
+CVE.org records, NVD, CISA KEV, EPSS, OSV (packages only), endoflife.date and
+the CVE ids from Exploit-DB and Metasploit. All are open and need no key. A
+workflow in this repository builds one database a day and publishes it as a
+release asset. Licenses and attributions are in [NOTICE](NOTICE); the
+[data page](https://amet13.github.io/unpatched/guide/data.html) says what happens when
+a source fails.
 
-- Base URL: `https://services.nvd.nist.gov/rest/json/cves/2.0`
-- Search endpoint: `/rest/json/cves/2.0`
-- CVE details: `/rest/json/cves/2.0?cveId={CVE-ID}`
+## Guide
 
-## 📊 Output Formats
+[Guide](https://amet13.github.io/unpatched/) ·
+[Findings and rules](https://amet13.github.io/unpatched/guide/findings.html) ·
+[Config reference](https://amet13.github.io/unpatched/guide/config.html) ·
+[Catalog](https://amet13.github.io/unpatched/guide/catalog.html) ·
+[FAQ](https://amet13.github.io/unpatched/guide/faq.html) ·
+[Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html)
 
-### Simple Text
+## With an AI agent
 
-Human-readable format with clear vulnerability information and summaries.
+`unpatched mcp` is a read-only MCP server (`check_stack`, `is_affected`,
+`explain`, `search_catalog`, `db_status`). The repository also ships skills
+(`set-up-unpatched`, `inventory-from-notes`, `plan-upgrades`,
+`explain-a-finding`), a Claude Code plugin and a Gemini CLI extension, and the
+site has [`llms.txt`](https://amet13.github.io/unpatched/guide/llms.txt). See
+[With an agent](https://amet13.github.io/unpatched/guide/with-an-agent.html).
 
-### JSON
+## Contributing
 
-Structured JSON output for programmatic processing and integration.
+Wrong verdicts and new products are the most useful reports. See
+[CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and
+[MAINTAINING.md](MAINTAINING.md). Security problems: [SECURITY.md](SECURITY.md).
 
-### YAML
+This repository was CVEWatch, a Go tool. It is now `unpatched`, written in
+Rust; see [Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html).
 
-YAML format for configuration and data exchange.
+## License
 
-### Table
-
-Formatted table output for easy reading and analysis.
-
-### CSV
-
-Comma-separated values for spreadsheet analysis and reporting.
-
-## 🚨 Security Features
-
-- SSL/TLS verification enabled by default
-- Secure HTTP headers
-- Rate limiting and retry logic
-- Input validation and sanitization
-- Secure configuration file handling
-- SBOM artifacts generated for releases
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
-
-- Code of Conduct
-- Development setup
-- How to submit issues
-- How to create pull requests
-- Coding standards
-
-## 🛟 Support
-
-For usage help and troubleshooting, see [SUPPORT.md](SUPPORT.md).
-
-## 🔐 Security Policy
-
-To report vulnerabilities privately, follow [SECURITY.md](SECURITY.md).
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Code: [MIT](LICENSE). Data keeps the terms of its publishers: [NOTICE](NOTICE).

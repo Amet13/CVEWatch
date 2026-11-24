@@ -1,0 +1,32 @@
+[package]
+name = "unpatched-mcp"
+description = "Model Context Protocol server for unpatched"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["mcp", "vulnerability", "cve", "security", "ai"]
+categories = ["development-tools", "command-line-utilities"]
+include = ["src/**/*", "README.md", "LICENSE"]
+
+[dependencies]
+unpatched-core.workspace = true
+unpatched-catalog.workspace = true
+unpatched-db.workspace = true
+unpatched-notify.workspace = true
+unpatched-sources.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

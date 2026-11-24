@@ -1,0 +1,17 @@
+id: elasticsearch
+name: Elasticsearch
+vendor: Elastic
+kind: database
+versioning: dotted
+match:
+  cpe:
+    - "elastic:elasticsearch"
+  cna:
+    - { vendor: Elastic, product: Elasticsearch }
+    - { vendor: Elastic, product: elasticsearch }
+  kev:
+    - { vendorProject: Elastic, product: Elasticsearch }
+eol: elasticsearch
+aliases: [elastic, es]
+homepage: https://www.elastic.co/elasticsearch
+checked: 2026-11-23

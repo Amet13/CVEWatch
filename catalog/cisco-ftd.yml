@@ -1,0 +1,18 @@
+id: cisco-ftd
+name: Cisco Firepower Threat Defense (FTD) Software
+vendor: Cisco
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "cisco:firepower_threat_defense"
+  cna:
+    - { vendor: Cisco, product: Cisco Firepower Threat Defense Software }
+    - { vendor: Cisco, product: Cisco Secure Firewall Threat Defense (FTD) Software }
+  kev:
+    - { vendorProject: Cisco, product: Adaptive Security Appliance (ASA) and Firepower Threat Defense (FTD) }
+    - { vendorProject: Cisco, product: Secure Firewall ASA Software and Cisco Secure FTD Software }
+    - { vendorProject: Cisco, product: Secure Firewall Adaptive Security Appliance (ASA) and Secure Firewall Threat Defense (FTD) }
+aliases: [ftd, firepower, cisco secure firewall]
+homepage: https://www.cisco.com/site/us/en/products/security/firewalls/index.html
+checked: 2026-11-23

@@ -1,0 +1,62 @@
+description: 'An advisory for the Deck app (filed under the CNA product security-advisories, with app versions) must not be compared with the server version 26.0.3; a server advisory still is.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: nextcloud
+      version: "26.0.3"
+      exposure: internet
+data:
+  products:
+  - id: nextcloud
+    name: Nextcloud Server
+    vendor: Nextcloud
+    kind: server
+    versioning: dotted
+    match:
+      cpe:
+      - nextcloud:nextcloud_server
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-22213
+    summary: 'Deck app: missing access check'
+    published: '2026-10-01'
+    ranges: []
+  - id: CVE-2024-37315
+    summary: 'Nextcloud Server: restore older versions of a read-only file'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 6.5
+    ranges:
+    - source: cve-org
+      product: nextcloud
+      constraints:
+      - kind: range
+        start:
+          version: '26.0.0'
+          inclusive: true
+        end:
+          version: '26.0.12'
+          inclusive: false
+      - kind: range
+        start:
+          version: '27.0.0'
+          inclusive: true
+        end:
+          version: '27.1.7'
+          inclusive: false
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: nextcloud/CVE-2024-37315
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 26.0.12
+absent:
+- nextcloud/CVE-2024-22213

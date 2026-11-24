@@ -1,0 +1,46 @@
+description: 'OpenSSL on Debian 12 (OSV-shaped data): affected before 3.0.13-1~deb12u1.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - purl: "pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+packages:
+  pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm:
+  - id: CVE-2024-0727
+    summary: NULL pointer dereference processing PKCS12 files
+    published: '2026-10-01'
+    ranges:
+    - source: osv
+      product: purl:pkg:deb/debian/openssl
+      constraints:
+      - kind: range
+        start:
+          version: '0'
+          inclusive: true
+        end:
+          version: 3.0.13-1~deb12u1
+          inclusive: false
+      raw: ECOSYSTEM 0 .. fixed 3.0.13-1~deb12u1
+expect:
+- key: pkg-deb-debian-openssl/CVE-2024-0727
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 3.0.13-1~deb12u1

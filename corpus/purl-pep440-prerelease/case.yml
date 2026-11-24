@@ -1,0 +1,46 @@
+description: 'PEP 440: 4.2rc1 is before 4.2, so a release candidate is affected.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - purl: "pkg:pypi/django@4.2rc1"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+packages:
+  pkg:pypi/django@4.2rc1:
+  - id: CVE-2026-0803
+    summary: Package flaw
+    published: '2026-10-01'
+    ranges:
+    - source: osv
+      product: purl:pkg:pypi/django
+      constraints:
+      - kind: range
+        start:
+          version: '4.0'
+          inclusive: true
+        end:
+          version: '4.2'
+          inclusive: false
+      raw: ECOSYSTEM 4.0 .. fixed 4.2
+expect:
+- key: pkg-pypi-django/CVE-2026-0803
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: '4.2'

@@ -1,0 +1,46 @@
+description: 'NVD lists WordPress 2.8.4 with the update a, which cannot be placed in the order; a version that is clearly another release (6.4.1) is not matched by it, and the range excludes 6.4.1.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: wordpress
+      version: "6.4.1"
+      exposure: internet
+data:
+  products:
+  - id: wordpress
+    name: WordPress
+    vendor: WordPress
+    kind: cms
+    versioning: dotted
+    match:
+      cpe:
+      - wordpress:wordpress
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2014-0166
+    summary: 'WordPress cookie forgery'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 7.5
+    ranges:
+    - source: nvd
+      product: wordpress
+      constraints:
+      - kind: range
+        start: null
+        end:
+          version: '3.8.1'
+          inclusive: true
+      - kind: unplaced
+        version: '2.8.4'
+        update: 'a'
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect: []
+absent:
+- wordpress/CVE-2014-0166

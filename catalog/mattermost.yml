@@ -1,0 +1,15 @@
+id: mattermost
+name: Mattermost
+vendor: Mattermost
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "mattermost:mattermost_server"
+    - "mattermost:mattermost"
+  cna:
+    - { vendor: Mattermost, product: Mattermost }
+eol: mattermost
+aliases: [mattermost server]
+homepage: https://mattermost.com/
+checked: 2026-11-23

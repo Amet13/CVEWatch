@@ -1,0 +1,99 @@
+description: 'DSM 7.2.1-69057 is newer than the 7.2 build 64561: dotted read 7.2-64561 as 7.2.64561 and called it inside the range. The fix is the next update, never an older build.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: synology-dsm
+      version: "7.2.1-69057"
+      exposure: internet
+data:
+  products:
+  - id: synology-dsm
+    name: Synology DiskStation Manager (DSM)
+    vendor: Synology
+    kind: os
+    versioning: synology
+    match:
+      cpe:
+      - synology:diskstation_manager
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-10441
+    summary: 'Synology DSM: remote code execution in the control panel'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.8
+    ranges:
+    - source: nvd
+      product: synology-dsm
+      constraints:
+      - kind: range
+        start:
+          version: '7.2'
+          inclusive: true
+        end:
+          version: '7.2-64570-4'
+          inclusive: false
+      - kind: range
+        start:
+          version: '7.2.1-69057'
+          inclusive: true
+        end:
+          version: '7.2.1-69057-6'
+          inclusive: false
+      - kind: range
+        start:
+          version: '7.2.2'
+          inclusive: true
+        end:
+          version: '7.2.2-72806-1'
+          inclusive: false
+      raw: ''
+  - id: CVE-2024-0001
+    summary: 'Synology DSM: flaw fixed in an older build'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.8
+    ranges:
+    - source: nvd
+      product: synology-dsm
+      constraints:
+      - kind: range
+        start:
+          version: '7.0'
+          inclusive: true
+        end:
+          version: '7.2-64561'
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2024-10441:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Synology
+        product: DiskStation Manager (DSM)
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: synology-dsm/CVE-2024-10441
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-CVSS
+  - UNP-EXPOSED
+  fixed_in: 7.2.1-69057-6
+absent:
+- synology-dsm/CVE-2024-0001
+expect_items:
+- key: synology-dsm
+  upgrade_to: 7.2.1-69057-6
+  fixes: 1
+  of: 1

@@ -1,0 +1,16 @@
+id: fortiweb
+name: FortiWeb
+vendor: Fortinet
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "fortinet:fortiweb"
+  cna:
+    - { vendor: Fortinet, product: FortiWeb }
+    - { vendor: Fortinet, product: Fortinet FortiWeb }
+  kev:
+    - { vendorProject: Fortinet, product: FortiWeb }
+homepage: https://www.fortinet.com/products/web-application-firewall/fortiweb
+version_hint: "7.4.2 (three numbers; leave out the build)"
+checked: 2026-11-23

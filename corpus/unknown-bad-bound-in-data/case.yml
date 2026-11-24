@@ -1,0 +1,54 @@
+description: A range bound in the data that does not parse makes that source unknown, not not-affected, and says the fault is in the data.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0001
+    summary: Odd data
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: 7.2.0
+          inclusive: true
+        end:
+          version: seven!
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2026-0001:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Fortinet
+        product: FortiOS
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/CVE-2026-0001
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-DATA
+  - UNP-KEV

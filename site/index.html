@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>unpatched</title>
+<meta name="description" content="unpatched checks the software you run against open vulnerability data every day and opens an issue only when something you run is affected, with the version to upgrade to.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/literata-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="masthead">
+  <a class="name" href="./"><img src="assets/logo.svg" alt="" width="28" height="28">unpatched</a>
+  <nav aria-label="Site">
+    <a href="guide/">Guide</a>
+    <a href="guide/catalog.html">Products</a>
+    <a href="guide/faq.html">FAQ</a>
+    <a href="https://github.com/Amet13/unpatched">Source</a>
+  </nav>
+</header>
+
+<main>
+
+<section class="opening">
+  <div class="opening-text">
+    <h1>Most CVEs are not about you. A few are.</h1>
+    <p>You run a firewall, a VPN, a NAS, a few self-hosted apps. Nobody's job is to read advisories for them. unpatched does it every morning, against the versions you actually run, and opens an issue only when one of them is affected.</p>
+    <p>The issue says what to install, and how urgent it is — judged by whether attackers are using the bug, not by its CVSS score.</p>
+    <p class="actions"><a class="button" href="guide/start-github.html">Set it up in a private repository</a> <a class="quiet-link" href="guide/">or read the guide</a></p>
+  </div>
+
+  <figure class="issue" aria-labelledby="issue-cap">
+    <div class="issue-title">
+      <span class="state">Open</span>
+      <h2>🔴 FortiOS 7.2.5 (Office firewall): 8 to fix today — upgrade to 7.2.12</h2>
+    </div>
+    <p class="issue-meta"><span class="label l-now">unpatched:now</span><span class="label">unpatched</span> opened by github-actions · updated 06:17 UTC</p>
+    <div class="issue-body">
+      <p><strong>Upgrade to 7.2.12.</strong> It fixes 61 of the 110 findings for this firewall. 49 have no fix on the 7.2 branch; plan the move to 7.4.</p>
+      <h3>Fix today</h3>
+      <table>
+        <tbody>
+          <tr><td class="mono">CVE-2024-21762</td><td>Out-of-bounds write in SSL-VPN</td><td>CISA KEV since 2024-02-09, ransomware use known</td></tr>
+          <tr><td class="mono">CVE-2025-59718</td><td>FortiCloud SSO login bypass</td><td>CISA KEV since 2025-12-16</td></tr>
+          <tr><td class="mono">CVE-2024-23113</td><td>Format string in fgfmd</td><td>CISA KEV since 2024-10-09</td></tr>
+        </tbody>
+      </table>
+      <p class="more">…and 5 more, then 32 for this week. FYI findings are counted, not listed.</p>
+    </div>
+    <figcaption id="issue-cap">The issue unpatched opened for one item in a test stack on 24 November 2026, shortened.</figcaption>
+  </figure>
+</section>
+
+<section class="facts" aria-label="Today's data">
+  <p><b>1,792</b> vulnerabilities are being exploited right now, according to CISA's KEV catalog this morning.</p>
+  <p><b>34,326</b> vulnerabilities in today's database touch the <b>71</b> products unpatched knows by name. Packages (Debian, Alpine, PyPI, npm and more) are looked up in OSV.</p>
+  <p>Your list of what you run never leaves your repository.</p>
+</section>
+
+<section class="explain">
+  <h2>What it decides, and how</h2>
+  <div class="columns">
+    <p>Each vulnerability is matched against your exact version, using the vendor's own version scheme — a FortiOS build, an Ivanti <span class="mono">22.7R2.5</span>, a Debian <span class="mono">3.0.11-1~deb12u1</span>. Every source is read on its own: the CVE record, NVD, OSV. One specific "affected" is enough. "Not affected" needs a source that actually has version ranges; when the data is missing or contradicts itself, the answer is <em>unknown</em>, with the reason.</p>
+    <p>Then it asks how soon you should act. <span class="now">Fix today</span> means the bug is in CISA's Known Exploited list, or CISA says exploitation is active, or there is public exploit code and the thing faces the internet. <em>This week</em> means likely to be exploited soon (EPSS), critical, or serious and exposed. Software past its end of life gets its own line. Everything else is counted and kept out of your way.</p>
+  </div>
+</section>
+
+<section class="setup">
+  <h2>Setup is two files</h2>
+  <p>Put them in a private repository. The workflow runs every morning and needs no token of your own. <span class="mono">unpatched init --github</span> writes both for you.</p>
+  <div class="files">
+<pre aria-label="unpatched.yml"><span class="file">unpatched.yml</span>
+version: 1
+stack:
+  - product: fortios
+    version: "7.2.5"
+    exposure: internet
+    name: Office firewall
+  - product: nextcloud
+    version: "29.0.3"
+  - purl: pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm</pre>
+<pre aria-label=".github/workflows/unpatched.yml"><span class="file">.github/workflows/unpatched.yml</span>
+on:
+  schedule: [{ cron: "17 6 * * *" }]
+  workflow_dispatch:
+permissions: { contents: read, issues: write }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: amet13/unpatched@v3</pre>
+  </div>
+  <p class="aside">It also runs as a command, in Docker, and as an MCP server, so you can ask an assistant <q>is anything I run affected by the new Ivanti bug?</q> and get an answer from your own list. See <a href="guide/start-cli.html">the command line</a> and <a href="guide/with-an-agent.html">agents</a>.</p>
+</section>
+
+<section class="not">
+  <h2>What it won't do</h2>
+  <p>It does not scan your code or container images; OSV-Scanner, Trivy and Grype do that well. It does not list every CVE a vendor ever had. It does not guess: no model decides a verdict, and every finding names its sources. It needs no account, no API key and no server.</p>
+</section>
+
+</main>
+
+<footer class="colophon">
+  <p>unpatched is MIT licensed. Data from CISA, FIRST, NIST NVD, the CVE Program, OSV and endoflife.date (<a href="https://github.com/Amet13/unpatched/blob/main/NOTICE">notice</a>). This page loads nothing from anyone else.</p>
+  <p><a href="guide/">Guide</a> · <a href="guide/privacy.html">Privacy</a> · <a href="https://github.com/Amet13/unpatched/releases">Releases</a> · <a href="guide/llms.txt">llms.txt</a></p>
+</footer>
+
+</body>
+</html>

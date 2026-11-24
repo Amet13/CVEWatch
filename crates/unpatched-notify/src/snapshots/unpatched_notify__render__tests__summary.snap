@@ -1,0 +1,63 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: markdown_summary(&r)
+---
+## unpatched
+
+5 to act on (1 today, 2 this week, 1 end of life, 1 unknown), 1 FYI. 🟢 1,412 vulnerabilities checked against your versions: not affected
+
+- 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+- 🟡 Nextcloud 29.0.3  2 this week  →  upgrade to 29.0.8 (fixes all 2)
+- ⚫ PostgreSQL 13.12  1 end of life  →  upgrade to a supported release
+- ❔ Home Assistant 2024.10.1  1 unknown
+- ⚪ Redis 7.2.1  1 FYI  →  upgrade to 7.2.4 (fixes it)
+
+| Bucket | Findings |
+| --- | ---: |
+| 🔴 Fix today | 1 |
+| 🟡 This week | 2 |
+| ⚫ End of life | 1 |
+| ❔ Unknown | 1 |
+| ⚪ FYI | 1 |
+
+### 🔴 Fix today
+
+- **FortiOS 7.2.5 (Office firewall)**: CVE-2024-21762
+  - Why: In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing
+  - Do: Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+  - Rules: `UNP-KEV`, `UNP-EXPOSED`
+
+### 🟡 This week
+
+- **Nextcloud 29.0.3**: CVE-2026-1001
+  - Why: EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
+  - Do: Upgrade to 29.0.8 or later.
+  - Rules: `UNP-EPSS`, `UNP-EXPOSED`
+- **Nextcloud 29.0.3**: CVE-2026-1002
+  - Why: EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
+  - Do: Upgrade to 29.0.6 or later.
+  - Rules: `UNP-EPSS`, `UNP-EXPOSED`
+
+### ⚫ End of life
+
+- **PostgreSQL 13.12**: past end of life
+  - Why: End of life
+  - Do: Upgrade to a supported release.
+  - Rules: `UNP-EOL`
+
+### ❔ Unknown
+
+- **Home Assistant 2024.10.1**: CVE-2026-0042
+  - Why: No usable version data yet
+  - Do: No source has version data for this yet. Read the advisory and check your version by hand.
+  - Rules: `UNP-UNKNOWN-NO-RANGES`
+
+1 FYI not shown: run with -v or --format json
+
+1 ignored on purpose (see unpatched.yml).
+
+Database: built 2026-11-22 02:41 UTC, 1 day old
+
+### Notes
+
+- The catalog entry for home-assistant has not been verified for 40 days.

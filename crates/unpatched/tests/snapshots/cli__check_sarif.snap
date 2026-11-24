@@ -1,0 +1,259 @@
+---
+source: crates/unpatched/tests/cli.rs
+expression: out
+---
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "level": "error",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "FortiOS 7.2.5",
+                  "kind": "resource",
+                  "name": "Office firewall"
+                }
+              ],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "unpatched.yml"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "FortiOS 7.2.5 (Office firewall): A out-of-bounds write vulnerability in Fortinet FortiOS 7.4.0 through 7.4.2, FortiOS 7.2.0 through 7.2.6, FortiOS 7.0.0 through 7.0.13, For… Why: In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 84.6% (percentile 100) · CVSS 9.6 · internet-facing Do: Upgrade to 7.2.7 or later."
+          },
+          "partialFingerprints": {
+            "unpatched/finding": "office-firewall/CVE-2024-21762"
+          },
+          "properties": {
+            "bucket": "now",
+            "fixedAfter": null,
+            "fixedIn": "7.2.7",
+            "rules": [
+              "UNP-KEV",
+              "UNP-SSVC-ACTIVE",
+              "UNP-EPSS",
+              "UNP-CVSS",
+              "UNP-EXPOSED"
+            ],
+            "verdict": "affected",
+            "vulnerability": "CVE-2024-21762"
+          },
+          "ruleId": "UNP-KEV"
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "Nextcloud 29.0.3",
+                  "kind": "resource",
+                  "name": "nextcloud"
+                }
+              ],
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "unpatched.yml"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Nextcloud 29.0.3: nextcloud 29.0.3 is past end of life: the 29 release cycle no longer gets security fixes Why: End of life · internet-facing Do: Upgrade to a supported release."
+          },
+          "partialFingerprints": {
+            "unpatched/finding": "nextcloud/eol"
+          },
+          "properties": {
+            "bucket": "eol",
+            "fixedAfter": null,
+            "fixedIn": null,
+            "rules": [
+              "UNP-EOL"
+            ],
+            "verdict": "affected",
+            "vulnerability": null
+          },
+          "ruleId": "UNP-EOL"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/Amet13/unpatched",
+          "name": "unpatched",
+          "rules": [
+            {
+              "fullDescription": {
+                "text": "CISA lists this vulnerability in its Known Exploited Vulnerabilities catalog, so attackers are using it now. Fix it today."
+              },
+              "id": "UNP-KEV",
+              "name": "UNP-KEV",
+              "shortDescription": {
+                "text": "Known to be exploited"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "CISA's SSVC assessment says exploitation of this vulnerability is active. Treat it like a known exploited vulnerability and fix it today."
+              },
+              "id": "UNP-SSVC-ACTIVE",
+              "name": "UNP-SSVC-ACTIVE",
+              "shortDescription": {
+                "text": "Exploitation is active"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A public exploit exists (Exploit-DB or Metasploit) and this item is marked as internet-facing. Anyone can try it against you, so fix it today."
+              },
+              "id": "UNP-EXPLOIT-EXPOSED",
+              "name": "UNP-EXPLOIT-EXPOSED",
+              "shortDescription": {
+                "text": "Public exploit and reachable from the internet"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The EPSS score is at or above your threshold (default 0.05), which means exploitation in the next 30 days is more likely than for most vulnerabilities. Fix it this week."
+              },
+              "id": "UNP-EPSS",
+              "name": "UNP-EPSS",
+              "shortDescription": {
+                "text": "Likely to be exploited soon"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The CVSS base score is at or above your threshold (default 9.0). Severity alone does not mean it is being exploited, but it is serious enough to fix this week."
+              },
+              "id": "UNP-CVSS",
+              "name": "UNP-CVSS",
+              "shortDescription": {
+                "text": "Critical severity"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "This version is affected, the item is marked as internet-facing and the CVSS base score is at or above your exposed threshold (default 7.0). Attackers can reach it, so fix it this week."
+              },
+              "id": "UNP-EXPOSED",
+              "name": "UNP-EXPOSED",
+              "shortDescription": {
+                "text": "Affected, reachable from the internet and severe"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "This version is affected, but nothing says it is exploited, it is not both internet-facing and severe, and the scores are below your thresholds. Fix it with your normal updates."
+              },
+              "id": "UNP-AFFECTED",
+              "name": "UNP-AFFECTED",
+              "shortDescription": {
+                "text": "Affected, no sign of exploitation"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "This release cycle no longer gets security fixes (endoflife.date). New vulnerabilities will not be patched, so plan an upgrade to a supported cycle."
+              },
+              "id": "UNP-EOL",
+              "name": "UNP-EOL",
+              "shortDescription": {
+                "text": "End of life"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "No source names the affected versions: new CVEs often wait for NVD analysis, and a record that only says \"all versions\" or gives no version is not a range anyone checked. It could matter, so check the advisory yourself. The finding goes away when data arrives."
+              },
+              "id": "UNP-UNKNOWN-NO-RANGES",
+              "name": "UNP-UNKNOWN-NO-RANGES",
+              "shortDescription": {
+                "text": "No usable version data yet"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "Your configured version does not parse under this product's version scheme. unpatched does not guess, so check the version in unpatched.yml (`unpatched catalog show` says how the product writes versions)."
+              },
+              "id": "UNP-UNKNOWN-VERSION",
+              "name": "UNP-UNKNOWN-VERSION",
+              "shortDescription": {
+                "text": "Version cannot be compared"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "A source gave a version bound that does not parse under this product's version scheme, so it cannot be compared. Your own version is fine. Read the advisory and check it by hand."
+              },
+              "id": "UNP-UNKNOWN-DATA",
+              "name": "UNP-UNKNOWN-DATA",
+              "shortDescription": {
+                "text": "A version in the data cannot be read"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "One source says this version is affected and another says it is not. A source that only says \"all versions\" does not outweigh one with exact ranges, so the verdict is unknown. Read the evidence to see which source to trust."
+              },
+              "id": "UNP-CONFLICT",
+              "name": "UNP-CONFLICT",
+              "shortDescription": {
+                "text": "Sources disagree"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The catalog's names for this product match no record in the database, so an empty result would not mean you are safe. Check the catalog entry or report it."
+              },
+              "id": "UNP-UNVERIFIED-PRODUCT",
+              "name": "UNP-UNVERIFIED-PRODUCT",
+              "shortDescription": {
+                "text": "Product not found in the data"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "An ignore entry in unpatched.yml accepts this risk until its date. The finding is listed separately and comes back when the entry expires."
+              },
+              "id": "UNP-IGNORED",
+              "name": "UNP-IGNORED",
+              "shortDescription": {
+                "text": "Ignored on purpose"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "An ignore entry matched this finding but its date has passed, so the finding is back. Fix the issue or write a new entry with a new date."
+              },
+              "id": "UNP-IGNORE-EXPIRED",
+              "name": "UNP-IGNORE-EXPIRED",
+              "shortDescription": {
+                "text": "Ignore entry has expired"
+              }
+            },
+            {
+              "fullDescription": {
+                "text": "The vulnerability database is older than your warning threshold (default 3 days). Results may miss new vulnerabilities, so check that the daily database build is running."
+              },
+              "id": "UNP-STALE-DATA",
+              "name": "UNP-STALE-DATA",
+              "shortDescription": {
+                "text": "Data is out of date"
+              }
+            }
+          ],
+          "version": "3.0.0"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

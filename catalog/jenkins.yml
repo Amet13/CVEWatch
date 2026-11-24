@@ -1,0 +1,18 @@
+id: jenkins
+name: Jenkins
+vendor: Jenkins Project
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "jenkins:jenkins"
+  cna:
+    - { vendor: Jenkins Project, product: Jenkins }
+  kev:
+    - { vendorProject: Jenkins, product: Jenkins }
+    - { vendorProject: Jenkins, product: Jenkins Command Line Interface (CLI) }
+    - { vendorProject: Jenkins, product: Jenkins Stapler Web Framework }
+    - { vendorProject: Jenkins, product: Jenkins User Interface (UI) }
+eol: jenkins
+homepage: https://www.jenkins.io/
+checked: 2026-11-23

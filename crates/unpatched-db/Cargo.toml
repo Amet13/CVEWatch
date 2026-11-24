@@ -1,0 +1,37 @@
+[package]
+name = "unpatched-db"
+description = "The unpatched SQLite database: build, read, download"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["vulnerability", "cve", "sqlite", "security", "database"]
+categories = ["database", "development-tools"]
+include = ["src/**/*", "README.md", "LICENSE"]
+
+[dependencies]
+unpatched-core.workspace = true
+unpatched-sources.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+rusqlite.workspace = true
+zstd.workspace = true
+sha2.workspace = true
+hex.workspace = true
+flate2.workspace = true
+tracing.workspace = true
+tempfile.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+serde_norway.workspace = true
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true

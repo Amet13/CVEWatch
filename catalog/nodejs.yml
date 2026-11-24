@@ -1,0 +1,14 @@
+id: nodejs
+name: Node.js
+vendor: OpenJS Foundation
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "nodejs:node.js"
+  cna:
+    - { vendor: NodeJS, product: Node }
+eol: nodejs
+aliases: [node, node.js]
+homepage: https://nodejs.org/
+checked: 2026-11-23

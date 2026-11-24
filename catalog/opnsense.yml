@@ -1,0 +1,14 @@
+id: opnsense
+name: OPNsense
+vendor: Deciso
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "opnsense:opnsense"
+  cna:
+    - { vendor: Opnsense, product: OPNsense }
+    - { vendor: opnsense, product: core }
+eol: opnsense
+homepage: https://opnsense.org/
+checked: 2026-11-23

@@ -1,322 +1,92 @@
-# Contributing to CVEWatch
+# Contributing to unpatched
 
-Thank you for considering contributing to CVEWatch! We welcome contributions from the community.
+Thank you for helping. The most useful contributions are wrong-verdict reports
+and new catalog products. Both are small, and both end as a test.
 
-## Table of Contents
+Read [AGENTS.md](AGENTS.md) for the layout and the rules, and
+[CONTEXT.md](CONTEXT.md) for the words we use. Be kind: see the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [How to Contribute](#how-to-contribute)
-- [Code Style Guidelines](#code-style-guidelines)
-- [Testing](#testing)
-- [Pull Request Process](#pull-request-process)
-- [Reporting Bugs](#reporting-bugs)
-- [Suggesting Enhancements](#suggesting-enhancements)
+## Set up
 
-## Code of Conduct
+You need Rust (the repository pins the toolchain in `rust-toolchain.toml`; the
+minimum supported version is in `Cargo.toml`, `rust-version`).
 
-This project adheres to a code of conduct. By participating, you are expected to uphold this code. Please be respectful and constructive in all interactions.
-
-## Getting Started
-
-1. Fork the repository on GitHub
-2. Clone your fork locally
-3. Create a new branch for your feature or bug fix
-4. Make your changes
-5. Test your changes thoroughly
-6. Submit a pull request
-
-## Development Setup
-
-### Prerequisites
-
-- Go 1.26 or later
-- Make
-- Git
-
-### Setup Steps
-
-```bash
-# Clone your fork
-git clone https://github.com/YOUR_USERNAME/CVEWatch.git
-cd CVEWatch
-
-# Add upstream remote
-git remote add upstream https://github.com/Amet13/CVEWatch.git
-
-# Install development dependencies
-make dev-setup
-
-# Verify everything works
-make test
-make build
+```sh
+git clone https://github.com/Amet13/unpatched
+cd unpatched
+cargo xtask check
 ```
 
-## How to Contribute
+`cargo xtask check` is the one command to run before every commit. It runs
+`cargo fmt --check`, clippy (warnings are errors), all tests, and the checks
+that generated files are up to date. CI runs the same command. Tests never use
+the network: source data is recorded in `fixtures/`.
 
-### Reporting Bugs
+Optional tools: `cargo install cargo-deny` (licenses and advisories, as in CI),
+`mdbook` (the guide), `shellcheck` and `actionlint` (the workflows).
 
-Before creating bug reports, please check existing issues to avoid duplicates. When creating a bug report, include:
+## Adding a product
 
-- **Clear title and description**
-- **Steps to reproduce** the issue
-- **Expected behavior** vs **actual behavior**
-- **Version information** (`cvewatch version`)
-- **Environment details** (OS, Go version)
-- **Logs or error messages** if applicable
+A product is one file in `catalog/`, named after its id.
 
-### Suggesting Enhancements
+1. Check that it is not there: `unpatched search <name>`.
+2. Copy a similar file in `catalog/` and change the names: the CPE
+   vendor and product, the CNA names used in CVE records, the KEV names, the
+   endoflife.date slug, and the versioning scheme (`dotted`, `semver`, `calver`,
+   `debian`, `rpm`, `apk`, `pep440`, or a named custom scheme).
+3. Pick one CVE that affects it and check the names against the real CVE
+   record and NVD entry. A wrong name silently means "no vulnerabilities".
+   `unpatched explain <CVE>` shows what each source says (`source says: ...`),
+   which has the CPE vendor and product, and the CNA vendor and product as the
+   record writes them. The CISA KEV names are in the
+   [KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+   (`vendorProject` and `product`). The endoflife.date slugs are listed at
+   <https://endoflife.date/api/all.json>. The `add-product` skill (in
+   `.agents/skills/`) walks through all of this.
+4. Add a corpus case (see below) for that CVE with one affected and one fixed version.
+5. Run `cargo xtask catalog build` (it regenerates the file that the code
+   reads, never edit that file by hand), then `cargo xtask check`.
+6. Set `checked:` to today's date. It means a person looked at the entry.
 
-Enhancement suggestions are welcome! Please include:
+The `add-product` agent skill does steps 2 to 4 for you; a person still checks
+the result.
 
-- **Clear description** of the enhancement
-- **Use cases** and why it would be useful
-- **Examples** of how it would work
-- **Possible implementation** details (optional)
+## Adding a source
 
-### Code Contributions
+Each source is one module in `crates/unpatched-sources`.
 
-1. **Pick an issue** or create one to discuss your proposed changes
-2. **Create a branch** with a descriptive name:
-   - `feature/add-xxx` for new features
-   - `fix/issue-123` for bug fixes
-   - `docs/update-readme` for documentation
-3. **Write code** following our style guidelines
-4. **Add tests** for new functionality
-5. **Update documentation** if needed
-6. **Run quality checks** (`make pre-commit`)
-7. **Submit a pull request**
+- `parse_*` functions are pure: bytes in, core types out. They have unit tests
+  against files in `fixtures/`.
+- `fetch_*` functions do the network and nothing else.
+- The source must work without an account or an API key.
+- Check its license and add the attribution to [NOTICE](NOTICE) and to the data
+  page of the guide.
+- Add it to `unpatched db sources-health` (one known item) so a format change is
+  noticed.
 
-## Code Style Guidelines
+## Corpus cases
 
-### Go Code Style
+The corpus is the spec: `corpus/<case>/case.yml` holds a small stack, the data
+slice it needs and the findings that must come out. A bug fix starts as a new
+failing case. Do not loosen, skip or delete a case to get green. A report
+labelled "wrong verdict" gives you the product, version and CVE for the case.
 
-- Follow standard Go conventions and idioms
-- Use `gofmt` and `goimports` for formatting
-- Write clear, self-documenting code
-- Add comments for exported functions and complex logic
-- Keep functions small and focused
-- Prefer descriptive names over comments
+## Commits and pull requests
 
-### Commit Message Guidelines
-
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-**Types:**
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-- `perf`: Performance improvements
-- `ci`: CI/CD changes
-- `sec`: Security fixes
-
-**Examples:**
-
-```
-feat(search): add support for date range queries
-
-Implement date range filtering to allow users to search CVEs
-across multiple days instead of a single date.
-
-Closes #42
-```
-
-```
-fix(validation): support modern CVE ID formats
-
-Update CVE ID validation to accept IDs with more than 5 digits,
-as modern CVE identifiers can have 6+ digits.
-
-Fixes #123
-```
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run tests with race detection
-make test-race
-
-# Run tests with coverage
-make test-coverage
-
-# View coverage report
-open coverage.html
-```
-
-### Writing Tests
-
-- Write unit tests for all new functionality
-- Aim for >80% code coverage
-- Use table-driven tests when appropriate
-- Mock external dependencies
-- Test error cases and edge cases
-
-Example test structure:
-
-```go
-func TestFunctionName(t *testing.T) {
-    tests := []struct {
-        name     string
-        input    string
-        expected string
-        wantErr  bool
-    }{
-        {"valid input", "input1", "output1", false},
-        {"invalid input", "bad", "", true},
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result, err := FunctionName(tt.input)
-            if (err != nil) != tt.wantErr {
-                t.Errorf("unexpected error: %v", err)
-            }
-            if result != tt.expected {
-                t.Errorf("got %v, want %v", result, tt.expected)
-            }
-        })
-    }
-}
-```
-
-## Pull Request Process
-
-1. **Update documentation** for any user-facing changes
-2. **Update CHANGELOG** if applicable
-3. **Ensure all tests pass** (`make test`)
-4. **Run linters** (`make lint`)
-5. **Run security scan** (`make security-scan`)
-6. **Keep PR focused** - one feature/fix per PR
-7. **Provide clear description** of changes
-8. **Link related issues** using keywords (Fixes #123)
-9. **Be responsive** to review feedback
-10. **Squash commits** before merging if requested
-
-### PR Checklist
-
-- [ ] Code follows project style guidelines
-- [ ] Self-review completed
-- [ ] Comments added for complex code
-- [ ] Documentation updated
-- [ ] Tests added/updated
-- [ ] All tests pass locally
-- [ ] No new linter warnings
-- [ ] Commit messages follow conventions
-- [ ] PR description is clear and complete
-
-## Code Ownership
-
-This repository uses CODEOWNERS for critical paths. Changes under workflow/release/security files require maintainer review.
-
-See [.github/CODEOWNERS](.github/CODEOWNERS) for details.
-## Code Review Process
-
-- All submissions require review by maintainers
-- We aim to review PRs within 3-5 business days
-- Address review feedback promptly
-- Expect 1-2 rounds of review for most PRs
-- Be patient and respectful during review
-
-## Development Workflow
-
-### Before Starting
-
-1. Sync your fork with upstream:
-
-```bash
-git fetch upstream
-git checkout main
-git merge upstream/main
-```
-
-2. Create a feature branch:
-
-```bash
-git checkout -b feature/my-feature
-```
-
-### During Development
-
-1. Make small, logical commits
-2. Run tests frequently: `make test`
-3. Run linters: `make lint`
-4. Keep your branch updated with main
-
-### Before Submitting PR
-
-1. Run full pre-commit checks:
-
-```bash
-make pre-commit
-```
-
-2. Ensure your branch is up to date:
-
-```bash
-git fetch upstream
-git rebase upstream/main
-```
-
-3. Push to your fork:
-
-```bash
-git push origin feature/my-feature
-```
-
-## Performance Considerations
-
-- Profile code for performance-critical paths
-- Use benchmarks for performance-sensitive code:
-
-```bash
-go test -bench=. -benchmem ./...
-```
-
-- Consider memory allocations and garbage collection
-- Test with realistic data volumes
+- Commit subjects are short and in the present tense. A prefix is welcome:
+  `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `chore:`, `catalog:`.
+- One change per pull request. Say what and why; the template has the rest.
+- Add a line under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md) for every
+  change a user can see.
+- Dependency and CI updates are made by Dependabot; see
+  [MAINTAINING.md](MAINTAINING.md) for what runs on its own.
 
 ## Security
 
-- Never commit sensitive data (API keys, passwords, etc.)
-- Report security vulnerabilities privately (see SECURITY.md)
-- Follow secure coding practices
-- Run security scans: `make security-scan`
-
-## Questions?
-
-- Open an issue for general questions
-- Tag maintainers in discussions
-- Join community discussions
+Do not open an issue for a vulnerability in unpatched itself; see
+[SECURITY.md](SECURITY.md).
 
 ## License
 
-By contributing to CVEWatch, you agree that your contributions will be licensed under the MIT License.
-
-## Recognition
-
-Contributors will be recognized in:
-
-- Release notes
-- GitHub contributors list
-- README acknowledgments (for significant contributions)
-
-Thank you for contributing to CVEWatch! 🎉
+By contributing you agree that your work is released under the [MIT License](LICENSE).

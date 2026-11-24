@@ -1,0 +1,24 @@
+id: nextcloud
+name: Nextcloud Server
+vendor: Nextcloud
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "nextcloud:nextcloud_server"
+    - "nextcloud:nextcloud"
+  cna:
+    - { vendor: Nextcloud, product: Nextcloud Server }
+    - { vendor: "n/a", product: Nextcloud Server }
+    # Nextcloud files the server and every app under `security-advisories`; only
+    # records about the server count (the app versions are not server versions).
+    - vendor: nextcloud
+      product: security-advisories
+      summary_starts:
+        - "Nextcloud Server is a self hosted personal cloud system."
+        - "Nextcloud is an open source content collaboration platform. In Nextcloud Server"
+eol: nextcloud
+aliases: [nextcloud server, nextcloud hub]
+homepage: https://nextcloud.com/
+version_hint: "29.0.3, or 29.0.3.4 with the fourth number (Settings > Overview)"
+checked: 2026-11-23

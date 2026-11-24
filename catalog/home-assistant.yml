@@ -1,0 +1,14 @@
+id: home-assistant
+name: Home Assistant
+vendor: Home Assistant
+kind: app
+versioning: calver
+match:
+  cpe:
+    - "home-assistant:home-assistant"
+  cna:
+    - { vendor: home-assistant, product: core }
+aliases: [homeassistant, hass, home assistant core, hassio]
+homepage: https://www.home-assistant.io/
+version_hint: "2024.10.1 (year.month.patch)"
+checked: 2026-11-23

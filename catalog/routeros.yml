@@ -1,0 +1,17 @@
+id: routeros
+name: MikroTik RouterOS
+vendor: MikroTik
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "mikrotik:routeros"
+  cna:
+    - { vendor: MikroTik, product: RouterOS }
+    - { vendor: "n/a", product: MikroTik RouterOS }
+  kev:
+    - { vendorProject: MikroTik, product: RouterOS }
+eol: routeros
+aliases: [mikrotik, mikrotik routeros]
+homepage: https://mikrotik.com/software
+checked: 2026-11-23

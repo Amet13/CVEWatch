@@ -1,0 +1,64 @@
+description: 'An item whose findings have no fixed version has no upgrade recommendation and counts them as unfixed.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0001
+    summary: Flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: 7.0.0
+          inclusive: true
+        end: null
+      raw: ''
+  - id: CVE-2026-0002
+    summary: Flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.2.0'
+          inclusive: true
+        end:
+          version: '7.2.6'
+          inclusive: true
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/CVE-2026-0001
+  bucket: fyi
+  verdict: affected
+- key: fortios/CVE-2026-0002
+  bucket: fyi
+  verdict: affected
+expect_items:
+- key: fortios
+  upgrade_to: none
+  fixes: 0
+  of: 2
+  unfixed: 1

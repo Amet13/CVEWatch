@@ -1,0 +1,37 @@
+description: A cycle whose end date is today counts as ended.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: postgresql
+      version: "14.1"
+data:
+  products:
+  - id: postgresql
+    name: PostgreSQL
+    vendor: PostgreSQL
+    kind: database
+    versioning: dotted
+    match:
+      cpe:
+      - postgresql:postgresql
+    checked: '2026-11-01'
+    eol: postgresql
+  vulns: []
+  eol:
+    postgresql:
+    - cycle: '14'
+      eol: '2026-11-24'
+      eol_reached: false
+      latest: '14.15'
+      lts: false
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: postgresql/eol
+  bucket: eol
+  verdict: affected
+  rules:
+  - UNP-EOL

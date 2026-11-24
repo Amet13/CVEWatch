@@ -1,0 +1,8 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: "text(&report(vec![]), &TextOptions::default())"
+---
+Nothing to act on
+
+🟢 1,412 vulnerabilities checked against your versions: not affected
+Database: built 2026-11-22 02:41 UTC, 1 day old

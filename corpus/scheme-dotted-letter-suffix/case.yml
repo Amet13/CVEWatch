@@ -1,0 +1,45 @@
+description: 'Dotted versions with a letter suffix: 1.1.1k is before 1.1.1w.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: openssl
+      version: "1.1.1k"
+data:
+  products:
+  - id: openssl
+    name: OpenSSL
+    vendor: OpenSSL
+    kind: library
+    versioning: dotted
+    match:
+      cpe:
+      - openssl:openssl
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0700
+    summary: OpenSSL flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: openssl
+      constraints:
+      - kind: range
+        start:
+          version: 1.1.1
+          inclusive: true
+        end:
+          version: 1.1.1w
+          inclusive: false
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: openssl/CVE-2026-0700
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 1.1.1w

@@ -1,0 +1,28 @@
+id: netscaler
+name: NetScaler ADC and Gateway
+vendor: Cloud Software Group
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "citrix:netscaler_application_delivery_controller"
+    - "citrix:netscaler_gateway"
+    - "citrix:application_delivery_controller"
+    - "citrix:gateway"
+  cna:
+    - { vendor: Citrix, product: NetScaler ADC }
+    - { vendor: Citrix, product: NetScaler Gateway }
+    - { vendor: NetScaler, product: ADC }
+    - { vendor: NetScaler, product: Gateway }
+    - { vendor: Cloud Software Group, product: NetScaler ADC }
+    - { vendor: "n/a", product: "Citrix ADC, Citrix Gateway" }
+  kev:
+    - { vendorProject: Citrix, product: NetScaler }
+    - { vendorProject: Citrix, product: NetScaler ADC and Gateway }
+    - { vendorProject: Citrix, product: NetScaler ADC and NetScaler Gateway }
+    - { vendorProject: Citrix, product: Application Delivery Controller (ADC) and Gateway }
+    - { vendorProject: Citrix, product: "Application Delivery Controller (ADC), Gateway, and SD-WAN WANOP Appliance" }
+aliases: [citrix adc, citrix gateway, citrix netscaler, netscaler adc, netscaler gateway]
+homepage: https://www.netscaler.com/
+version_hint: "13.1-49.13 (release-build, as `show version` prints it)"
+checked: 2026-11-23

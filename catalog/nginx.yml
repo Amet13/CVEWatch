@@ -1,0 +1,16 @@
+id: nginx
+name: nginx
+vendor: F5
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "f5:nginx"
+    - "nginx:nginx"
+  cna:
+    - { vendor: F5, product: NGINX }
+    - { vendor: nginx, product: nginx }
+eol: nginx
+aliases: [nginx open source]
+homepage: https://nginx.org/
+checked: 2026-11-23

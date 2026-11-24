@@ -1,0 +1,18 @@
+id: roundcube
+name: Roundcube Webmail
+vendor: Roundcube
+kind: app
+versioning: dotted
+match:
+  cpe:
+    - "roundcube:webmail"
+  cna:
+    - { vendor: Roundcube, product: Webmail }
+    - { vendor: Roundcube, product: Roundcubemail }
+  kev:
+    - { vendorProject: Roundcube, product: Webmail }
+    - { vendorProject: Roundcube, product: Roundcube Webmail }
+eol: roundcube
+aliases: [roundcubemail, roundcube webmail]
+homepage: https://roundcube.net/
+checked: 2026-11-23

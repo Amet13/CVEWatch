@@ -1,0 +1,44 @@
+name: Add a product
+description: Ask for a product that is not in the catalog yet
+title: "[product] "
+labels: [catalog]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Products are files in `catalog/`. You can also send a pull request: see
+        "Adding a product" in CONTRIBUTING.md. Check `unpatched search <name>` first.
+  - type: input
+    id: vendor
+    attributes:
+      label: Vendor
+      placeholder: Fortinet
+    validations:
+      required: true
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      placeholder: FortiOS
+    validations:
+      required: true
+  - type: input
+    id: cve
+    attributes:
+      label: One CVE that affects it
+      description: A real CVE id for this product. It lets us check the names the CVE record and NVD use.
+      placeholder: CVE-2024-21762
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where you use it
+      description: For example a homelab, a small business, or a client network. Say how the version is shown (a version string, a build number, a date).
+    validations:
+      required: true
+  - type: input
+    id: eol
+    attributes:
+      label: endoflife.date page
+      description: Optional. The slug, if the product is listed there.

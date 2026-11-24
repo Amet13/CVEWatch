@@ -1,0 +1,2584 @@
+[
+  {
+    "id": "apache-http-server",
+    "name": "Apache HTTP Server",
+    "vendor": "Apache Software Foundation",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "apache:http_server"
+      ],
+      "cna": [
+        {
+          "vendor": "Apache Software Foundation",
+          "product": "Apache HTTP Server"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Apache",
+          "product": "HTTP Server"
+        }
+      ]
+    },
+    "eol": "apache-http-server",
+    "aliases": [
+      "apache",
+      "httpd",
+      "apache2",
+      "apache httpd"
+    ],
+    "homepage": "https://httpd.apache.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "bitbucket",
+    "name": "Atlassian Bitbucket (Data Center and Server)",
+    "vendor": "Atlassian",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "atlassian:bitbucket_data_center",
+        "atlassian:bitbucket_server",
+        "atlassian:bitbucket"
+      ],
+      "cna": [
+        {
+          "vendor": "Atlassian",
+          "product": "Bitbucket Server"
+        },
+        {
+          "vendor": "Atlassian",
+          "product": "Bitbucket Data Center"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Atlassian",
+          "product": "Bitbucket Server and Data Center"
+        }
+      ]
+    },
+    "eol": "bitbucket",
+    "aliases": [
+      "atlassian bitbucket",
+      "bitbucket server",
+      "bitbucket data center"
+    ],
+    "homepage": "https://www.atlassian.com/software/bitbucket",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "caddy",
+    "name": "Caddy",
+    "vendor": "Caddy",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "caddyserver:caddy"
+      ],
+      "cna": [
+        {
+          "vendor": "caddyserver",
+          "product": "caddy"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "caddy",
+    "aliases": [
+      "caddyserver",
+      "caddy server"
+    ],
+    "homepage": "https://caddyserver.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "check-point-quantum",
+    "name": "Check Point Quantum Security Gateway",
+    "vendor": "Check Point",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "checkpoint:quantum_security_gateway",
+        "checkpoint:security_gateway"
+      ],
+      "cna": [
+        {
+          "vendor": "checkpoint",
+          "product": "Check Point Quantum Gateway, Spark Gateway and CloudGuard Network"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Check Point",
+          "product": "Quantum Security Gateways"
+        },
+        {
+          "vendorProject": "Check Point",
+          "product": "Security Gateway"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "checkpoint",
+      "check point gateway",
+      "quantum gateway"
+    ],
+    "homepage": "https://www.checkpoint.com/quantum/network-security/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "cisco-asa",
+    "name": "Cisco Adaptive Security Appliance (ASA) Software",
+    "vendor": "Cisco",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "cisco:adaptive_security_appliance_software"
+      ],
+      "cna": [
+        {
+          "vendor": "Cisco",
+          "product": "Cisco Adaptive Security Appliance (ASA) Software"
+        },
+        {
+          "vendor": "Cisco",
+          "product": "Cisco Secure Firewall Adaptive Security Appliance (ASA) Software"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Cisco",
+          "product": "Adaptive Security Appliance (ASA)"
+        },
+        {
+          "vendorProject": "Cisco",
+          "product": "Adaptive Security Appliance (ASA) and Firepower Threat Defense (FTD)"
+        },
+        {
+          "vendorProject": "Cisco",
+          "product": "Adaptive Security Appliance and Firepower Threat Defense"
+        },
+        {
+          "vendorProject": "Cisco",
+          "product": "Secure Firewall ASA Software and Cisco Secure FTD Software"
+        },
+        {
+          "vendorProject": "Cisco",
+          "product": "Secure Firewall Adaptive Security Appliance (ASA) and Secure Firewall Threat Defense (FTD)"
+        },
+        {
+          "vendorProject": "Cisco",
+          "product": "Secure Firewall Adaptive Security Appliance and Secure Firewall Threat Defense"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "asa",
+      "cisco asa",
+      "adaptive security appliance"
+    ],
+    "homepage": "https://www.cisco.com/site/us/en/products/security/firewalls/adaptive-security-appliance-asa-software/index.html",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "cisco-ftd",
+    "name": "Cisco Firepower Threat Defense (FTD) Software",
+    "vendor": "Cisco",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "cisco:firepower_threat_defense"
+      ],
+      "cna": [
+        {
+          "vendor": "Cisco",
+          "product": "Cisco Firepower Threat Defense Software"
+        },
+        {
+          "vendor": "Cisco",
+          "product": "Cisco Secure Firewall Threat Defense (FTD) Software"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Cisco",
+          "product": "Adaptive Security Appliance (ASA) and Firepower Threat Defense (FTD)"
+        },
+        {
+          "vendorProject": "Cisco",
+          "product": "Secure Firewall ASA Software and Cisco Secure FTD Software"
+        },
+        {
+          "vendorProject": "Cisco",
+          "product": "Secure Firewall Adaptive Security Appliance (ASA) and Secure Firewall Threat Defense (FTD)"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "ftd",
+      "firepower",
+      "cisco secure firewall"
+    ],
+    "homepage": "https://www.cisco.com/site/us/en/products/security/firewalls/index.html",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "confluence",
+    "name": "Atlassian Confluence (Data Center and Server)",
+    "vendor": "Atlassian",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "atlassian:confluence_data_center",
+        "atlassian:confluence_server",
+        "atlassian:confluence"
+      ],
+      "cna": [
+        {
+          "vendor": "Atlassian",
+          "product": "Confluence Data Center"
+        },
+        {
+          "vendor": "Atlassian",
+          "product": "Confluence Server"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Atlassian",
+          "product": "Confluence"
+        },
+        {
+          "vendorProject": "Atlassian",
+          "product": "Confluence Data Center and Server"
+        },
+        {
+          "vendorProject": "Atlassian",
+          "product": "Confluence Server"
+        },
+        {
+          "vendorProject": "Atlassian",
+          "product": "Confluence Server and Data Center"
+        },
+        {
+          "vendorProject": "Atlassian",
+          "product": "Confluence Server and Data Server"
+        },
+        {
+          "vendorProject": "Atlassian",
+          "product": "Confluence Server/Data Center"
+        }
+      ]
+    },
+    "eol": "confluence",
+    "aliases": [
+      "atlassian confluence",
+      "confluence data center",
+      "confluence server"
+    ],
+    "homepage": "https://www.atlassian.com/software/confluence",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "docker-engine",
+    "name": "Docker Engine (Moby)",
+    "vendor": "Docker",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "mobyproject:moby",
+        "docker:docker"
+      ],
+      "cna": [
+        {
+          "vendor": "moby",
+          "product": "moby"
+        },
+        {
+          "vendor": "Docker",
+          "product": "Docker Engine"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "docker-engine",
+    "aliases": [
+      "docker",
+      "moby",
+      "dockerd"
+    ],
+    "homepage": "https://docs.docker.com/engine/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "dovecot",
+    "name": "Dovecot",
+    "vendor": "Dovecot",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "dovecot:dovecot"
+      ],
+      "cna": [
+        {
+          "vendor": "The Dovecot Project",
+          "product": "Dovecot"
+        },
+        {
+          "vendor": "The Dovecot Project",
+          "product": "dovecot"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "dovecot",
+    "aliases": [],
+    "homepage": "https://www.dovecot.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "drupal",
+    "name": "Drupal",
+    "vendor": "Drupal",
+    "kind": "cms",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "drupal:drupal"
+      ],
+      "cna": [
+        {
+          "vendor": "Drupal",
+          "product": "Drupal core"
+        },
+        {
+          "vendor": "Drupal",
+          "product": "Drupal Core"
+        },
+        {
+          "vendor": "Drupal",
+          "product": "Core"
+        },
+        {
+          "vendor": "Drupal",
+          "product": "core"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Drupal",
+          "product": "Core"
+        },
+        {
+          "vendorProject": "Drupal",
+          "product": "Drupal Core"
+        },
+        {
+          "vendorProject": "Drupal",
+          "product": "Drupal core"
+        }
+      ]
+    },
+    "eol": "drupal",
+    "aliases": [
+      "drupal core"
+    ],
+    "homepage": "https://www.drupal.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "elasticsearch",
+    "name": "Elasticsearch",
+    "vendor": "Elastic",
+    "kind": "database",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "elastic:elasticsearch"
+      ],
+      "cna": [
+        {
+          "vendor": "Elastic",
+          "product": "Elasticsearch"
+        },
+        {
+          "vendor": "Elastic",
+          "product": "elasticsearch"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Elastic",
+          "product": "Elasticsearch"
+        }
+      ]
+    },
+    "eol": "elasticsearch",
+    "aliases": [
+      "elastic",
+      "es"
+    ],
+    "homepage": "https://www.elastic.co/elasticsearch",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "esxi",
+    "name": "VMware ESXi",
+    "vendor": "Broadcom",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "vmware:esxi"
+      ],
+      "cna": [
+        {
+          "vendor": "n/a",
+          "product": "VMware ESXi"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "VMware",
+          "product": "ESXi"
+        },
+        {
+          "vendorProject": "VMware",
+          "product": "ESXi and Workstation"
+        },
+        {
+          "vendorProject": "VMware",
+          "product": "ESXi, Workstation, and Fusion"
+        }
+      ]
+    },
+    "eol": "esxi",
+    "aliases": [
+      "vmware esxi",
+      "vsphere esxi"
+    ],
+    "homepage": "https://www.vmware.com/products/cloud-infrastructure/vsphere",
+    "version_hint": "8.0.2 (build 23305546 gives 8.0.2; leave out the build)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "exchange-server",
+    "name": "Microsoft Exchange Server",
+    "vendor": "Microsoft",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "microsoft:exchange_server"
+      ],
+      "cna": [
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2013 Cumulative Update 21"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2013 Cumulative Update 22"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2013 Cumulative Update 23"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2016 Cumulative Update 22"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2016 Cumulative Update 23"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2019 Cumulative Update 11"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2019 Cumulative Update 12"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2019 Cumulative Update 13"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2019 Cumulative Update 14"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server 2019 Cumulative Update 15"
+        },
+        {
+          "vendor": "Microsoft",
+          "product": "Microsoft Exchange Server Subscription Edition RTM"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Microsoft",
+          "product": "Exchange Server"
+        },
+        {
+          "vendorProject": "Microsoft",
+          "product": "Exchange"
+        }
+      ]
+    },
+    "eol": "msexchange",
+    "aliases": [
+      "exchange",
+      "ms exchange",
+      "microsoft exchange"
+    ],
+    "homepage": "https://learn.microsoft.com/exchange/",
+    "version_hint": "the build number, for example 15.2.1544.4 (not '2019 CU14')",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "exim",
+    "name": "Exim",
+    "vendor": "Exim",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "exim:exim"
+      ],
+      "cna": [
+        {
+          "vendor": "exim",
+          "product": "exim"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Exim",
+          "product": "Exim"
+        },
+        {
+          "vendorProject": "Exim",
+          "product": "Exim Internet Mailer"
+        },
+        {
+          "vendorProject": "Exim",
+          "product": "Mail Transfer Agent (MTA)"
+        }
+      ]
+    },
+    "eol": "exim",
+    "aliases": [],
+    "homepage": "https://www.exim.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "fortimanager",
+    "name": "FortiManager",
+    "vendor": "Fortinet",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "fortinet:fortimanager"
+      ],
+      "cna": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiManager"
+        },
+        {
+          "vendor": "Fortinet",
+          "product": "Fortinet FortiManager"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiManager"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [],
+    "homepage": "https://www.fortinet.com/products/management/fortimanager",
+    "version_hint": "7.4.3 (three numbers; leave out the build)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "fortios",
+    "name": "FortiOS",
+    "vendor": "Fortinet",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "fortinet:fortios"
+      ],
+      "cna": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiOS"
+        },
+        {
+          "vendor": "Fortinet",
+          "product": "Fortinet FortiOS, FortiProxy, FortiSwitchManager"
+        },
+        {
+          "vendor": "Fortinet",
+          "product": "FortiOS-6K7K"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiOS"
+        },
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiOS and FortiProxy"
+        },
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiOS and FortiProxy SSL-VPN"
+        },
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiOS and FortiADC"
+        }
+      ]
+    },
+    "eol": "fortios",
+    "aliases": [
+      "fortigate",
+      "fortinet firewall"
+    ],
+    "homepage": "https://www.fortinet.com/products/fortigate/fortios",
+    "version_hint": "7.2.5 (three numbers; leave out 'build 1517')",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "fortiproxy",
+    "name": "FortiProxy",
+    "vendor": "Fortinet",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "fortinet:fortiproxy"
+      ],
+      "cna": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiProxy"
+        },
+        {
+          "vendor": "Fortinet",
+          "product": "Fortinet FortiOS, FortiProxy, FortiSwitchManager"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiOS and FortiProxy"
+        },
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiOS and FortiProxy SSL-VPN"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [],
+    "homepage": "https://www.fortinet.com/products/secure-web-gateway/fortiproxy",
+    "version_hint": "7.4.3 (three numbers; leave out the build)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "fortiweb",
+    "name": "FortiWeb",
+    "vendor": "Fortinet",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "fortinet:fortiweb"
+      ],
+      "cna": [
+        {
+          "vendor": "Fortinet",
+          "product": "FortiWeb"
+        },
+        {
+          "vendor": "Fortinet",
+          "product": "Fortinet FortiWeb"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Fortinet",
+          "product": "FortiWeb"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [],
+    "homepage": "https://www.fortinet.com/products/web-application-firewall/fortiweb",
+    "version_hint": "7.4.2 (three numbers; leave out the build)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "gitea",
+    "name": "Gitea",
+    "vendor": "Gitea",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "gitea:gitea"
+      ],
+      "cna": [
+        {
+          "vendor": "Gitea",
+          "product": "Gitea"
+        },
+        {
+          "vendor": "go-gitea",
+          "product": "go-gitea/gitea"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Gitea",
+          "product": "Gitea"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [],
+    "homepage": "https://about.gitea.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "gitlab",
+    "name": "GitLab",
+    "vendor": "GitLab",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "gitlab:gitlab"
+      ],
+      "cna": [
+        {
+          "vendor": "GitLab",
+          "product": "GitLab"
+        },
+        {
+          "vendor": "GitLab",
+          "product": "GitLab Community and Enterprise Editions"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "GitLab",
+          "product": "GitLab"
+        },
+        {
+          "vendorProject": "GitLab",
+          "product": "Community Edition and Enterprise Edition"
+        },
+        {
+          "vendorProject": "GitLab",
+          "product": "Community and Enterprise Editions"
+        },
+        {
+          "vendorProject": "GitLab",
+          "product": "GitLab CE/EE"
+        }
+      ]
+    },
+    "eol": "gitlab",
+    "aliases": [
+      "gitlab ce",
+      "gitlab ee"
+    ],
+    "homepage": "https://about.gitlab.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "grafana",
+    "name": "Grafana",
+    "vendor": "Grafana Labs",
+    "kind": "app",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "grafana:grafana"
+      ],
+      "cna": [
+        {
+          "vendor": "grafana",
+          "product": "grafana"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Grafana Labs",
+          "product": "Grafana"
+        }
+      ]
+    },
+    "eol": "grafana",
+    "aliases": [],
+    "homepage": "https://grafana.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "haproxy",
+    "name": "HAProxy",
+    "vendor": "HAProxy",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "haproxy:haproxy"
+      ],
+      "cna": [
+        {
+          "vendor": "HAProxy",
+          "product": "HAProxy"
+        },
+        {
+          "vendor": "haproxy",
+          "product": "haproxy"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "haproxy",
+    "aliases": [],
+    "homepage": "https://www.haproxy.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "home-assistant",
+    "name": "Home Assistant",
+    "vendor": "Home Assistant",
+    "kind": "app",
+    "versioning": "calver",
+    "match": {
+      "cpe": [
+        "home-assistant:home-assistant"
+      ],
+      "cna": [
+        {
+          "vendor": "home-assistant",
+          "product": "core"
+        }
+      ],
+      "kev": []
+    },
+    "eol": null,
+    "aliases": [
+      "homeassistant",
+      "hass",
+      "home assistant core",
+      "hassio"
+    ],
+    "homepage": "https://www.home-assistant.io/",
+    "version_hint": "2024.10.1 (year.month.patch)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "ivanti-connect-secure",
+    "name": "Ivanti Connect Secure",
+    "vendor": "Ivanti",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "ivanti:connect_secure",
+        "pulsesecure:pulse_connect_secure"
+      ],
+      "cna": [
+        {
+          "vendor": "Ivanti",
+          "product": "Connect Secure"
+        },
+        {
+          "vendor": "Ivanti",
+          "product": "ICS"
+        },
+        {
+          "vendor": "n/a",
+          "product": "Pulse Connect Secure"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Ivanti",
+          "product": "Connect Secure"
+        },
+        {
+          "vendorProject": "Ivanti",
+          "product": "Connect Secure and Policy Secure"
+        },
+        {
+          "vendorProject": "Ivanti",
+          "product": "Connect Secure, Policy Secure, and Neurons"
+        },
+        {
+          "vendorProject": "Ivanti",
+          "product": "Connect Secure, Policy Secure, and ZTA Gateways"
+        },
+        {
+          "vendorProject": "Ivanti",
+          "product": "Pulse Connect Secure"
+        },
+        {
+          "vendorProject": "Ivanti",
+          "product": "Pulse Connect Secure and Pulse Policy Secure"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "ics",
+      "pulse secure",
+      "pulse connect secure",
+      "ivanti vpn"
+    ],
+    "homepage": "https://www.ivanti.com/products/connect-secure-vpn",
+    "version_hint": "22.7R2 or 22.7R2.5 (release, R number, and the patch number when there is one)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "ivanti-epmm",
+    "name": "Ivanti Endpoint Manager Mobile (EPMM)",
+    "vendor": "Ivanti",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "ivanti:endpoint_manager_mobile",
+        "mobileiron:core"
+      ],
+      "cna": [
+        {
+          "vendor": "Ivanti",
+          "product": "Endpoint Manager Mobile"
+        },
+        {
+          "vendor": "Ivanti",
+          "product": "EPMM"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Ivanti",
+          "product": "Endpoint Manager Mobile (EPMM)"
+        },
+        {
+          "vendorProject": "Ivanti",
+          "product": "Endpoint Manager Mobile (EPMM) and MobileIron Core"
+        },
+        {
+          "vendorProject": "Ivanti",
+          "product": "MobileIron Multiple Products"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "epmm",
+      "mobileiron core",
+      "mobileiron"
+    ],
+    "homepage": "https://www.ivanti.com/products/mobile-device-management",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "jellyfin",
+    "name": "Jellyfin",
+    "vendor": "Jellyfin",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "jellyfin:jellyfin"
+      ],
+      "cna": [
+        {
+          "vendor": "jellyfin",
+          "product": "jellyfin"
+        }
+      ],
+      "kev": []
+    },
+    "eol": null,
+    "aliases": [
+      "jellyfin server"
+    ],
+    "homepage": "https://jellyfin.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "jenkins",
+    "name": "Jenkins",
+    "vendor": "Jenkins Project",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "jenkins:jenkins"
+      ],
+      "cna": [
+        {
+          "vendor": "Jenkins Project",
+          "product": "Jenkins"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Jenkins",
+          "product": "Jenkins"
+        },
+        {
+          "vendorProject": "Jenkins",
+          "product": "Jenkins Command Line Interface (CLI)"
+        },
+        {
+          "vendorProject": "Jenkins",
+          "product": "Jenkins Stapler Web Framework"
+        },
+        {
+          "vendorProject": "Jenkins",
+          "product": "Jenkins User Interface (UI)"
+        }
+      ]
+    },
+    "eol": "jenkins",
+    "aliases": [],
+    "homepage": "https://www.jenkins.io/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "jira",
+    "name": "Atlassian Jira (Data Center and Server)",
+    "vendor": "Atlassian",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "atlassian:jira_data_center",
+        "atlassian:jira_server"
+      ],
+      "cna": [
+        {
+          "vendor": "Atlassian",
+          "product": "Jira Server"
+        },
+        {
+          "vendor": "Atlassian",
+          "product": "Jira Data Center"
+        },
+        {
+          "vendor": "Atlassian",
+          "product": "Jira Server and Data Center"
+        },
+        {
+          "vendor": "Atlassian",
+          "product": "Jira"
+        },
+        {
+          "vendor": "Atlassian",
+          "product": "Jira Software Server"
+        },
+        {
+          "vendor": "Atlassian",
+          "product": "Jira Software Data Center"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Atlassian",
+          "product": "Jira Server and Data Center"
+        }
+      ]
+    },
+    "eol": "jira-software",
+    "aliases": [
+      "atlassian jira",
+      "jira software",
+      "jira data center",
+      "jira server"
+    ],
+    "homepage": "https://www.atlassian.com/software/jira",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "joomla",
+    "name": "Joomla!",
+    "vendor": "Joomla! Project",
+    "kind": "cms",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "joomla:joomla\\!"
+      ],
+      "cna": [
+        {
+          "vendor": "Joomla! Project",
+          "product": "Joomla! CMS"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Joomla!",
+          "product": "Joomla!"
+        }
+      ]
+    },
+    "eol": "joomla",
+    "aliases": [
+      "joomla!",
+      "joomla cms"
+    ],
+    "homepage": "https://www.joomla.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "keycloak",
+    "name": "Keycloak",
+    "vendor": "Red Hat",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "redhat:keycloak",
+        "keycloak:keycloak"
+      ],
+      "cna": [
+        {
+          "vendor": "Red Hat",
+          "product": "keycloak"
+        },
+        {
+          "vendor": "n/a",
+          "product": "Keycloak"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "keycloak",
+    "aliases": [
+      "red hat sso"
+    ],
+    "homepage": "https://www.keycloak.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "kubernetes",
+    "name": "Kubernetes",
+    "vendor": "Kubernetes",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "kubernetes:kubernetes"
+      ],
+      "cna": [
+        {
+          "vendor": "Kubernetes",
+          "product": "Kubernetes"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "kubernetes",
+    "aliases": [
+      "k8s"
+    ],
+    "homepage": "https://kubernetes.io/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "linux-kernel",
+    "name": "Linux kernel",
+    "vendor": "Linux",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "linux:linux_kernel"
+      ],
+      "cna": [
+        {
+          "vendor": "Linux",
+          "product": "Kernel"
+        },
+        {
+          "vendor": "Linux",
+          "product": "Linux"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Linux",
+          "product": "Kernel"
+        }
+      ]
+    },
+    "eol": "linux",
+    "aliases": [
+      "linux",
+      "kernel"
+    ],
+    "homepage": "https://www.kernel.org/",
+    "version_hint": "6.1.55 (the numbers `uname -r` starts with, without the distro suffix)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "mariadb",
+    "name": "MariaDB",
+    "vendor": "MariaDB Foundation",
+    "kind": "database",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "mariadb:mariadb"
+      ],
+      "cna": [],
+      "kev": []
+    },
+    "eol": "mariadb",
+    "aliases": [
+      "mariadb server"
+    ],
+    "homepage": "https://mariadb.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "mattermost",
+    "name": "Mattermost",
+    "vendor": "Mattermost",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "mattermost:mattermost_server",
+        "mattermost:mattermost"
+      ],
+      "cna": [
+        {
+          "vendor": "Mattermost",
+          "product": "Mattermost"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "mattermost",
+    "aliases": [
+      "mattermost server"
+    ],
+    "homepage": "https://mattermost.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "moveit-transfer",
+    "name": "MOVEit Transfer",
+    "vendor": "Progress",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "progress:moveit_transfer"
+      ],
+      "cna": [
+        {
+          "vendor": "Progress",
+          "product": "MOVEit Transfer"
+        },
+        {
+          "vendor": "Progress Software Corporation",
+          "product": "MOVEit Transfer"
+        },
+        {
+          "vendor": "Progress Software",
+          "product": "MOVEit Transfer"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Progress",
+          "product": "MOVEit Transfer"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "moveit",
+      "progress moveit"
+    ],
+    "homepage": "https://www.progress.com/moveit",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "mysql",
+    "name": "MySQL",
+    "vendor": "Oracle",
+    "kind": "database",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "oracle:mysql"
+      ],
+      "cna": [
+        {
+          "vendor": "Oracle Corporation",
+          "product": "MySQL Server"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "mysql",
+    "aliases": [
+      "mysql server",
+      "mysql community"
+    ],
+    "homepage": "https://www.mysql.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "netscaler",
+    "name": "NetScaler ADC and Gateway",
+    "vendor": "Cloud Software Group",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "citrix:netscaler_application_delivery_controller",
+        "citrix:netscaler_gateway",
+        "citrix:application_delivery_controller",
+        "citrix:gateway"
+      ],
+      "cna": [
+        {
+          "vendor": "Citrix",
+          "product": "NetScaler ADC"
+        },
+        {
+          "vendor": "Citrix",
+          "product": "NetScaler Gateway"
+        },
+        {
+          "vendor": "NetScaler",
+          "product": "ADC"
+        },
+        {
+          "vendor": "NetScaler",
+          "product": "Gateway"
+        },
+        {
+          "vendor": "Cloud Software Group",
+          "product": "NetScaler ADC"
+        },
+        {
+          "vendor": "n/a",
+          "product": "Citrix ADC, Citrix Gateway"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Citrix",
+          "product": "NetScaler"
+        },
+        {
+          "vendorProject": "Citrix",
+          "product": "NetScaler ADC and Gateway"
+        },
+        {
+          "vendorProject": "Citrix",
+          "product": "NetScaler ADC and NetScaler Gateway"
+        },
+        {
+          "vendorProject": "Citrix",
+          "product": "Application Delivery Controller (ADC) and Gateway"
+        },
+        {
+          "vendorProject": "Citrix",
+          "product": "Application Delivery Controller (ADC), Gateway, and SD-WAN WANOP Appliance"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "citrix adc",
+      "citrix gateway",
+      "citrix netscaler",
+      "netscaler adc",
+      "netscaler gateway"
+    ],
+    "homepage": "https://www.netscaler.com/",
+    "version_hint": "13.1-49.13 (release-build, as `show version` prints it)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "nextcloud",
+    "name": "Nextcloud Server",
+    "vendor": "Nextcloud",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "nextcloud:nextcloud_server",
+        "nextcloud:nextcloud"
+      ],
+      "cna": [
+        {
+          "vendor": "Nextcloud",
+          "product": "Nextcloud Server"
+        },
+        {
+          "vendor": "n/a",
+          "product": "Nextcloud Server"
+        },
+        {
+          "vendor": "nextcloud",
+          "product": "security-advisories",
+          "summary_starts": [
+            "Nextcloud Server is a self hosted personal cloud system.",
+            "Nextcloud is an open source content collaboration platform. In Nextcloud Server"
+          ]
+        }
+      ],
+      "kev": []
+    },
+    "eol": "nextcloud",
+    "aliases": [
+      "nextcloud server",
+      "nextcloud hub"
+    ],
+    "homepage": "https://nextcloud.com/",
+    "version_hint": "29.0.3, or 29.0.3.4 with the fourth number (Settings > Overview)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "nginx",
+    "name": "nginx",
+    "vendor": "F5",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "f5:nginx",
+        "nginx:nginx"
+      ],
+      "cna": [
+        {
+          "vendor": "F5",
+          "product": "NGINX"
+        },
+        {
+          "vendor": "nginx",
+          "product": "nginx"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "nginx",
+    "aliases": [
+      "nginx open source"
+    ],
+    "homepage": "https://nginx.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "nodejs",
+    "name": "Node.js",
+    "vendor": "OpenJS Foundation",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "nodejs:node.js"
+      ],
+      "cna": [
+        {
+          "vendor": "NodeJS",
+          "product": "Node"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "nodejs",
+    "aliases": [
+      "node",
+      "node.js"
+    ],
+    "homepage": "https://nodejs.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "openssh",
+    "name": "OpenSSH",
+    "vendor": "OpenBSD",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "openbsd:openssh"
+      ],
+      "cna": [
+        {
+          "vendor": "OpenBSD",
+          "product": "OpenSSH"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "OpenBSD",
+          "product": "OpenSSH"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "sshd",
+      "openssh server"
+    ],
+    "homepage": "https://www.openssh.com/",
+    "version_hint": "9.6p1 (as printed by `ssh -V`)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "openssl",
+    "name": "OpenSSL",
+    "vendor": "OpenSSL",
+    "kind": "library",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "openssl:openssl"
+      ],
+      "cna": [
+        {
+          "vendor": "OpenSSL",
+          "product": "OpenSSL"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "OpenSSL",
+          "product": "OpenSSL"
+        }
+      ]
+    },
+    "eol": "openssl",
+    "aliases": [],
+    "homepage": "https://www.openssl.org/",
+    "version_hint": "3.0.11, or 1.1.1w (a letter for old 1.x releases)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "opnsense",
+    "name": "OPNsense",
+    "vendor": "Deciso",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "opnsense:opnsense"
+      ],
+      "cna": [
+        {
+          "vendor": "Opnsense",
+          "product": "OPNsense"
+        },
+        {
+          "vendor": "opnsense",
+          "product": "core"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "opnsense",
+    "aliases": [],
+    "homepage": "https://opnsense.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "pan-os",
+    "name": "PAN-OS",
+    "vendor": "Palo Alto Networks",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "paloaltonetworks:pan-os"
+      ],
+      "cna": [
+        {
+          "vendor": "Palo Alto Networks",
+          "product": "PAN-OS"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Palo Alto Networks",
+          "product": "PAN-OS"
+        }
+      ]
+    },
+    "eol": "panos",
+    "aliases": [
+      "panos",
+      "palo alto",
+      "globalprotect"
+    ],
+    "homepage": "https://www.paloaltonetworks.com/network-security/pan-os",
+    "version_hint": "10.2.8, or 10.2.8-h3 for a hotfix",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "pfsense",
+    "name": "pfSense",
+    "vendor": "Netgate",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "netgate:pfsense",
+        "pfsense:pfsense"
+      ],
+      "cna": [
+        {
+          "vendor": "Netgate",
+          "product": "pfSense CE"
+        },
+        {
+          "vendor": "Netgate",
+          "product": "pfSense Plus"
+        },
+        {
+          "vendor": "Netgate",
+          "product": "Netgate pfSense"
+        },
+        {
+          "vendor": "pfSense",
+          "product": "pfSense CE and pfSense Plus"
+        }
+      ],
+      "kev": []
+    },
+    "eol": null,
+    "aliases": [
+      "pfsense ce",
+      "pfsense plus",
+      "netgate pfsense"
+    ],
+    "homepage": "https://www.pfsense.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "php",
+    "name": "PHP",
+    "vendor": "PHP Group",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "php:php"
+      ],
+      "cna": [
+        {
+          "vendor": "PHP Group",
+          "product": "PHP"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "PHP Group",
+          "product": "PHP"
+        },
+        {
+          "vendorProject": "PHP",
+          "product": "PHP"
+        },
+        {
+          "vendorProject": "PHP",
+          "product": "FastCGI Process Manager (FPM)"
+        }
+      ]
+    },
+    "eol": "php",
+    "aliases": [
+      "php-fpm"
+    ],
+    "homepage": "https://www.php.net/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "phpmyadmin",
+    "name": "phpMyAdmin",
+    "vendor": "phpMyAdmin",
+    "kind": "app",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "phpmyadmin:phpmyadmin"
+      ],
+      "cna": [],
+      "kev": [
+        {
+          "vendorProject": "phpMyAdmin",
+          "product": "phpMyAdmin"
+        }
+      ]
+    },
+    "eol": "phpmyadmin",
+    "aliases": [],
+    "homepage": "https://www.phpmyadmin.net/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "plex-media-server",
+    "name": "Plex Media Server",
+    "vendor": "Plex",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "plex:media_server"
+      ],
+      "cna": [
+        {
+          "vendor": "Plex",
+          "product": "Media Server"
+        },
+        {
+          "vendor": "n/a",
+          "product": "Plex Media Server"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Plex",
+          "product": "Media Server"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "plex",
+      "pms"
+    ],
+    "homepage": "https://www.plex.tv/media-server-downloads/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "postfix",
+    "name": "Postfix",
+    "vendor": "Postfix",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "postfix:postfix"
+      ],
+      "cna": [
+        {
+          "vendor": "Postfix",
+          "product": "Postfix"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "postfix",
+    "aliases": [],
+    "homepage": "https://www.postfix.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "postgresql",
+    "name": "PostgreSQL",
+    "vendor": "PostgreSQL",
+    "kind": "database",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "postgresql:postgresql"
+      ],
+      "cna": [
+        {
+          "vendor": "n/a",
+          "product": "PostgreSQL"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "postgresql",
+    "aliases": [
+      "postgres",
+      "pg"
+    ],
+    "homepage": "https://www.postgresql.org/",
+    "version_hint": "13.4 (major.minor; two numbers since version 10)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "proxmox-ve",
+    "name": "Proxmox Virtual Environment",
+    "vendor": "Proxmox",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "proxmox:virtual_environment"
+      ],
+      "cna": [],
+      "kev": []
+    },
+    "eol": "proxmox-ve",
+    "aliases": [
+      "proxmox",
+      "pve"
+    ],
+    "homepage": "https://www.proxmox.com/proxmox-virtual-environment/overview",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "python",
+    "name": "Python (CPython)",
+    "vendor": "Python Software Foundation",
+    "kind": "server",
+    "versioning": "pep440",
+    "match": {
+      "cpe": [
+        "python:python"
+      ],
+      "cna": [
+        {
+          "vendor": "Python Software Foundation",
+          "product": "CPython"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "python",
+    "aliases": [
+      "cpython"
+    ],
+    "homepage": "https://www.python.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "qnap-qts",
+    "name": "QNAP QTS",
+    "vendor": "QNAP",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "qnap:qts",
+        "qnap:quts_hero"
+      ],
+      "cna": [
+        {
+          "vendor": "QNAP Systems Inc.",
+          "product": "QTS"
+        },
+        {
+          "vendor": "QNAP Systems Inc.",
+          "product": "QuTS hero"
+        },
+        {
+          "vendor": "QNAP",
+          "product": "QNAP QTS"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "QNAP",
+          "product": "QTS"
+        },
+        {
+          "vendorProject": "QNAP",
+          "product": "QNAP Network-Attached Storage (NAS)"
+        },
+        {
+          "vendorProject": "QNAP",
+          "product": "Network Attached Storage (NAS)"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "qts",
+      "qnap",
+      "qnap nas",
+      "quts hero"
+    ],
+    "homepage": "https://www.qnap.com/qts",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "redis",
+    "name": "Redis",
+    "vendor": "Redis",
+    "kind": "database",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "redis:redis"
+      ],
+      "cna": [
+        {
+          "vendor": "redis",
+          "product": "redis"
+        },
+        {
+          "vendor": "Debian",
+          "product": "redis"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Redis",
+          "product": "Debian-specific Redis Servers"
+        }
+      ]
+    },
+    "eol": "redis",
+    "aliases": [
+      "redis server"
+    ],
+    "homepage": "https://redis.io/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "rocket-chat",
+    "name": "Rocket.Chat",
+    "vendor": "Rocket.Chat",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "rocket.chat:rocket.chat"
+      ],
+      "cna": [
+        {
+          "vendor": "n/a",
+          "product": "Rocket.Chat"
+        },
+        {
+          "vendor": "RocketChat",
+          "product": "Rocket.Chat"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "rocket-chat",
+    "aliases": [
+      "rocketchat",
+      "rocket.chat"
+    ],
+    "homepage": "https://rocket.chat/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "roundcube",
+    "name": "Roundcube Webmail",
+    "vendor": "Roundcube",
+    "kind": "app",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "roundcube:webmail"
+      ],
+      "cna": [
+        {
+          "vendor": "Roundcube",
+          "product": "Webmail"
+        },
+        {
+          "vendor": "Roundcube",
+          "product": "Roundcubemail"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Roundcube",
+          "product": "Webmail"
+        },
+        {
+          "vendorProject": "Roundcube",
+          "product": "Roundcube Webmail"
+        }
+      ]
+    },
+    "eol": "roundcube",
+    "aliases": [
+      "roundcubemail",
+      "roundcube webmail"
+    ],
+    "homepage": "https://roundcube.net/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "routeros",
+    "name": "MikroTik RouterOS",
+    "vendor": "MikroTik",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "mikrotik:routeros"
+      ],
+      "cna": [
+        {
+          "vendor": "MikroTik",
+          "product": "RouterOS"
+        },
+        {
+          "vendor": "n/a",
+          "product": "MikroTik RouterOS"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "MikroTik",
+          "product": "RouterOS"
+        }
+      ]
+    },
+    "eol": "routeros",
+    "aliases": [
+      "mikrotik",
+      "mikrotik routeros"
+    ],
+    "homepage": "https://mikrotik.com/software",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "samba",
+    "name": "Samba",
+    "vendor": "Samba",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "samba:samba"
+      ],
+      "cna": [
+        {
+          "vendor": "Samba",
+          "product": "Samba"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Samba",
+          "product": "Samba"
+        }
+      ]
+    },
+    "eol": "samba",
+    "aliases": [
+      "smbd"
+    ],
+    "homepage": "https://www.samba.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "screenconnect",
+    "name": "ConnectWise ScreenConnect",
+    "vendor": "ConnectWise",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "connectwise:screenconnect"
+      ],
+      "cna": [
+        {
+          "vendor": "ConnectWise",
+          "product": "ScreenConnect"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "ConnectWise",
+          "product": "ScreenConnect"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "connectwise control",
+      "connectwise screenconnect"
+    ],
+    "homepage": "https://www.connectwise.com/platform/unified-remote-monitoring-management/remote-support",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "sonicos",
+    "name": "SonicOS",
+    "vendor": "SonicWall",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "sonicwall:sonicos"
+      ],
+      "cna": [
+        {
+          "vendor": "SonicWall",
+          "product": "SonicOS"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "SonicWall",
+          "product": "SonicOS"
+        },
+        {
+          "vendorProject": "SonicWall",
+          "product": "SonicOS SSLVPN"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "sonicwall",
+      "sonicwall firewall"
+    ],
+    "homepage": "https://www.sonicwall.com/products/firewalls",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "synology-dsm",
+    "name": "Synology DiskStation Manager (DSM)",
+    "vendor": "Synology",
+    "kind": "os",
+    "versioning": "synology",
+    "match": {
+      "cpe": [
+        "synology:diskstation_manager"
+      ],
+      "cna": [
+        {
+          "vendor": "Synology",
+          "product": "DiskStation Manager (DSM)"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Synology",
+          "product": "DiskStation Manager (DSM)"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "dsm",
+      "synology",
+      "diskstation manager",
+      "synology nas"
+    ],
+    "homepage": "https://www.synology.com/dsm",
+    "version_hint": "7.2.1-69057, or 7.2.1-69057-5 for Update 5 (DSM Control Panel > Info Center)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "tomcat",
+    "name": "Apache Tomcat",
+    "vendor": "Apache Software Foundation",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "apache:tomcat"
+      ],
+      "cna": [
+        {
+          "vendor": "Apache Software Foundation",
+          "product": "Apache Tomcat"
+        },
+        {
+          "vendor": "Apache",
+          "product": "Apache Tomcat"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Apache",
+          "product": "Tomcat"
+        }
+      ]
+    },
+    "eol": "tomcat",
+    "aliases": [
+      "apache tomcat"
+    ],
+    "homepage": "https://tomcat.apache.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "traefik",
+    "name": "Traefik",
+    "vendor": "Traefik Labs",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "traefik:traefik"
+      ],
+      "cna": [
+        {
+          "vendor": "traefik",
+          "product": "traefik"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "traefik",
+    "aliases": [
+      "traefik proxy"
+    ],
+    "homepage": "https://traefik.io/traefik/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "truenas",
+    "name": "TrueNAS",
+    "vendor": "iXsystems",
+    "kind": "os",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "ixsystems:truenas"
+      ],
+      "cna": [
+        {
+          "vendor": "iXsystems",
+          "product": "TrueNAS CORE"
+        }
+      ],
+      "kev": []
+    },
+    "eol": "truenas",
+    "aliases": [
+      "truenas core",
+      "truenas scale",
+      "freenas"
+    ],
+    "homepage": "https://www.truenas.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "vaultwarden",
+    "name": "Vaultwarden",
+    "vendor": "Vaultwarden",
+    "kind": "server",
+    "versioning": "semver",
+    "match": {
+      "cpe": [
+        "dani-garcia:vaultwarden"
+      ],
+      "cna": [
+        {
+          "vendor": "dani-garcia",
+          "product": "vaultwarden"
+        }
+      ],
+      "kev": []
+    },
+    "eol": null,
+    "aliases": [
+      "bitwarden_rs",
+      "bitwarden rs"
+    ],
+    "homepage": "https://github.com/dani-garcia/vaultwarden",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "vcenter",
+    "name": "VMware vCenter Server",
+    "vendor": "Broadcom",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "vmware:vcenter_server"
+      ],
+      "cna": [
+        {
+          "vendor": "VMware",
+          "product": "vCenter Server"
+        },
+        {
+          "vendor": "n/a",
+          "product": "VMware vCenter Server"
+        },
+        {
+          "vendor": "n/a",
+          "product": "VMware vCenter Server and VMware Cloud Foundation"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "VMware",
+          "product": "vCenter Server"
+        },
+        {
+          "vendorProject": "VMware",
+          "product": "vCenter Server and Cloud Foundation"
+        },
+        {
+          "vendorProject": "Broadcom",
+          "product": "VMware vCenter"
+        },
+        {
+          "vendorProject": "Broadcom",
+          "product": "VMware vCenter Server"
+        }
+      ]
+    },
+    "eol": "vcenter",
+    "aliases": [
+      "vmware vcenter",
+      "vcsa",
+      "vcenter server"
+    ],
+    "homepage": "https://www.vmware.com/products/cloud-infrastructure/vsphere",
+    "version_hint": "8.0.2 (build 23319993 gives 8.0.2; leave out the build)",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "veeam-backup-replication",
+    "name": "Veeam Backup & Replication",
+    "vendor": "Veeam",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "veeam:veeam_backup_\\&_replication"
+      ],
+      "cna": [
+        {
+          "vendor": "Veeam",
+          "product": "Backup & Replication"
+        },
+        {
+          "vendor": "Veeam",
+          "product": "Backup and Replication"
+        },
+        {
+          "vendor": "n/a",
+          "product": "Veeam Backup & Replication"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Veeam",
+          "product": "Backup & Replication"
+        }
+      ]
+    },
+    "eol": "veeam-backup-and-replication",
+    "aliases": [
+      "veeam",
+      "vbr",
+      "veeam backup"
+    ],
+    "homepage": "https://www.veeam.com/products/veeam-data-platform/backup-recovery.html",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "wordpress",
+    "name": "WordPress",
+    "vendor": "WordPress",
+    "kind": "cms",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "wordpress:wordpress"
+      ],
+      "cna": [
+        {
+          "vendor": "WordPress",
+          "product": "wordpress-develop"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "WordPress",
+          "product": "Core"
+        },
+        {
+          "vendorProject": "WordPress",
+          "product": "WordPress Core"
+        }
+      ]
+    },
+    "eol": "wordpress",
+    "aliases": [
+      "wp",
+      "wordpress core"
+    ],
+    "homepage": "https://wordpress.org/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "zabbix",
+    "name": "Zabbix",
+    "vendor": "Zabbix",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "zabbix:zabbix"
+      ],
+      "cna": [
+        {
+          "vendor": "Zabbix",
+          "product": "Frontend"
+        },
+        {
+          "vendor": "Zabbix",
+          "product": "Zabbix Server"
+        },
+        {
+          "vendor": "Zabbix",
+          "product": "Zabbix"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Zabbix",
+          "product": "Frontend"
+        }
+      ]
+    },
+    "eol": "zabbix",
+    "aliases": [
+      "zabbix server"
+    ],
+    "homepage": "https://www.zabbix.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "zimbra",
+    "name": "Zimbra Collaboration",
+    "vendor": "Synacor",
+    "kind": "server",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "zimbra:collaboration",
+        "synacor:zimbra_collaboration_suite"
+      ],
+      "cna": [
+        {
+          "vendor": "Synacor",
+          "product": "Zimbra Server"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Synacor",
+          "product": "Zimbra Collaboration Suite (ZCS)"
+        },
+        {
+          "vendorProject": "Synacor",
+          "product": "Zimbra Collaboration Suite"
+        },
+        {
+          "vendorProject": "Synacor",
+          "product": "Zimbra Collaborate Suite (ZCS)"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "zcs",
+      "zimbra collaboration suite",
+      "zimbra collaboration"
+    ],
+    "homepage": "https://www.zimbra.com/",
+    "checked": "2026-11-23"
+  },
+  {
+    "id": "zyxel-zld",
+    "name": "Zyxel firewalls (ZLD: USG FLEX, ATP, VPN series)",
+    "vendor": "Zyxel",
+    "kind": "appliance",
+    "versioning": "dotted",
+    "match": {
+      "cpe": [
+        "zyxel:zld",
+        "zyxel:usg_flex_100_firmware"
+      ],
+      "cna": [
+        {
+          "vendor": "Zyxel",
+          "product": "USG FLEX series firmware"
+        },
+        {
+          "vendor": "Zyxel",
+          "product": "ATP series firmware"
+        },
+        {
+          "vendor": "Zyxel",
+          "product": "VPN series firmware"
+        },
+        {
+          "vendor": "Zyxel",
+          "product": "USG20(W)-VPN series firmware"
+        },
+        {
+          "vendor": "Zyxel",
+          "product": "USG FLEX 50(W) series firmware"
+        },
+        {
+          "vendor": "Zyxel",
+          "product": "ZyWALL/USG series firmware"
+        }
+      ],
+      "kev": [
+        {
+          "vendorProject": "Zyxel",
+          "product": "Multiple Firewalls"
+        }
+      ]
+    },
+    "eol": null,
+    "aliases": [
+      "zyxel",
+      "zyxel usg",
+      "zyxel atp",
+      "zyxel zywall",
+      "usg flex"
+    ],
+    "homepage": "https://www.zyxel.com/global/en/products/security",
+    "checked": "2026-11-23"
+  }
+]

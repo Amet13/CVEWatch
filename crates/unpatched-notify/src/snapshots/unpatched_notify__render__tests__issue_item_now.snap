@@ -1,0 +1,26 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+
+This item is marked as internet-facing.
+
+### 🔴 Fix today (1)
+
+- **CVE-2024-21762** Out-of-bounds write in sslvpnd allows remote code execution — In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing — Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+
+---
+
+unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
+
+To accept this risk, add to unpatched.yml:
+
+```yaml
+ignore:
+  - cve: CVE-…
+    reason: …
+    until: YYYY-MM-DD
+```
+
+<!-- unpatched:item=office-firewall -->

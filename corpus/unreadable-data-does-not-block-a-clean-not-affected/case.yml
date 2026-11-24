@@ -1,0 +1,56 @@
+description: 'NVD gives the bound ''9.5.1.'' (it does not parse); CVE.org gives a clean range that excludes 7.3.0. The unreadable source says nothing, so the item is not affected.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.3.0"
+      exposure: internet
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0100
+    summary: 'Flaw with a junk bound in one source'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.8
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.2.0'
+          inclusive: true
+        end:
+          version: '7.2.6'
+          inclusive: false
+      raw: ''
+    - source: nvd
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.0.0'
+          inclusive: true
+        end:
+          version: '9.5.1.'
+          inclusive: false
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect: []
+absent:
+- fortios/CVE-2026-0100

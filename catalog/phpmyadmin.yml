@@ -1,0 +1,13 @@
+id: phpmyadmin
+name: phpMyAdmin
+vendor: phpMyAdmin
+kind: app
+versioning: dotted
+match:
+  cpe:
+    - "phpmyadmin:phpmyadmin"
+  kev:
+    - { vendorProject: phpMyAdmin, product: phpMyAdmin }
+eol: phpmyadmin
+homepage: https://www.phpmyadmin.net/
+checked: 2026-11-23

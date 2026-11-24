@@ -1,0 +1,27 @@
+---
+source: crates/unpatched/tests/cli.rs
+expression: stdout_of(check(ws.path()))
+---
+2 to act on (1 today, 1 end of life)
+
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+⚫ Nextcloud 29.0.3  1 end of life  →  upgrade to a supported release
+
+🔴 Fix today (1)
+
+  FortiOS 7.2.5 (Office firewall)
+  CVE-2024-21762  A out-of-bounds write vulnerability in Fortinet FortiOS 7.4.0 through 7.4.2, FortiOS 7.2.0 through 7.2.6, FortiOS 7.0.0 through 7.0.13, For…
+    Why   In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 84.6% (percentile 100) · CVSS 9.6 · internet-facing
+    Do    Upgrade to 7.2.7 or later.
+    Rule  UNP-KEV, UNP-SSVC-ACTIVE, UNP-EPSS, UNP-CVSS, UNP-EXPOSED · verdict affected
+
+⚫ End of life (1)
+
+  Nextcloud 29.0.3
+  nextcloud 29.0.3 is past end of life: the 29 release cycle no longer gets security fixes
+    Why   End of life · internet-facing
+    Do    Upgrade to a supported release.
+    Rule  UNP-EOL · verdict affected
+
+🟢 1 vulnerability checked against your versions: not affected
+Database: built 2026-11-23 12:00 UTC, 0 days old

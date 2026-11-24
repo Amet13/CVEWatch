@@ -1,0 +1,16 @@
+id: joomla
+name: "Joomla!"
+vendor: "Joomla! Project"
+kind: cms
+versioning: dotted
+match:
+  cpe:
+    - "joomla:joomla\\!"
+  cna:
+    - { vendor: "Joomla! Project", product: "Joomla! CMS" }
+  kev:
+    - { vendorProject: "Joomla!", product: "Joomla!" }
+eol: joomla
+aliases: ["joomla!", joomla cms]
+homepage: https://www.joomla.org/
+checked: 2026-11-23

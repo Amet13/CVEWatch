@@ -1,0 +1,71 @@
+description: 'QNAP writes 5.1.x and 5.2.0.2782 build 20240601 in CVE.org; the affected range cannot be read, so the verdict is unknown, and QuTS hero style versions (h5.1.2) are unknown too.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: qnap-qts
+      version: "5.1.5.2645"
+      exposure: internet
+      name: "qts"
+    - product: qnap-qts
+      version: "h5.1.2.2534"
+      exposure: internet
+      name: "quts-hero"
+data:
+  products:
+  - id: qnap-qts
+    name: QNAP QTS
+    vendor: QNAP
+    kind: os
+    versioning: dotted
+    match:
+      cpe:
+      - qnap:qts
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-32771
+    summary: 'QNAP QTS: command injection'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.8
+    ranges:
+    - source: cve-org
+      product: qnap-qts
+      constraints: []
+      unaffected:
+      - kind: exact
+        version: '5.0.x'
+      - kind: exact
+        version: '4.5.x'
+      raw: ''
+  signals:
+    CVE-2024-32771:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: QNAP
+        product: QTS
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: qts/CVE-2024-32771
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-NO-RANGES
+  - UNP-KEV
+  - UNP-EXPOSED
+- key: quts-hero/CVE-2024-32771
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-VERSION
+  - UNP-KEV
+  - UNP-EXPOSED
+notes_contain:
+- cannot be compared

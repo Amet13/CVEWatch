@@ -1,0 +1,62 @@
+# unpatched.yml: what you run, and where to tell you.
+# Keep this file in a PRIVATE repository: it lists your software and versions.
+# Check it with `unpatched check`; `unpatched schema config` prints the format.
+
+# File format version. Only 1 exists.
+version: 1
+
+# The software you run. Each entry is either a catalog `product` (find ids with
+# `unpatched search <name>`) or a package `purl`.
+stack:
+  # A firewall that faces the internet. Edge devices are what attackers hit first.
+  - product: fortios
+    version: 7.2.5
+    exposure: internet # internet | internal (default: internal)
+    name: Office firewall # your label; tells several instances apart
+
+  - product: nextcloud
+    version: 29.0.3
+    exposure: internet
+
+  # Quote versions YAML would read as numbers ("15.4" is a number to YAML).
+  - product: postgresql
+    version: "15.4"
+
+  - product: home-assistant
+    version: 2024.10.1
+
+  # A package: unpatched asks OSV about it (needs the network).
+  # - purl: pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm
+
+# Accept a risk on purpose. `until` is required: nothing is ignored forever, and
+# the finding comes back when the date has passed.
+# ignore:
+#   - cve: CVE-2024-1234
+#     product: nextcloud # optional: a product id or a stack `name`; default is all
+#     reason: "The app is disabled"
+#     until: 2027-01-31
+
+# Where findings go. GitHub issues need no secret and are on by default.
+# Secrets are never written here: they come from environment variables
+# (repository secrets in GitHub Actions).
+notify:
+  issues: true
+  # telegram:
+  #   chat: "123456789" # the bot token is in UNPATCHED_TELEGRAM_TOKEN
+  # slack: true # webhook URL in UNPATCHED_SLACK_WEBHOOK
+  # discord: true # webhook URL in UNPATCHED_DISCORD_WEBHOOK
+  # ntfy:
+  #   topic: my-unpatched-topic # optional token in UNPATCHED_NTFY_TOKEN
+  # webhook: true # URL in UNPATCHED_WEBHOOK_URL
+
+# The day of the weekly digest (monday ... sunday), or `daily`. "Fix today"
+# findings are sent at once, whatever the day.
+digest: monday
+
+# When a finding gets more urgent. The defaults are shown.
+# thresholds:
+#   epss_week: 0.05 # EPSS at or above this: fix this week
+#   cvss_week: 9.0 # CVSS at or above this: fix this week
+#   cvss_week_exposed: 7.0 # CVSS at or above this on an internet-facing item: fix this week
+#   stale_warn_days: 3 # warn when the database is older than this
+#   stale_fail_days: 7 # fail when the database is older than this

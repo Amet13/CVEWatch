@@ -1,0 +1,13 @@
+id: postfix
+name: Postfix
+vendor: Postfix
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "postfix:postfix"
+  cna:
+    - { vendor: Postfix, product: Postfix }
+eol: postfix
+homepage: https://www.postfix.org/
+checked: 2026-11-23

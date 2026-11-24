@@ -1,0 +1,80 @@
+description: 'NVD lists OpenSSH 8.5:p1 as 8.5p1 and ends a range with <= 9.8; 8.5p1 is affected; 9.8p1 against <= 9.8 is unknown (9.8p1 is the OpenSSH fix, the data cannot say); 8.4p1 and 9.9p1 are not.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: openssh
+      version: "8.5p1"
+      exposure: internet
+      name: "ssh-85"
+    - product: openssh
+      version: "9.8p1"
+      exposure: internet
+      name: "ssh-98"
+    - product: openssh
+      version: "8.4p1"
+      exposure: internet
+      name: "ssh-84"
+    - product: openssh
+      version: "9.9p1"
+      exposure: internet
+      name: "ssh-99"
+data:
+  products:
+  - id: openssh
+    name: OpenSSH
+    vendor: OpenBSD
+    kind: server
+    versioning: dotted
+    match:
+      cpe:
+      - openbsd:openssh
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-6387
+    summary: 'regreSSHion: signal handler race condition in sshd'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.1
+    ranges:
+    - source: nvd
+      product: openssh
+      constraints:
+      - kind: range
+        start: null
+        end:
+          version: '4.4'
+          inclusive: false
+      - kind: range
+        start:
+          version: '8.6'
+          inclusive: true
+        end:
+          version: '9.8'
+          inclusive: true
+      - kind: exact
+        version: '4.4'
+      - kind: exact
+        version: '8.5p1'
+      - kind: exact
+        version: '8.6'
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: ssh-85/CVE-2024-6387
+  bucket: week
+  verdict: affected
+  rules:
+  - UNP-EXPOSED
+  fixed_in: none
+- key: ssh-98/CVE-2024-6387
+  bucket: unknown
+  verdict: unknown
+  fixed_in: none
+absent:
+- ssh-84/CVE-2024-6387
+- ssh-99/CVE-2024-6387

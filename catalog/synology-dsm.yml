@@ -1,0 +1,16 @@
+id: synology-dsm
+name: Synology DiskStation Manager (DSM)
+vendor: Synology
+kind: os
+versioning: synology
+match:
+  cpe:
+    - "synology:diskstation_manager"
+  cna:
+    - { vendor: Synology, product: DiskStation Manager (DSM) }
+  kev:
+    - { vendorProject: Synology, product: DiskStation Manager (DSM) }
+aliases: [dsm, synology, diskstation manager, synology nas]
+homepage: https://www.synology.com/dsm
+version_hint: "7.2.1-69057, or 7.2.1-69057-5 for Update 5 (DSM Control Panel > Info Center)"
+checked: 2026-11-23

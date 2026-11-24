@@ -1,0 +1,73 @@
+description: 'A CPE with version ''-'' (not applicable) names no affected version: a plugin flaw does not hit WordPress core 6.4.1, and with a public exploit it only stays visible as unknown.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: wordpress
+      version: "6.4.1"
+      exposure: internet
+data:
+  products:
+  - id: wordpress
+    name: WordPress
+    vendor: WordPress
+    kind: cms
+    versioning: dotted
+    match:
+      cpe:
+      - wordpress:wordpress
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2012-6527
+    summary: 'Cross-site scripting in a WordPress plugin'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 4.3
+    ranges:
+    - source: nvd
+      product: wordpress
+      constraints: []
+      raw: 'cpe:2.3:a:wordpress:wordpress:- (version - means not applicable)'
+  - id: CVE-2012-3414
+    summary: 'Flash file in a WordPress plugin'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 6.8
+    ranges:
+    - source: nvd
+      product: wordpress
+      constraints:
+      - kind: range
+        start: null
+        end:
+          version: '3.3.1'
+          inclusive: true
+      - kind: exact
+        version: '3.0.1'
+      raw: 'cpe:2.3:a:wordpress:wordpress:*'
+  signals:
+    CVE-2012-6527:
+      exploits:
+      - source: exploit-db
+        id: EDB-1
+        url: https://www.exploit-db.com/exploits/1
+    CVE-2012-3414:
+      exploits:
+      - source: exploit-db
+        id: EDB-1
+        url: https://www.exploit-db.com/exploits/1
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: wordpress/CVE-2012-6527
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-NO-RANGES
+  - UNP-EXPLOIT-EXPOSED
+absent:
+- wordpress/CVE-2012-3414

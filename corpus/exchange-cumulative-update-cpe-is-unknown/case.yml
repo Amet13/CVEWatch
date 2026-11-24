@@ -1,0 +1,61 @@
+description: 'NVD lists Exchange as 2019 with the update cumulative_update_14, which cannot be placed against build 15.2.1544.4; the verdict is unknown, not not-affected because 2019 is not the build.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: exchange-server
+      version: "15.2.1544.4"
+      exposure: internet
+data:
+  products:
+  - id: exchange-server
+    name: Microsoft Exchange Server
+    vendor: Microsoft
+    kind: server
+    versioning: dotted
+    match:
+      cpe:
+      - microsoft:exchange_server
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-26198
+    summary: 'Microsoft Exchange Server remote code execution'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.8
+    ranges:
+    - source: nvd
+      product: exchange-server
+      constraints:
+      - kind: unplaced
+        version: '2019'
+        update: 'cumulative_update_14'
+      - kind: unplaced
+        version: '2019'
+        update: 'cumulative_update_13'
+      - kind: unplaced
+        version: '2016'
+        update: 'cumulative_update_23'
+      raw: ''
+  signals:
+    CVE-2024-26198:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Microsoft
+        product: Exchange Server
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: exchange-server/CVE-2024-26198
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-DATA
+  - UNP-KEV
+  - UNP-EXPOSED

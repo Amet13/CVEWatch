@@ -1,0 +1,24 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+❔ Home Assistant 2024.10.1  1 unknown
+
+### ❔ Unknown (1)
+
+- **CVE-2026-0042** Authentication bypass in Home Assistant — No usable version data yet — No source has version data for this yet. Read the advisory and check your version by hand.
+
+---
+
+unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
+
+To accept this risk, add to unpatched.yml:
+
+```yaml
+ignore:
+  - cve: CVE-…
+    reason: …
+    until: YYYY-MM-DD
+```
+
+<!-- unpatched:item=home-assistant -->

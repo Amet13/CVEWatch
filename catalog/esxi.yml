@@ -1,0 +1,19 @@
+id: esxi
+name: VMware ESXi
+vendor: Broadcom
+kind: os
+versioning: dotted
+match:
+  cpe:
+    - "vmware:esxi"
+  cna:
+    - { vendor: "n/a", product: VMware ESXi }
+  kev:
+    - { vendorProject: VMware, product: ESXi }
+    - { vendorProject: VMware, product: ESXi and Workstation }
+    - { vendorProject: VMware, product: "ESXi, Workstation, and Fusion" }
+eol: esxi
+aliases: [vmware esxi, vsphere esxi]
+homepage: https://www.vmware.com/products/cloud-infrastructure/vsphere
+version_hint: "8.0.2 (build 23305546 gives 8.0.2; leave out the build)"
+checked: 2026-11-23

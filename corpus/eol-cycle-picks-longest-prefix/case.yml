@@ -1,0 +1,38 @@
+description: Version 7.2.5 belongs to cycle 7.2, not to cycle 7.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  eol:
+    fortios:
+    - cycle: '7'
+      eol: '2020-01-01'
+      eol_reached: true
+      latest: '7.9'
+      lts: false
+    - cycle: '7.2'
+      eol: '2028-01-01'
+      eol_reached: false
+      latest: 7.2.11
+      lts: false
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect: []
+absent:
+- fortios/eol

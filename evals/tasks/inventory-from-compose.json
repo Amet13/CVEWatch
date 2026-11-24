@@ -1,0 +1,17 @@
+{
+  "id": "inventory-from-compose",
+  "title": "Inventory a docker-compose file without inventing versions",
+  "kind": "config",
+  "prompt": "Add what runs in docker-compose.yml to unpatched.yml so it can be watched. Only add things whose version you can read from the file. Tell me what you left out and why.",
+  "files": {
+    "docker-compose.yml": "services:\n  nextcloud:\n    image: nextcloud:29.0.3\n    ports: [\"443:443\"]\n  cache:\n    image: redis:latest\n  blog:\n    image: ghcr.io/example/blog:stable\n",
+    "unpatched.yml": "version: 1\nstack: []\n"
+  },
+  "expect": {
+    "stack": [{ "product": "nextcloud", "version": "29.0.3" }],
+    "stackExcludes": ["(?i)redis", "(?i)blog", "(?i)latest", "(?i)stable"]
+  },
+  "reference": {
+    "unpatched.yml": "version: 1\nstack:\n  - product: nextcloud\n    version: 29.0.3\n"
+  }
+}

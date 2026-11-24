@@ -1,0 +1,129 @@
+description: "The item recommendation is the smallest version in the item's cycle that fixes every finding there; a fix in the next cycle is left out."
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+      exposure: internet
+      name: "Office firewall"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+    eol: fortios
+  vulns:
+  - id: CVE-2026-0001
+    summary: Flaw CVE-2026-0001
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.0.0'
+          inclusive: true
+        end:
+          version: '7.2.7'
+          inclusive: false
+      raw: ''
+  - id: CVE-2026-0002
+    summary: Flaw CVE-2026-0002
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.0.0'
+          inclusive: true
+        end:
+          version: '7.2.9'
+          inclusive: false
+      raw: ''
+  - id: CVE-2026-0003
+    summary: Flaw CVE-2026-0003
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.0.0'
+          inclusive: true
+        end:
+          version: '7.4.2'
+          inclusive: false
+      raw: ''
+  - id: CVE-2026-0004
+    summary: Flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: 7.0.0
+          inclusive: true
+        end: null
+      raw: ''
+  signals:
+    CVE-2026-0001:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: V
+        product: P
+  eol:
+    fortios:
+    - cycle: '7.2'
+      release_date: '2022-03-31'
+      eol: '2027-09-30'
+      eol_reached: false
+      latest: '7.2.11'
+      lts: false
+    - cycle: '7.4'
+      release_date: '2023-05-11'
+      eol: '2028-05-11'
+      eol_reached: false
+      latest: '7.4.5'
+      lts: false
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: office-firewall/CVE-2026-0001
+  bucket: now
+  verdict: affected
+- key: office-firewall/CVE-2026-0002
+  bucket: fyi
+  verdict: affected
+- key: office-firewall/CVE-2026-0003
+  bucket: fyi
+  verdict: affected
+- key: office-firewall/CVE-2026-0004
+  bucket: fyi
+  verdict: affected
+expect_items:
+- key: office-firewall
+  upgrade_to: 7.2.9
+  fixes: 2
+  of: 4
+  unfixed: 1
+  eol: false
+  now: 1
+  week: 0

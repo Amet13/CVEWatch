@@ -1,0 +1,14 @@
+---
+source: crates/unpatched-notify/src/message.rs
+expression: "m.render(Dialect::Slack, SLACK_MAX)"
+---
+*unpatched · week 48*
+
+*🔴*  FortiOS 7.2.5 (Office firewall): 1 today → upgrade to 7.2.7 (fixes it)
+*🟡*  Nextcloud 29.0.3: 2 this week → upgrade to 29.0.8 (fixes all 2)
+*⚫*  PostgreSQL 13.12: 1 end of life → upgrade to a supported release
+*❔*  Home Assistant 2024.10.1: 1 unknown
+*⚪*  Redis 7.2.1: 1 FYI → upgrade to 7.2.4 (fixes it)
+
+🟢 1,412 vulnerabilities checked against your versions: not affected
+Database: built 2026-11-22 02:41 UTC, 1 day old

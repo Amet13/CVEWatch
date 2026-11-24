@@ -1,0 +1,16 @@
+id: openssl
+name: OpenSSL
+vendor: OpenSSL
+kind: library
+versioning: dotted
+match:
+  cpe:
+    - "openssl:openssl"
+  cna:
+    - { vendor: OpenSSL, product: OpenSSL }
+  kev:
+    - { vendorProject: OpenSSL, product: OpenSSL }
+eol: openssl
+homepage: https://www.openssl.org/
+version_hint: "3.0.11, or 1.1.1w (a letter for old 1.x releases)"
+checked: 2026-11-23

@@ -1,0 +1,61 @@
+description: 'PAN-OS 10.2.8 and the GlobalProtect bug CVE-2024-3400: fix today.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: pan-os
+      version: "10.2.8"
+      exposure: internet
+      name: "Edge GP"
+data:
+  products:
+  - id: pan-os
+    name: PAN-OS
+    vendor: Palo Alto Networks
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - palo alto networks:pan-os
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-3400
+    summary: Command injection in the GlobalProtect feature of PAN-OS
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 10.0
+    ranges:
+    - source: cve-org
+      product: pan-os
+      constraints:
+      - kind: range
+        start:
+          version: 10.2.0
+          inclusive: true
+        end:
+          version: 10.2.9
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2024-3400:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Palo Alto Networks
+        product: PAN-OS
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: edge-gp/CVE-2024-3400
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-CVSS
+  - UNP-EXPOSED
+  fixed_in: 10.2.9

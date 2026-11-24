@@ -1,0 +1,11 @@
+---
+source: crates/unpatched-notify/src/message.rs
+expression: "m.render(Dialect::Plain, usize::MAX)"
+---
+unpatched · 1 to fix today
+
+🔴 Fix today  FortiOS 7.2.5 (Office firewall): CVE-2024-21762, exploited, upgrade to 7.2.7+
+
+🟢 1,412 vulnerabilities checked against your versions: not affected
+Database: built 2026-11-22 02:41 UTC, 1 day old
+https://example.com/r

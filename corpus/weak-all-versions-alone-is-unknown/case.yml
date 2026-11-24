@@ -1,0 +1,64 @@
+description: 'An all-versions record is not a range anyone checked: a KEV-listed CVE with only that evidence stays visible as unknown, never in Fix today.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: ivanti-connect-secure
+      version: "22.7R2"
+      exposure: internet
+      name: "VPN"
+data:
+  products:
+  - id: ivanti-connect-secure
+    name: Ivanti Connect Secure
+    vendor: Ivanti
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - ivanti:ivanti-connect-secure
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-104935
+    summary: Ivanti flaw
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.8
+    ranges:
+    - source: cve-org
+      product: ivanti-connect-secure
+      constraints:
+      - kind: all
+      raw: 'defaultStatus affected'
+      unaffected:
+      - kind: exact
+        version: '25.1.3.0'
+      - kind: exact
+        version: '25.1.3.1'
+      - kind: exact
+        version: '22.8R2.5'
+      - kind: exact
+        version: '22.7R2.14'
+  signals:
+    CVE-2026-104935:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: V
+        product: P
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: vpn/CVE-2026-104935
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-NO-RANGES
+  - UNP-KEV
+  - UNP-CVSS
+  - UNP-EXPOSED

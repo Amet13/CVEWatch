@@ -1,0 +1,16 @@
+{
+  "id": "plan-upgrades",
+  "title": "Order the open findings into an upgrade plan",
+  "kind": "answer",
+  "prompt": "Check unpatched.yml and give me an upgrade plan: what to do first, and which version to move to for each item. Do not make up versions. If no fixed version is known, say so.",
+  "files": {
+    "unpatched.yml": "version: 1\nstack:\n  - product: linux-kernel\n    version: 6.6.20\n    name: Backup server\n  - product: fortios\n    version: 7.2.5\n    exposure: internet\n    name: Office firewall\n"
+  },
+  "expect": {
+    "matches": ["CVE-2024-21762", "7\\.2\\.7", "CVE-2024-26925"],
+    "order": ["(?i)fortios|firewall", "(?i)kernel|backup server"]
+  },
+  "reference": {
+    "answer.md": "1. Office firewall (FortiOS 7.2.5, internet-facing): CVE-2024-21762 is exploited (CISA KEV). Upgrade to 7.2.7 or later today.\n2. Backup server (Linux kernel 6.6.20): CVE-2024-26925 affects it, low urgency. No fixed version is named in the data, so check your distribution's advisory and plan it with the next kernel update."
+  }
+}

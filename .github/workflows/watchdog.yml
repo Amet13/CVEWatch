@@ -1,0 +1,120 @@
+# Opens one issue per workflow when a run on main, on an automation branch or on a release
+# tag (or a scheduled run) fails, so a broken update, database build, release or benchmark is
+# not missed; closes it when the same workflow next succeeds there. Runs on pull requests
+# are not reported: their authors see them.
+#
+# GitHub starts workflow_run only for runs it did not start with GITHUB_TOKEN. The runs
+# the automation starts (ci, codeql and pages after its merges, ci on
+# automation branches, every release autorelease starts) are seen by the hourly sweep,
+# which applies the same logic to every run that finished since the sweep before, and
+# cancels and starts again a run stuck in the queue without a job. The logic is in
+# .github/scripts/watchdog.sh; repeating it is harmless, so the sweep's window overlaps.
+name: watchdog
+
+on:
+  workflow_run:
+    workflows:
+      - ci
+      - codeql
+      - build-db
+      - pages
+      - release
+      - maintenance
+      - autorelease
+      - automerge
+      - OpenSSF Scorecard
+    types: [completed]
+  schedule:
+    - cron: "13 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # A job that GitHub could not give a runner (macOS capacity, a lost runner) never ran
+  # the code, so it says nothing about the change. Such a run is re-run once, failed jobs
+  # only; a job that ran and failed is never re-run, and a second miss is reported.
+  rerun:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1 &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      contains(fromJSON('["ci","build-db","release"]'), github.event.workflow_run.name)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+      checks: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Re-run jobs that never got a runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: bash .github/scripts/watchdog.sh rerun "$RUN_ID"
+
+  report:
+    # Only conclusions that open or close an issue start a runner (most automerge runs are
+    # skipped, and cancelled runs say nothing). The issue follows the newest run of the
+    # workflow on that branch, so a late report of an older run changes nothing.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      contains(fromJSON('["failure","timed_out","startup_failure","success"]'), github.event.workflow_run.conclusion) &&
+      github.event.workflow_run.event != 'pull_request' &&
+      (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.event == 'schedule' ||
+       startsWith(github.event.workflow_run.head_branch, 'automation/') ||
+       (startsWith(github.event.workflow_run.head_branch, 'v') &&
+        contains(fromJSON('["release"]'), github.event.workflow_run.name)))
+    concurrency:
+      group: watchdog-${{ github.event.workflow_run.name }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WORKFLOW_ID: ${{ github.event.workflow_run.workflow_id }}
+          NAME: ${{ github.event.workflow_run.name }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: bash .github/scripts/watchdog.sh report "$WORKFLOW_ID" "$NAME" "$BRANCH"
+
+  sweep:
+    if: github.event_name != 'workflow_run'
+    concurrency:
+      group: watchdog-sweep
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+      checks: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      # 90 minutes for an hourly schedule: GitHub starts scheduled runs late at times.
+      - name: Re-run, report and unstick the runs of the last 90 minutes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: bash .github/scripts/watchdog.sh sweep 90

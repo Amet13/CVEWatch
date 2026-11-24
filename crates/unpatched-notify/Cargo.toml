@@ -1,0 +1,32 @@
+[package]
+name = "unpatched-notify"
+description = "Render unpatched reports and deliver them (GitHub Issues, Telegram, Slack, Discord, ntfy, webhook)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["vulnerability", "notifications", "cve", "security", "slack"]
+categories = ["development-tools", "text-processing"]
+include = ["src/**/*", "README.md", "LICENSE"]
+
+[dependencies]
+unpatched-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+reqwest.workspace = true
+tracing.workspace = true
+sha2.workspace = true
+hex.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

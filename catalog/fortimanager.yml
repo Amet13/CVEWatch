@@ -1,0 +1,16 @@
+id: fortimanager
+name: FortiManager
+vendor: Fortinet
+kind: appliance
+versioning: dotted
+match:
+  cpe:
+    - "fortinet:fortimanager"
+  cna:
+    - { vendor: Fortinet, product: FortiManager }
+    - { vendor: Fortinet, product: Fortinet FortiManager }
+  kev:
+    - { vendorProject: Fortinet, product: FortiManager }
+homepage: https://www.fortinet.com/products/management/fortimanager
+version_hint: "7.4.3 (three numbers; leave out the build)"
+checked: 2026-11-23

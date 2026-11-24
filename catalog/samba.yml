@@ -1,0 +1,16 @@
+id: samba
+name: Samba
+vendor: Samba
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "samba:samba"
+  cna:
+    - { vendor: Samba, product: Samba }
+  kev:
+    - { vendorProject: Samba, product: Samba }
+eol: samba
+aliases: [smbd]
+homepage: https://www.samba.org/
+checked: 2026-11-23

@@ -1,0 +1,52 @@
+# Publishes the workspace crates to crates.io. Called by release.yml (a dist "publish
+# job") after the GitHub release exists. Needs the secret CARGO_REGISTRY_TOKEN; without
+# it the job says so and succeeds, so a release is never blocked by a missing token.
+# The crates go one by one, dependencies first (.github/scripts/publish-crates.sh): a
+# version already on crates.io is skipped, and when crates.io limits new crates (5 at
+# once, then one every 10 minutes) the script waits and tries again. If the job still
+# fails, run it again from the Actions tab: it continues where it stopped.
+name: publish-crates
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        description: The dist plan (JSON) of the release
+        required: true
+        type: string
+    secrets:
+      CARGO_REGISTRY_TOKEN:
+        description: The crates.io API token
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: release
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - name: Is there a token?
+        id: token
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::notice title=crates.io::CARGO_REGISTRY_TOKEN is not set: nothing was published to crates.io."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.token.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ fromJson(inputs.plan).announcement_tag }}
+      - if: steps.token.outputs.present == 'true'
+        uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
+        with:
+          toolchain: 1.100.0
+      - if: steps.token.outputs.present == 'true'
+        run: bash .github/scripts/publish-crates.sh

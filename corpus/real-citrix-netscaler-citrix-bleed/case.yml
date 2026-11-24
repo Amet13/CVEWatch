@@ -1,0 +1,65 @@
+description: 'NetScaler ADC 13.1-49.13 and Citrix Bleed (CVE-2023-4966): fix today.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: netscaler
+      version: "13.1-49.13"
+      exposure: internet
+data:
+  products:
+  - id: netscaler
+    name: NetScaler
+    vendor: Citrix
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - citrix:netscaler
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2023-4966
+    summary: Sensitive information disclosure in NetScaler ADC and Gateway
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.4
+    ranges:
+    - source: cve-org
+      product: netscaler
+      constraints:
+      - kind: range
+        start:
+          version: 13.1-0
+          inclusive: true
+        end:
+          version: 13.1-49.15
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2023-4966:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Citrix
+        product: NetScaler ADC and Gateway
+      exploits:
+      - source: exploit-db
+        id: '51324'
+        url: null
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: netscaler/CVE-2023-4966
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-EXPLOIT-EXPOSED
+  - UNP-CVSS
+  - UNP-EXPOSED
+  fixed_in: 13.1-49.15

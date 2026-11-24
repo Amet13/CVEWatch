@@ -1,0 +1,209 @@
+---
+source: crates/unpatched/tests/cli.rs
+assertion_line: 104
+expression: out
+---
+{
+  "format": 1,
+  "generated_at": "2026-11-24T00:00:00Z",
+  "db": {
+    "schema_version": 1,
+    "built_at": "2026-11-23T12:00:00Z",
+    "sources": [
+      {
+        "source": "kev",
+        "fetched_at": "2026-11-23T12:00:00Z",
+        "records": 7,
+        "ok": true,
+        "note": null
+      },
+      {
+        "source": "epss",
+        "fetched_at": "2026-11-23T12:00:00Z",
+        "records": 8,
+        "ok": true,
+        "note": null
+      },
+      {
+        "source": "nvd",
+        "fetched_at": "2026-11-23T12:00:00Z",
+        "records": 2,
+        "ok": true,
+        "note": "1 feeds, 7 records scanned"
+      },
+      {
+        "source": "cve-org",
+        "fetched_at": "2026-11-23T12:00:00Z",
+        "records": 14,
+        "ok": true,
+        "note": null
+      },
+      {
+        "source": "endoflife",
+        "fetched_at": "2026-11-23T12:00:00Z",
+        "records": 1,
+        "ok": true,
+        "note": null
+      },
+      {
+        "source": "exploit-db",
+        "fetched_at": "2026-11-23T12:00:00Z",
+        "records": 9,
+        "ok": true,
+        "note": null
+      },
+      {
+        "source": "metasploit",
+        "fetched_at": "2026-11-23T12:00:00Z",
+        "records": 9,
+        "ok": true,
+        "note": null
+      }
+    ]
+  },
+  "summary": {
+    "now": 1,
+    "week": 0,
+    "eol": 1,
+    "unknown": 0,
+    "fyi": 0,
+    "ignored": 0,
+    "not_affected": 1
+  },
+  "findings": [
+    {
+      "key": "office-firewall/CVE-2024-21762",
+      "item": "Office firewall",
+      "product": "fortios",
+      "product_name": "FortiOS",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "vuln": "CVE-2024-21762",
+      "title": "A out-of-bounds write vulnerability in Fortinet FortiOS 7.4.0 through 7.4.2, FortiOS 7.2.0 through 7.2.6, FortiOS 7.0.0 through 7.0.13, FortiOS 6.4.0 through 6.4.14, FortiOS 6.2.0 through 6.2.15, FortiOS 6.0 all versions, FortiProxy 7.4.0 through 7.4.2, FortiProxy 7.2.0 through 7.2.8, FortiProxy 7.0.0 through 7.0.14, FortiProxy 2.0.0 through 2.0.13, FortiProxy 01.02 all versions, FortiProxy 1.2 all versions, FortiProxy 01.01 all versions, FortiProxy 1.1 all versions, FortiProxy 01.00 all versions allows attacker to execute unauthorized code or commands via specifically crafted requests",
+      "verdict": "affected",
+      "bucket": "now",
+      "rules": [
+        "UNP-KEV",
+        "UNP-SSVC-ACTIVE",
+        "UNP-EPSS",
+        "UNP-CVSS",
+        "UNP-EXPOSED"
+      ],
+      "fixed_in": "7.2.7",
+      "latest_in_cycle": null,
+      "cvss": {
+        "version": "3.1",
+        "score": 9.6,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:H/RL:W/RC:C"
+      },
+      "signals": {
+        "kev": {
+          "date_added": "2024-02-09",
+          "due_date": "2024-02-16",
+          "known_ransomware": true,
+          "required_action": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable.",
+          "vendor_project": "Fortinet",
+          "product": "FortiOS"
+        },
+        "epss": {
+          "score": 0.8458899855613708,
+          "percentile": 0.9971100091934204,
+          "date": "2026-11-23"
+        },
+        "ssvc_exploitation": "active",
+        "ssvc_automatable": true
+      },
+      "evidence": [
+        {
+          "source": "cve-org",
+          "verdict": "affected",
+          "detail": "affected: 7.2.5 is inside >= 7.2.0 and <= 7.2.6 (source says: {\"defaultStatus\":\"unaffected\",\"product\":\"FortiOS\",\"vendor\":\"Fortinet\",\"versions\":[{\"lessThanOrEqual\":\"7.4.2\",\"status\":\"affected\",\"version\":\"7.4.0\",\"versionType\":\"semver\"},{\"lessThanOrEqual\":\"7.2.6\",\"status\":\"affected\",\"version\":\"7.2.0\",\"versionType\":\"semver\"},{\"lessThanOrEqual\":\"7.0.13\",\"status\":\"affected\",\"version\":\"7.0.0\",\"versionType\":\"semver\"},{\"lessThanOrEqual\":\"6.4.14\",\"status\":\"affected\",\"version\":\"6.4.0\",\"versionType\":\"semver\"},{\"lessThanOrEqual\":\"6.2.15\",\"status\":\"affected\",\"version\":\"6.2.0\",\"versionType\":\"semver\"},{\"lessThanOrEqual\":\"6.0.18\",\"status\":\"affected\",\"version\":\"6.0.0\",\"versionType\":\"semver\"}]}); affected up to and including 7.2.6, so the fix is a later version this source does not name"
+        },
+        {
+          "source": "nvd",
+          "verdict": "affected",
+          "detail": "affected: 7.2.5 is inside >= 7.2.0 and < 7.2.7 (source says: cpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:* >=6.0.0 <6.0.18\ncpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:* >=6.2.0 <6.2.16\ncpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:* >=6.4.0 <6.4.15\ncpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:* >=7.0.0 <7.0.14\ncpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:* >=7.2.0 <7.2.7\ncpe:2.3:o:fortinet:fortios:*:*:*:*:*:*:*:* >=7.4.0 <7.4.3)"
+        }
+      ],
+      "references": [
+        "https://fortiguard.com/psirt/FG-IR-24-015",
+        "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2024-21762"
+      ]
+    },
+    {
+      "key": "nextcloud/eol",
+      "item": "nextcloud",
+      "product": "nextcloud",
+      "product_name": "Nextcloud",
+      "version": "29.0.3",
+      "exposure": "internet",
+      "vuln": null,
+      "title": "nextcloud 29.0.3 is past end of life: the 29 release cycle no longer gets security fixes",
+      "verdict": "affected",
+      "bucket": "eol",
+      "rules": [
+        "UNP-EOL"
+      ],
+      "fixed_in": null,
+      "latest_in_cycle": null,
+      "cvss": null,
+      "signals": {
+        "kev": null,
+        "epss": null,
+        "ssvc_exploitation": null,
+        "ssvc_automatable": null
+      },
+      "evidence": [
+        {
+          "source": "endoflife",
+          "verdict": "affected",
+          "detail": "release cycle 29 reached end of life on 2025-04-30 (endoflife.date)"
+        }
+      ]
+    }
+  ],
+  "ignored": [],
+  "items": [
+    {
+      "key": "office-firewall",
+      "item": "Office firewall",
+      "product": "fortios",
+      "product_name": "FortiOS",
+      "version": "7.2.5",
+      "exposure": "internet",
+      "counts": {
+        "now": 1,
+        "week": 0,
+        "eol": 0,
+        "unknown": 0,
+        "fyi": 0
+      },
+      "upgrade_to": "7.2.7",
+      "fixes": 1,
+      "of": 1,
+      "eol": false,
+      "unfixed": 0
+    },
+    {
+      "key": "nextcloud",
+      "item": "nextcloud",
+      "product": "nextcloud",
+      "product_name": "Nextcloud",
+      "version": "29.0.3",
+      "exposure": "internet",
+      "counts": {
+        "now": 0,
+        "week": 0,
+        "eol": 1,
+        "unknown": 0,
+        "fyi": 0
+      },
+      "upgrade_to": null,
+      "fixes": 0,
+      "of": 0,
+      "eol": true,
+      "unfixed": 0
+    }
+  ],
+  "notes": []
+}

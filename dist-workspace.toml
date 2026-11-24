@@ -1,0 +1,55 @@
+[workspace]
+members = ["cargo:."]
+
+# Config for 'dist' (cargo-dist): https://axodotdev.github.io/cargo-dist/
+# `dist plan` shows what a release builds. `dist generate` rewrites
+# .github/workflows/release.yml; see MAINTAINING.md for the one edit that file keeps.
+[dist]
+# The version of dist that built release.yml.
+cargo-dist-version = "0.34.0"
+# CI backend.
+ci = "github"
+# Installers: a shell script, a PowerShell script and a Homebrew formula. There is no
+# tap: the formula (unpatched.rb) is only a release asset. Use it with
+# `brew install --formula ./unpatched.rb` or from a tap of your own.
+installers = ["shell", "powershell", "homebrew"]
+# Target platforms (Rust target triples).
+targets = [
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+  "aarch64-unknown-linux-musl",
+  "x86_64-unknown-linux-musl",
+  "x86_64-pc-windows-msvc",
+]
+# One SHA-256 file per archive, and a combined sha256.sum.
+checksum = "sha256"
+# GitHub build-provenance attestations for every archive and installer.
+github-attestations = true
+# Where the installers put the binary.
+install-path = "CARGO_HOME"
+install-updater = false
+# dist creates the GitHub release itself, after every build passed.
+create-release = true
+# Checks only (no artifacts) on pull requests that touch the release setup.
+pr-run-mode = "plan"
+# Third-party actions pinned to commits (tag in the comment of release.yml).
+github-action-commits = { "actions/checkout" = "3d3c42e5aac5ba805825da76410c181273ba90b1", "actions/upload-artifact" = "cf430e030ddbb5b0abf93d22962f4752f3646cd9", "actions/download-artifact" = "9000827ccba6bdab643e8b6fd33ac0654aef8333", "actions/attest" = "1e69f48acb82d1966a394da916b4c1698aa569d6" }
+# crates.io and the Docker image, after the GitHub release exists. Both run in the
+# `release` environment (reviewers can be required there).
+publish-jobs = ["./publish-crates", "./publish-docker"]
+# The release.yml file is generated, then edited once to add `workflow_dispatch`
+# (autorelease.yml starts a release of an existing tag). `dist generate` therefore
+# leaves it alone.
+allow-dirty = ["ci"]
+
+[dist.github-custom-runners]
+global = "ubuntu-latest"
+aarch64-apple-darwin = "macos-latest"
+x86_64-apple-darwin = "macos-latest"
+x86_64-unknown-linux-musl = "ubuntu-latest"
+aarch64-unknown-linux-musl = "ubuntu-latest"
+x86_64-pc-windows-msvc = "windows-latest"
+
+[dist.github-custom-job-permissions]
+publish-crates = { contents = "read" }
+publish-docker = { contents = "read", packages = "write", id-token = "write", attestations = "write" }

@@ -1,0 +1,13 @@
+{
+  "id": "is-affected-fortios",
+  "title": "Am I affected by CVE-2024-21762 with FortiOS 7.2.5?",
+  "kind": "answer",
+  "prompt": "Am I affected by CVE-2024-21762? My firewall runs FortiOS 7.2.5 and is reachable from the internet. Answer in a short paragraph: the verdict, the version to upgrade to, and the evidence.",
+  "expect": {
+    "matches": ["(?i)\\baffected\\b", "7\\.2\\.7", "(?i)KEV|known exploited"],
+    "notMatches": ["(?i)\\b(is|are) not affected\\b", "(?i)\\bunaffected\\b", "(?i)\\bnot vulnerable\\b"]
+  },
+  "reference": {
+    "answer.md": "Yes. FortiOS 7.2.5 is affected by CVE-2024-21762. It is in the CISA KEV list, so upgrade to 7.2.7 or later. CVE.org lists 7.2.0 to 7.2.6 as affected and NVD says the same."
+  }
+}

@@ -1,0 +1,125 @@
+description: 'NVD writes Ivanti 22.7R2.4 as version 22.7 and update r2.4; the release is exact, so 22.6R2.1 and 22.7R2 are affected where listed and 22.7R2.5 is not.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: ivanti-connect-secure
+      version: "22.6R2.1"
+      exposure: internet
+      name: "ics-a"
+    - product: ivanti-connect-secure
+      version: "22.7R2"
+      exposure: internet
+      name: "ics-b"
+    - product: ivanti-connect-secure
+      version: "22.7R2.5"
+      exposure: internet
+      name: "ics-c"
+data:
+  products:
+  - id: ivanti-connect-secure
+    name: Ivanti Connect Secure
+    vendor: Ivanti
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - ivanti:connect_secure
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-21893
+    summary: 'Server-side request forgery in Ivanti Connect Secure'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 8.2
+    ranges:
+    - source: nvd
+      product: ivanti-connect-secure
+      constraints:
+      - kind: exact
+        version: '22.1r1'
+      - kind: exact
+        version: '22.1r6'
+      - kind: exact
+        version: '22.2'
+      - kind: exact
+        version: '22.2r1'
+      - kind: exact
+        version: '22.3r1'
+      - kind: exact
+        version: '22.4r1'
+      - kind: exact
+        version: '22.4r2.1'
+      - kind: exact
+        version: '22.6'
+      - kind: exact
+        version: '22.6r1'
+      - kind: exact
+        version: '22.6r2'
+      - kind: exact
+        version: '22.6r2.1'
+      raw: 'cpe:2.3:a:ivanti:connect_secure:22.6:r2.1 (read as version 22.6r2.1)'
+  - id: CVE-2025-0282
+    summary: 'Stack-based buffer overflow in Ivanti Connect Secure'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.0
+    ranges:
+    - source: nvd
+      product: ivanti-connect-secure
+      constraints:
+      - kind: exact
+        version: '22.7r2'
+      - kind: exact
+        version: '22.7r2.1'
+      - kind: exact
+        version: '22.7r2.2'
+      - kind: exact
+        version: '22.7r2.3'
+      - kind: exact
+        version: '22.7r2.4'
+      raw: ''
+  signals:
+    CVE-2024-21893:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Ivanti
+        product: Connect Secure
+    CVE-2025-0282:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Ivanti
+        product: Connect Secure
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: ics-a/CVE-2024-21893
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-EXPOSED
+  fixed_in: none
+- key: ics-b/CVE-2025-0282
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-CVSS
+  - UNP-EXPOSED
+  fixed_in: none
+absent:
+- ics-a/CVE-2025-0282
+- ics-b/CVE-2024-21893
+- ics-c/CVE-2024-21893
+- ics-c/CVE-2025-0282

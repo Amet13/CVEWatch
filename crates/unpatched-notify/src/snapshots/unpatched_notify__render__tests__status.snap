@@ -1,0 +1,57 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+5 to act on (1 today, 2 this week, 1 end of life, 1 unknown), 1 FYI. 🟢 1,412 vulnerabilities checked against your versions: not affected
+
+| Bucket | Findings |
+| --- | ---: |
+| 🔴 Fix today | 1 |
+| 🟡 This week | 2 |
+| ⚫ End of life | 1 |
+| ❔ Unknown | 1 |
+| ⚪ FYI | 1 |
+| Ignored on purpose | 1 |
+
+### What to do
+
+- #10 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+- #11 🟡 Nextcloud 29.0.3  2 this week  →  upgrade to 29.0.8 (fixes all 2)
+- #12 ⚫ PostgreSQL 13.12  1 end of life  →  upgrade to a supported release
+- #13 ❔ Home Assistant 2024.10.1  1 unknown
+- ⚪ Redis 7.2.1  1 FYI  →  upgrade to 7.2.4 (fixes it)
+
+### 🔴 Fix today
+
+- FortiOS 7.2.5 (Office firewall) — CVE-2024-21762: Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+
+### 🟡 This week
+
+- Nextcloud 29.0.3 — CVE-2026-1001: Upgrade to 29.0.8 or later.
+- Nextcloud 29.0.3 — CVE-2026-1002: Upgrade to 29.0.6 or later.
+
+### ⚫ End of life
+
+- PostgreSQL 13.12 — past end of life: Upgrade to a supported release.
+
+### ❔ Unknown
+
+- Home Assistant 2024.10.1 — CVE-2026-0042: No source has version data for this yet. Read the advisory and check your version by hand.
+
+1 FYI not shown: run with -v or --format json
+
+### Closed but still affected
+
+Someone closed these issues, but the items still have findings. unpatched does not reopen them.
+
+- #11 Nextcloud 29.0.3
+
+Database: built 2026-11-22 02:41 UTC, 1 day old
+
+Last run: 2026-11-23 06:17 UTC
+
+### Notes
+
+- The catalog entry for home-assistant has not been verified for 40 days.
+
+<!-- unpatched:state {"version":1,"last_run":"2026-11-23T06:17:00Z","last_digest":null,"sent":{"home-assistant/CVE-2026-0042":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"unknown","channels":[]},"nextcloud/CVE-2026-1001":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"week","channels":[]},"nextcloud/CVE-2026-1002":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"week","channels":[]},"office-firewall/CVE-2024-21762":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"now","channels":[]},"postgresql/eol":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"eol","channels":[]},"redis/CVE-2025-1111":{"first_seen":"2026-11-23T06:17:00Z","last_sent":null,"bucket":"fyi","channels":[]}},"items":{"home-assistant":{"first_seen":"2026-11-23T06:17:00Z","bucket":"unknown","issue":13},"nextcloud":{"first_seen":"2026-11-23T06:17:00Z","bucket":"week","issue":11,"closed_by_human":true},"office-firewall":{"first_seen":"2026-11-23T06:17:00Z","bucket":"now","issue":10},"postgresql":{"first_seen":"2026-11-23T06:17:00Z","bucket":"eol","issue":12},"redis":{"first_seen":"2026-11-23T06:17:00Z","bucket":"fyi"}}} -->

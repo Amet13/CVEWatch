@@ -1,0 +1,30 @@
+[package]
+name = "unpatched-core"
+description = "Pure matching logic for unpatched: versions, ranges, verdicts, buckets, rules"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+readme = "README.md"
+keywords = ["vulnerability", "cve", "semver", "security", "versions"]
+categories = ["development-tools", "parser-implementations"]
+include = ["src/**/*", "README.md", "LICENSE"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_norway.workspace = true
+schemars.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+regex.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+insta.workspace = true
+
+[lints]
+workspace = true

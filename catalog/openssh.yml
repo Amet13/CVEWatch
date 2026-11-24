@@ -1,0 +1,16 @@
+id: openssh
+name: OpenSSH
+vendor: OpenBSD
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "openbsd:openssh"
+  cna:
+    - { vendor: OpenBSD, product: OpenSSH }
+  kev:
+    - { vendorProject: OpenBSD, product: OpenSSH }
+aliases: [sshd, openssh server]
+homepage: https://www.openssh.com/
+version_hint: "9.6p1 (as printed by `ssh -V`)"
+checked: 2026-11-23

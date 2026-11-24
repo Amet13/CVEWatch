@@ -1,0 +1,33 @@
+description: A record that only says all versions, with nothing urgent about it, is dropped (it is not a range anyone checked).
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0001
+    summary: Flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: all
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect: []

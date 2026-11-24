@@ -1,0 +1,25 @@
+[book]
+title = "unpatched"
+description = "Hear about vulnerabilities only when something you run is affected."
+authors = ["Amet Umierov"]
+language = "en"
+src = "docs/guide"
+
+[build]
+build-dir = "book/guide"
+create-missing = false
+
+[output.html]
+site-url = "/unpatched/guide/"
+git-repository-url = "https://github.com/Amet13/unpatched"
+edit-url-template = "https://github.com/Amet13/unpatched/edit/main/docs/guide/{path}"
+default-theme = "light"
+preferred-dark-theme = "navy"
+theme = "docs/theme"
+additional-css = ["docs/theme/unpatched.css"]
+smart-punctuation = true
+
+[output.html.search]
+enable = true
+limit-results = 20
+use-boolean-and = true

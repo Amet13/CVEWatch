@@ -1,0 +1,24 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: body
+---
+⚫ PostgreSQL 13.12  1 end of life  →  upgrade to a supported release
+
+### ⚫ End of life (1)
+
+- **past end of life** — End of life — Upgrade to a supported release.
+
+---
+
+unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
+
+To accept this risk, add to unpatched.yml:
+
+```yaml
+ignore:
+  - cve: CVE-…
+    reason: …
+    until: YYYY-MM-DD
+```
+
+<!-- unpatched:item=postgresql -->

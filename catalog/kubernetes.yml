@@ -1,0 +1,14 @@
+id: kubernetes
+name: Kubernetes
+vendor: Kubernetes
+kind: server
+versioning: semver
+match:
+  cpe:
+    - "kubernetes:kubernetes"
+  cna:
+    - { vendor: Kubernetes, product: Kubernetes }
+eol: kubernetes
+aliases: [k8s]
+homepage: https://kubernetes.io/
+checked: 2026-11-23

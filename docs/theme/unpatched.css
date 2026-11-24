@@ -1,0 +1,78 @@
+/* unpatched guide: the same voice as the landing page.
+   White paper, black ink, serif for reading, grotesque for the interface,
+   red only for "fix today". Fonts come from the site root (/unpatched/assets/fonts),
+   so the guide requests nothing from anyone else; locally they fall back to Georgia. */
+
+@font-face { font-family: "Literata"; src: url("../../../assets/fonts/literata-var.woff2") format("woff2"); font-weight: 200 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Literata"; src: url("../../../assets/fonts/literata-italic-var.woff2") format("woff2"); font-weight: 200 900; font-style: italic; font-display: swap; }
+@font-face { font-family: "Archivo"; src: url("../../../assets/fonts/archivo-var.woff2") format("woff2"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../../../assets/fonts/jetbrains-mono-var.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+
+:root {
+  --unp-red: #c8102e;
+  --content-max-width: 760px;
+  --mono-font: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --code-font-size: .86em;
+}
+
+.light, html:not(.js) {
+  --bg: #ffffff; --fg: #111111;
+  --sidebar-bg: #ffffff; --sidebar-fg: #3d3d3d; --sidebar-non-existant: #9a9a9a;
+  --sidebar-active: #111111; --sidebar-spacer: #dadada; --sidebar-header-border-color: #dadada;
+  --scrollbar: #cfcfcf; --icons: #6b6b6b; --icons-hover: #111111;
+  --links: #111111; --inline-code-color: #111111;
+  --theme-popup-bg: #ffffff; --theme-popup-border: #dadada; --theme-hover: #f4f4f2;
+  --quote-bg: #f4f4f2; --quote-border: #dadada;
+  --table-border-color: #dadada; --table-header-bg: #ffffff; --table-alternate-bg: #ffffff;
+  --searchbar-border-color: #cfcfcf; --searchbar-bg: #ffffff; --searchbar-fg: #111111; --searchbar-shadow-color: transparent;
+  --searchresults-header-fg: #6b6b6b; --searchresults-border-color: #dadada; --searchresults-li-bg: #f4f4f2; --search-mark-bg: #ffe3e6;
+}
+.navy, .coal, .ayu, .rust {
+  --bg: #0f0f0f; --fg: #ececec;
+  --sidebar-bg: #0f0f0f; --sidebar-fg: #c2c2c2; --sidebar-non-existant: #6b6b6b;
+  --sidebar-active: #ffffff; --sidebar-spacer: #2c2c2c; --sidebar-header-border-color: #2c2c2c;
+  --scrollbar: #333; --icons: #8d8d8d; --icons-hover: #ffffff;
+  --links: #ececec; --inline-code-color: #ececec;
+  --theme-popup-bg: #181818; --theme-popup-border: #2c2c2c; --theme-hover: #1d1d1d;
+  --quote-bg: #181818; --quote-border: #2c2c2c;
+  --table-border-color: #2c2c2c; --table-header-bg: #0f0f0f; --table-alternate-bg: #0f0f0f;
+  --searchbar-border-color: #333; --searchbar-bg: #181818; --searchbar-fg: #ececec; --searchbar-shadow-color: transparent;
+  --searchresults-header-fg: #8d8d8d; --searchresults-border-color: #2c2c2c; --searchresults-li-bg: #1d1d1d; --search-mark-bg: #5c1a22;
+  --unp-red: #ff5c64; --color-scheme: dark;
+}
+
+html { font-family: "Literata", Georgia, "Times New Roman", serif; font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
+.content main { font-size: 1.8rem; line-height: 1.65; }
+/* mdBook sets html { font-size: 62.5% }, so 1rem is 10px here. */
+
+/* Interface in the grotesque. */
+#menu-bar, .sidebar, .nav-chapters, .mobile-nav-chapters, #searchbar, .searchresults-header { font-family: "Archivo", ui-sans-serif, system-ui, sans-serif; }
+#menu-bar { border-top: 5px solid var(--fg); border-bottom: 1px solid var(--fg); }
+.menu-title { font-family: "Archivo", ui-sans-serif, sans-serif; font-weight: 750; letter-spacing: -.02em; }
+.sidebar { border-right: 1px solid var(--sidebar-spacer); }
+.chapter li.chapter-item { line-height: 1.45; }
+.chapter li a { font-size: 1.5rem; }
+.chapter li a.active { font-weight: 700; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+.chapter li.part-title { color: var(--fg); font-weight: 700; font-size: 1.5rem; margin-top: 1.4em; padding-bottom: 4px; border-bottom: 1px solid var(--sidebar-spacer); }
+
+/* Headings: serif, sentence case, rules instead of colour. */
+.content h1, .content h2, .content h3, .content h4 { font-family: "Literata", Georgia, serif; font-weight: 650; letter-spacing: -.012em; }
+.content h1 { font-size: 4.2rem; line-height: 1.08; margin: .5em 0 .6em; font-variation-settings: "opsz" 72; }
+.content h2 { font-size: 2.7rem; margin-top: 2.2em; padding-top: .7em; border-top: 1px solid var(--table-border-color); }
+.content h3 { font-size: 2.1rem; }
+.content a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.content a:hover { color: var(--unp-red); }
+.content .header:link, .content .header:visited { text-decoration: none; }
+
+/* Code: quiet grey wash, no borders, no colour games. */
+:not(pre) > code { padding: .08em .3em; border-radius: 3px; background: var(--theme-hover); }
+pre { border-radius: 4px; }
+pre > code.hljs { padding: 1em 1.1em; font-size: .86em; }
+
+/* Tables: rules between rows, nothing else. */
+.content table { border-collapse: collapse; font-family: "Archivo", ui-sans-serif, sans-serif; font-size: .92em; }
+.content table thead th { font-weight: 700; text-align: left; border: 0; border-bottom: 2px solid var(--fg); background: transparent; }
+.content table td, .content table th { border: 0; border-bottom: 1px solid var(--table-border-color); padding: .5em .9em .5em 0; }
+.content table tr:nth-child(2n) { background: transparent; }
+
+blockquote { border-inline-start: 0; border-block: 0; padding: .6em 1em; border-radius: 4px; }

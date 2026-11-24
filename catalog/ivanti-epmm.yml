@@ -1,0 +1,19 @@
+id: ivanti-epmm
+name: Ivanti Endpoint Manager Mobile (EPMM)
+vendor: Ivanti
+kind: server
+versioning: dotted
+match:
+  cpe:
+    - "ivanti:endpoint_manager_mobile"
+    - "mobileiron:core"
+  cna:
+    - { vendor: Ivanti, product: Endpoint Manager Mobile }
+    - { vendor: Ivanti, product: EPMM }
+  kev:
+    - { vendorProject: Ivanti, product: Endpoint Manager Mobile (EPMM) }
+    - { vendorProject: Ivanti, product: Endpoint Manager Mobile (EPMM) and MobileIron Core }
+    - { vendorProject: Ivanti, product: MobileIron Multiple Products }
+aliases: [epmm, mobileiron core, mobileiron]
+homepage: https://www.ivanti.com/products/mobile-device-management
+checked: 2026-11-23

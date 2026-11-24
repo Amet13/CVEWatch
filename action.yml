@@ -1,0 +1,179 @@
+name: unpatched
+description: Checks the software you run (unpatched.yml) against open vulnerability data and tells you only what needs action.
+author: Amet13
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  version:
+    description: >-
+      The unpatched release to run, like v3.0.0, v3.1.0-rc.1 or v3 (the newest stable v3.x.y).
+      Empty: the version in the tag you used (`uses: amet13/unpatched@v3.0.0`), else the latest
+      release. Set it when you pin the action to a commit SHA (`uses: amet13/unpatched@<sha>`),
+      because a SHA says nothing about the version.
+    required: false
+    default: ""
+  binary:
+    description: Path to an unpatched binary you built. Skips the download. Used by this repository's CI.
+    required: false
+    default: ""
+  config:
+    description: Path to your stack file.
+    required: false
+    default: unpatched.yml
+  db:
+    description: "Path to a database file. Empty: download the daily database."
+    required: false
+    default: ""
+  dry-run:
+    description: Send nothing and write no issues; only print what would happen.
+    required: false
+    default: "false"
+  args:
+    description: Extra arguments for `unpatched check`, for example `--exit-code --verbose`.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve the version
+      id: resolve
+      if: inputs.binary == ''
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        ACTION_REF: ${{ github.action_ref }}
+        GH_TOKEN: ${{ github.token }}
+        RUNNER_OS_NAME: ${{ runner.os }}
+        RUNNER_ARCH_NAME: ${{ runner.arch }}
+      run: |
+        set -euo pipefail
+        repo="Amet13/unpatched"
+        want="$INPUT_VERSION"
+        if [ -z "$want" ]; then
+          # A ref like v3, v3.1 or v3.1.0, or a release candidate like v3.1.0-rc.1 (an exact version).
+          if printf '%s' "$ACTION_REF" | grep -Eq '^v[0-9]+(\.[0-9]+){0,2}(-[0-9A-Za-z.-]+)?$'; then
+            want="$ACTION_REF"
+          else
+            echo "::notice title=unpatched version::The action ref '$ACTION_REF' is not a version (a commit or a branch), so the latest release runs. Set the 'version:' input, like version: v3.0.0, to pin it."
+          fi
+        fi
+        case "$want" in
+          "")
+            tag="$(gh api "repos/$repo/releases/latest" --jq .tag_name)" ;;
+          v[0-9]*.[0-9]*.[0-9]*)
+            tag="$want" ;;
+          v[0-9]*)
+            # v3 or v3.0: the highest stable release that starts with it (by version,
+            # not by date: a patch release of an older line may be newer).
+            prefix="${want}."
+            tag="$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.prerelease == false and .draft == false) | .tag_name | select(startswith(\"$prefix\")) | select(test(\"^v[0-9]+\\\\.[0-9]+\\\\.[0-9]+$\"))" | sort -V | tail -n 1)"
+            if [ -z "$tag" ]; then
+              echo "::error::No release of $repo starts with $prefix. Use a full version such as v3.0.0."
+              exit 1
+            fi ;;
+          *)
+            echo "::error::version must look like v3.0.0 or v3, not '$want'."
+            exit 1 ;;
+        esac
+        case "$RUNNER_OS_NAME/$RUNNER_ARCH_NAME" in
+          Linux/X64)    target="x86_64-unknown-linux-musl";  ext="tar.xz" ;;
+          Linux/ARM64)  target="aarch64-unknown-linux-musl"; ext="tar.xz" ;;
+          macOS/ARM64)  target="aarch64-apple-darwin";       ext="tar.xz" ;;
+          macOS/X64)    target="x86_64-apple-darwin";        ext="tar.xz" ;;
+          Windows/X64)  target="x86_64-pc-windows-msvc";     ext="zip" ;;
+          *)
+            echo "::error::unpatched has no build for $RUNNER_OS_NAME/$RUNNER_ARCH_NAME."
+            exit 1 ;;
+        esac
+        {
+          echo "tag=$tag"
+          echo "asset=unpatched-$target.$ext"
+          echo "ext=$ext"
+          echo "dir=${RUNNER_TEMP}/unpatched-bin"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Restore the binary
+      id: cache
+      if: inputs.binary == ''
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.resolve.outputs.dir }}
+        key: unpatched-${{ steps.resolve.outputs.tag }}-${{ runner.os }}-${{ runner.arch }}
+
+    - name: Download unpatched
+      if: inputs.binary == '' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        TAG: ${{ steps.resolve.outputs.tag }}
+        ASSET: ${{ steps.resolve.outputs.asset }}
+        EXT: ${{ steps.resolve.outputs.ext }}
+        BIN_DIR: ${{ steps.resolve.outputs.dir }}
+      run: |
+        set -euo pipefail
+        base="https://github.com/Amet13/unpatched/releases/download/$TAG"
+        work="$(mktemp -d)"
+        curl --fail --silent --show-error --location --retry 3 -o "$work/$ASSET" "$base/$ASSET"
+        curl --fail --silent --show-error --location --retry 3 -o "$work/$ASSET.sha256" "$base/$ASSET.sha256"
+        expected="$(awk '{print $1}' "$work/$ASSET.sha256" | head -n 1)"
+        if command -v sha256sum > /dev/null; then
+          actual="$(sha256sum "$work/$ASSET" | awk '{print $1}')"
+        else
+          actual="$(shasum -a 256 "$work/$ASSET" | awk '{print $1}')"
+        fi
+        if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+          echo "::error::Checksum mismatch for $ASSET (expected '$expected', got '$actual'). Not running it."
+          exit 1
+        fi
+        mkdir -p "$work/unpacked" "$BIN_DIR"
+        if [ "$EXT" = "zip" ]; then
+          powershell -NoProfile -Command "Expand-Archive -LiteralPath '$(cygpath -w "$work/$ASSET")' -DestinationPath '$(cygpath -w "$work/unpacked")'"
+        else
+          tar -xf "$work/$ASSET" -C "$work/unpacked"
+        fi
+        found="$(find "$work/unpacked" -type f \( -name unpatched -o -name unpatched.exe \) | head -n 1)"
+        if [ -z "$found" ]; then
+          echo "::error::$ASSET has no unpatched binary inside."
+          exit 1
+        fi
+        cp "$found" "$BIN_DIR/"
+        chmod +x "$BIN_DIR"/unpatched*
+
+    - name: Check the stack
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        INPUT_BINARY: ${{ inputs.binary }}
+        BIN_DIR: ${{ steps.resolve.outputs.dir }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_DB: ${{ inputs.db }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_ARGS: ${{ inputs.args }}
+      run: |
+        set -euo pipefail
+        if [ -n "$INPUT_BINARY" ]; then
+          bin="$(cd "$(dirname "$INPUT_BINARY")" && pwd)/$(basename "$INPUT_BINARY")"
+        elif [ -x "$BIN_DIR/unpatched.exe" ]; then
+          bin="$BIN_DIR/unpatched.exe"
+        else
+          bin="$BIN_DIR/unpatched"
+        fi
+        args=(check --notify --format markdown --output "$GITHUB_STEP_SUMMARY" --config "$INPUT_CONFIG")
+        if [ -n "$INPUT_DB" ]; then
+          args+=(--db "$INPUT_DB")
+        fi
+        if [ "$INPUT_DRY_RUN" = "true" ]; then
+          args+=(--dry-run)
+        fi
+        if [ -n "$INPUT_ARGS" ]; then
+          # Split on spaces on purpose: `args` is a list of options.
+          # shellcheck disable=SC2206
+          # No globbing: a `*` in the arguments stays a `*`.
+          set -f
+          extra=($INPUT_ARGS)
+          set +f
+          args+=("${extra[@]}")
+        fi
+        "$bin" "${args[@]}"

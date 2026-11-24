@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CatalogEntry",
+  "type": "object",
+  "properties": {
+    "aliases": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "checked": {
+      "description": "When a person last checked this entry against real data.",
+      "type": "string",
+      "format": "date"
+    },
+    "eol": {
+      "description": "endoflife.date product slug.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "homepage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "id": {
+      "description": "Lowercase id used in `unpatched.yml` (`fortios`, `nextcloud`).",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/ProductKind"
+    },
+    "match": {
+      "$ref": "#/$defs/MatchKeys"
+    },
+    "name": {
+      "type": "string"
+    },
+    "vendor": {
+      "type": "string"
+    },
+    "version_hint": {
+      "description": "How this product writes its versions, when that is not obvious:\n`7.2.5 (without 'build')`, `22.7R2.5`. Shown by `unpatched catalog show`\nand when a version cannot be compared.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "versioning": {
+      "$ref": "#/$defs/Scheme"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "vendor",
+    "kind",
+    "versioning",
+    "match",
+    "checked"
+  ],
+  "$defs": {
+    "CnaKey": {
+      "type": "object",
+      "properties": {
+        "product": {
+          "type": "string"
+        },
+        "summary_starts": {
+          "description": "For a CNA that files every product under one name (Nextcloud uses the\nproduct `security-advisories` for the server and all its apps): the CVE\ndescription must start with one of these texts (ignoring case) for the\nrecord to count for this product. Empty means no condition.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vendor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "vendor",
+        "product"
+      ]
+    },
+    "KevKey": {
+      "type": "object",
+      "properties": {
+        "product": {
+          "type": "string"
+        },
+        "vendorProject": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "vendorProject",
+        "product"
+      ]
+    },
+    "MatchKeys": {
+      "type": "object",
+      "properties": {
+        "cna": {
+          "description": "Vendor and product exactly as CNAs write them in CVE records.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CnaKey"
+          }
+        },
+        "cpe": {
+          "description": "`vendor:product` as in CPE 2.3 (`fortinet:fortios`).",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "kev": {
+          "description": "`vendorProject` and `product` as in CISA KEV.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/KevKey"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProductKind": {
+      "type": "string",
+      "enum": [
+        "appliance",
+        "app",
+        "os",
+        "database",
+        "server",
+        "library",
+        "desktop",
+        "cms"
+      ]
+    },
+    "Scheme": {
+      "oneOf": [
+        {
+          "description": "Numbers separated by dots, with an optional suffix (`7.2.5`, `15.4`, `2.4.58`).",
+          "type": "string",
+          "const": "dotted"
+        },
+        {
+          "description": "Semantic Versioning 2.0 (pre-releases sort before releases).",
+          "type": "string",
+          "const": "semver"
+        },
+        {
+          "description": "Calendar versions (`2024.10.1`); compared like dotted.",
+          "type": "string",
+          "const": "calver"
+        },
+        {
+          "description": "dpkg rules (epoch, upstream, revision, `~`).",
+          "type": "string",
+          "const": "debian"
+        },
+        {
+          "description": "rpmvercmp rules (epoch, version, release).",
+          "type": "string",
+          "const": "rpm"
+        },
+        {
+          "description": "Alpine apk rules.",
+          "type": "string",
+          "const": "apk"
+        },
+        {
+          "description": "Python PEP 440.",
+          "type": "string",
+          "const": "pep440"
+        },
+        {
+          "description": "Synology DSM: `major.minor[.patch]-build[-update]` (`7.2.1-69057-5`).",
+          "type": "string",
+          "const": "synology"
+        }
+      ]
+    }
+  }
+}
