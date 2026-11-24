@@ -1,0 +1,46 @@
+description: An Alpine package compared with apk rules.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - purl: "pkg:apk/alpine/openssl@3.1.4-r0"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+packages:
+  pkg:apk/alpine/openssl@3.1.4-r0:
+  - id: CVE-2026-0801
+    summary: Package flaw
+    published: '2026-10-01'
+    ranges:
+    - source: osv
+      product: purl:pkg:apk/alpine/openssl
+      constraints:
+      - kind: range
+        start:
+          version: '0'
+          inclusive: true
+        end:
+          version: 3.1.4-r1
+          inclusive: false
+      raw: ECOSYSTEM 0 .. fixed 3.1.4-r1
+expect:
+- key: pkg-apk-alpine-openssl/CVE-2026-0801
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 3.1.4-r1

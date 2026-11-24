@@ -1,0 +1,47 @@
+description: 'No source has version data but the CVE is in KEV: unknown, reported.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0001
+    summary: New FortiOS flaw
+    published: '2026-10-01'
+    ranges:
+    - source: nvd
+      product: fortios
+      constraints: []
+      raw: awaiting analysis
+  signals:
+    CVE-2026-0001:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Fortinet
+        product: FortiOS
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/CVE-2026-0001
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-NO-RANGES
+  - UNP-KEV

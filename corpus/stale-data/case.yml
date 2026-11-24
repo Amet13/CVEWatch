@@ -1,0 +1,31 @@
+description: A database older than stale_warn_days adds a data finding and a note.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.4.3"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  info:
+    schema_version: 1
+    built_at: '2026-11-18T12:00:00Z'
+    sources: []
+expect:
+- key: data/stale
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-STALE-DATA
+notes_contain:
+- days old

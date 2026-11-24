@@ -3,10 +3,14 @@
 //! - `catalog build`: turn `catalog/*.yml` into the generated JSON and schema.
 //! - `catalog check`: fail if the generated files are out of date.
 //! - `catalog verify`: (network) check keys against NVD, KEV and endoflife.date.
+//! - `schema`: write schema/unpatched.schema.json and schema/report.schema.json.
+//! - `corpus new <name>`: start a corpus case.
 //! - `check`: everything CI runs (fmt, clippy, tests, generated-file checks).
 
 mod catalog;
 mod check;
+mod corpus;
+mod schema;
 
 use anyhow::{Result, bail};
 
@@ -16,6 +20,8 @@ tasks:
   catalog build    write catalog.generated.json and schema/catalog.schema.json
   catalog check    fail if the generated catalog files are out of date
   catalog verify   check catalog keys against NVD, KEV and endoflife.date (network)
+  schema           write schema/unpatched.schema.json and schema/report.schema.json
+  corpus new NAME  start a corpus case in corpus/NAME/case.yml
   check            fmt, clippy, tests and generated-file checks";
 
 fn main() {
@@ -32,6 +38,8 @@ fn run(args: &[&str]) -> Result<()> {
         ["catalog", "build"] => catalog::build(),
         ["catalog", "check"] => catalog::check(),
         ["catalog", "verify"] => catalog::verify(),
+        ["schema"] => schema::build(),
+        ["corpus", "new", name] => corpus::new(name),
         ["check"] => check::run(),
         ["help" | "--help" | "-h"] | [] => {
             println!("{USAGE}");

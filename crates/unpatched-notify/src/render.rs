@@ -627,6 +627,84 @@ pub fn markdown_status(report: &Report, state: &DeliveryState) -> String {
     b
 }
 
+// ---------------------------------------------------------------- markdown: run summary
+
+fn md_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// A summary of one run, for `$GITHUB_STEP_SUMMARY`: counts, the findings by
+/// bucket, the data age and the notes.
+pub fn markdown_summary(report: &Report) -> String {
+    let s = &report.summary;
+    let mut b = String::from("## unpatched\n\n");
+    if report.findings.is_empty() {
+        let _ = writeln!(b, "Nothing to fix. {}\n", heartbeat(report));
+    } else {
+        let n = report.findings.len();
+        let _ = writeln!(
+            b,
+            "{n} finding{} to look at. {}\n",
+            if n == 1 { "" } else { "s" },
+            heartbeat(report)
+        );
+        b.push_str("| Bucket | Findings |\n| --- | ---: |\n");
+        for (bucket, n) in [
+            (Bucket::Now, s.now),
+            (Bucket::Week, s.week),
+            (Bucket::Eol, s.eol),
+            (Bucket::Unknown, s.unknown),
+            (Bucket::Fyi, s.fyi),
+        ] {
+            let _ = writeln!(
+                b,
+                "| {} {} | {n} |",
+                bucket_emoji(bucket),
+                bucket_label(bucket)
+            );
+        }
+        b.push('\n');
+    }
+    for bucket in BUCKETS {
+        let group: Vec<&Finding> = report
+            .findings
+            .iter()
+            .filter(|f| f.bucket == bucket)
+            .collect();
+        if group.is_empty() {
+            continue;
+        }
+        let _ = writeln!(b, "### {} {}\n", bucket_emoji(bucket), bucket_label(bucket));
+        for f in group {
+            let _ = writeln!(
+                b,
+                "- **{}**: {}",
+                md_escape(&subject(f)),
+                md_escape(&issue_what(f))
+            );
+            let _ = writeln!(b, "  - Why: {}", md_escape(&why(f)));
+            let _ = writeln!(b, "  - Do: {}", md_escape(&action(f)));
+            let rules: Vec<String> = f.rules.iter().map(|r| format!("`{}`", r.code())).collect();
+            let _ = writeln!(b, "  - Rules: {}", rules.join(", "));
+        }
+        b.push('\n');
+    }
+    if s.ignored > 0 {
+        let _ = writeln!(b, "{} ignored on purpose (see unpatched.yml).\n", s.ignored);
+    }
+    let _ = writeln!(b, "{}\n", db_line(report));
+    if !report.notes.is_empty() {
+        b.push_str("### Notes\n\n");
+        for n in &report.notes {
+            let _ = writeln!(b, "- {}", md_escape(n));
+        }
+        b.push('\n');
+    }
+    b
+}
+
 // ---------------------------------------------------------------- digest
 
 /// A short digest for chat: plain text with light Markdown.
@@ -847,6 +925,12 @@ mod tests {
             );
         }
         assert_eq!(parse_finding_marker("no marker"), None);
+    }
+
+    #[test]
+    fn run_summary() {
+        let r = sample_report();
+        insta::assert_snapshot!("summary", markdown_summary(&r));
     }
 
     #[test]

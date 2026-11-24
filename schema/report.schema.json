@@ -1,0 +1,665 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Report",
+  "type": "object",
+  "properties": {
+    "db": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DbInfo"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "findings": {
+      "description": "Sorted by bucket, then item, then vuln id.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Finding"
+      }
+    },
+    "format": {
+      "description": "Report format version.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ignored": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Finding"
+      }
+    },
+    "notes": {
+      "description": "Problems with the run itself (stale data, unknown product ids, …).",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/Summary"
+    }
+  },
+  "required": [
+    "format",
+    "generated_at",
+    "summary",
+    "findings",
+    "ignored",
+    "notes"
+  ],
+  "$defs": {
+    "Bucket": {
+      "description": "How soon to act. Ordered most urgent first.",
+      "oneOf": [
+        {
+          "description": "Fix today.",
+          "type": "string",
+          "const": "now"
+        },
+        {
+          "description": "Fix this week.",
+          "type": "string",
+          "const": "week"
+        },
+        {
+          "description": "The release cycle is past end of life.",
+          "type": "string",
+          "const": "eol"
+        },
+        {
+          "description": "Could be urgent, but the data cannot say yet.",
+          "type": "string",
+          "const": "unknown"
+        },
+        {
+          "description": "Affected, low urgency.",
+          "type": "string",
+          "const": "fyi"
+        }
+      ]
+    },
+    "Cvss": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "type": "number",
+          "format": "float"
+        },
+        "vector": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "score"
+      ]
+    },
+    "DbInfo": {
+      "description": "Facts about the database a report was made from.",
+      "type": "object",
+      "properties": {
+        "built_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schema_version": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceStatus"
+          }
+        }
+      },
+      "required": [
+        "schema_version",
+        "built_at",
+        "sources"
+      ]
+    },
+    "Epss": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "percentile": {
+          "type": "number",
+          "format": "float"
+        },
+        "score": {
+          "type": "number",
+          "format": "float"
+        }
+      },
+      "required": [
+        "score",
+        "percentile",
+        "date"
+      ]
+    },
+    "Evidence": {
+      "type": "object",
+      "properties": {
+        "detail": {
+          "description": "Human-readable: \"affected 7.2.0 to 7.2.6 (CNA Fortinet)\".",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceId"
+        },
+        "verdict": {
+          "$ref": "#/$defs/Verdict"
+        }
+      },
+      "required": [
+        "source",
+        "verdict",
+        "detail"
+      ]
+    },
+    "ExploitRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceId"
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "source",
+        "id"
+      ]
+    },
+    "Exposure": {
+      "oneOf": [
+        {
+          "description": "Reachable from the internet (VPN portals, web apps, mail servers).",
+          "type": "string",
+          "const": "internet"
+        },
+        {
+          "description": "Only reachable from inside your network.",
+          "type": "string",
+          "const": "internal"
+        }
+      ]
+    },
+    "Finding": {
+      "description": "One stack item × one vulnerability (or one EOL / data problem).",
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "$ref": "#/$defs/Bucket"
+        },
+        "cvss": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Cvss"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          }
+        },
+        "exposure": {
+          "$ref": "#/$defs/Exposure"
+        },
+        "fixed_in": {
+          "description": "Smallest version that fixes it, when known.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ignored": {
+          "description": "Set when an ignore entry matched (the finding is then in `Report::ignored`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IgnoredBecause"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "item": {
+          "description": "The stack item's `name`, else product id or purl.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Stable across runs: `<item key>/<vuln id or rule>`. Used for dedup and issue markers.",
+          "type": "string"
+        },
+        "latest_in_cycle": {
+          "description": "Latest release in the same cycle (endoflife.date), when newer than `fixed_in`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "product": {
+          "type": "string"
+        },
+        "product_name": {
+          "description": "Display name of the product: the catalog name (\"FortiOS\"), or the purl\nwithout its version for packages.",
+          "type": "string"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rules": {
+          "description": "Why this bucket, most important first.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuleId"
+          }
+        },
+        "signals": {
+          "$ref": "#/$defs/Signals"
+        },
+        "title": {
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/Verdict"
+        },
+        "version": {
+          "type": "string"
+        },
+        "vuln": {
+          "description": "CVE or advisory id; `None` for EOL and data findings.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "item",
+        "product",
+        "product_name",
+        "version",
+        "exposure",
+        "title",
+        "verdict",
+        "bucket",
+        "rules",
+        "signals",
+        "evidence"
+      ]
+    },
+    "IgnoredBecause": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "until": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "reason",
+        "until"
+      ]
+    },
+    "KevEntry": {
+      "type": "object",
+      "properties": {
+        "date_added": {
+          "type": "string",
+          "format": "date"
+        },
+        "due_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "known_ransomware": {
+          "type": "boolean"
+        },
+        "product": {
+          "type": "string"
+        },
+        "required_action": {
+          "type": "string"
+        },
+        "vendor_project": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date_added",
+        "known_ransomware",
+        "required_action",
+        "vendor_project",
+        "product"
+      ]
+    },
+    "RuleId": {
+      "oneOf": [
+        {
+          "description": "In CISA KEV.",
+          "type": "string",
+          "const": "UNP-KEV"
+        },
+        {
+          "description": "CISA SSVC says exploitation is active.",
+          "type": "string",
+          "const": "UNP-SSVC-ACTIVE"
+        },
+        {
+          "description": "A public exploit exists and the item is internet-facing.",
+          "type": "string",
+          "const": "UNP-EXPLOIT-EXPOSED"
+        },
+        {
+          "description": "EPSS at or above the threshold.",
+          "type": "string",
+          "const": "UNP-EPSS"
+        },
+        {
+          "description": "CVSS at or above the threshold.",
+          "type": "string",
+          "const": "UNP-CVSS"
+        },
+        {
+          "description": "Affected and internet-facing.",
+          "type": "string",
+          "const": "UNP-EXPOSED"
+        },
+        {
+          "description": "Affected, no other signal.",
+          "type": "string",
+          "const": "UNP-AFFECTED"
+        },
+        {
+          "description": "The release cycle is past its end of life.",
+          "type": "string",
+          "const": "UNP-EOL"
+        },
+        {
+          "description": "No source has usable version data.",
+          "type": "string",
+          "const": "UNP-UNKNOWN-NO-RANGES"
+        },
+        {
+          "description": "The configured version does not parse under the product's scheme.",
+          "type": "string",
+          "const": "UNP-UNKNOWN-VERSION"
+        },
+        {
+          "description": "Sources disagree.",
+          "type": "string",
+          "const": "UNP-CONFLICT"
+        },
+        {
+          "description": "The product's catalog keys match nothing in the database.",
+          "type": "string",
+          "const": "UNP-UNVERIFIED-PRODUCT"
+        },
+        {
+          "description": "An ignore entry matched.",
+          "type": "string",
+          "const": "UNP-IGNORED"
+        },
+        {
+          "description": "An ignore entry has expired.",
+          "type": "string",
+          "const": "UNP-IGNORE-EXPIRED"
+        },
+        {
+          "description": "The database is older than the warning threshold.",
+          "type": "string",
+          "const": "UNP-STALE-DATA"
+        }
+      ]
+    },
+    "Signals": {
+      "description": "Everything that says how likely a vulnerability is to be used against you.",
+      "type": "object",
+      "properties": {
+        "epss": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Epss"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exploits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExploitRef"
+          }
+        },
+        "kev": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/KevEntry"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ssvc_automatable": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ssvc_exploitation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SsvcExploitation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "SourceId": {
+      "description": "Where a fact came from.",
+      "oneOf": [
+        {
+          "description": "CVE.org record, CNA container (`affected`).",
+          "type": "string",
+          "const": "cve-org"
+        },
+        {
+          "description": "CVE.org record, CISA ADP container (Vulnrichment).",
+          "type": "string",
+          "const": "cisa-adp"
+        },
+        {
+          "description": "NVD CVE 2.0 feeds (CPE configurations, CVSS).",
+          "type": "string",
+          "const": "nvd"
+        },
+        {
+          "description": "OSV.dev (packages).",
+          "type": "string",
+          "const": "osv"
+        },
+        {
+          "description": "CISA Known Exploited Vulnerabilities.",
+          "type": "string",
+          "const": "kev"
+        },
+        {
+          "description": "FIRST EPSS.",
+          "type": "string",
+          "const": "epss"
+        },
+        {
+          "description": "endoflife.date.",
+          "type": "string",
+          "const": "endoflife"
+        },
+        {
+          "description": "Exploit-DB index.",
+          "type": "string",
+          "const": "exploit-db"
+        },
+        {
+          "description": "Metasploit module metadata.",
+          "type": "string",
+          "const": "metasploit"
+        }
+      ]
+    },
+    "SourceStatus": {
+      "type": "object",
+      "properties": {
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "records": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "source": {
+          "$ref": "#/$defs/SourceId"
+        }
+      },
+      "required": [
+        "source",
+        "fetched_at",
+        "records",
+        "ok"
+      ]
+    },
+    "SsvcExploitation": {
+      "description": "SSVC \"Exploitation\" decision point from the CISA ADP container.",
+      "type": "string",
+      "enum": [
+        "none",
+        "poc",
+        "active"
+      ]
+    },
+    "Summary": {
+      "type": "object",
+      "properties": {
+        "eol": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "fyi": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "ignored": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "not_affected": {
+          "description": "Vulnerabilities checked against the stack that did not affect it.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "now": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "unknown": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "week": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "now",
+        "week",
+        "eol",
+        "unknown",
+        "fyi",
+        "ignored",
+        "not_affected"
+      ]
+    },
+    "Verdict": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "affected",
+            "not-affected",
+            "unknown"
+          ]
+        },
+        {
+          "description": "Was affected; the configured version is at or past the fix.",
+          "type": "string",
+          "const": "fixed"
+        }
+      ]
+    }
+  }
+}

@@ -47,6 +47,8 @@ tempfile = "3"
 insta = { version = "1", features = ["yaml", "json"] }
 proptest = "1"
 wiremock = "0.6"
+assert_cmd = "2"
+predicates = "3"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

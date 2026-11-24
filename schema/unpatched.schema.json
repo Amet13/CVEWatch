@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "type": "object",
+  "properties": {
+    "digest": {
+      "description": "Day of the weekly digest (`monday` … `sunday`), or `daily`.",
+      "type": "string",
+      "default": "monday"
+    },
+    "ignore": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Ignore"
+      }
+    },
+    "notify": {
+      "$ref": "#/$defs/Notify",
+      "default": {
+        "discord": false,
+        "issues": true,
+        "slack": false,
+        "webhook": false
+      }
+    },
+    "stack": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/StackItem"
+      }
+    },
+    "thresholds": {
+      "$ref": "#/$defs/Thresholds",
+      "default": {
+        "cvss_week": 9.0,
+        "epss_week": 0.05000000074505806,
+        "stale_fail_days": 7,
+        "stale_warn_days": 3
+      }
+    },
+    "version": {
+      "description": "File format version. Only `1` exists.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "stack"
+  ],
+  "$defs": {
+    "Exposure": {
+      "oneOf": [
+        {
+          "description": "Reachable from the internet (VPN portals, web apps, mail servers).",
+          "type": "string",
+          "const": "internet"
+        },
+        {
+          "description": "Only reachable from inside your network.",
+          "type": "string",
+          "const": "internal"
+        }
+      ]
+    },
+    "Ignore": {
+      "description": "Accept a risk on purpose. `until` is required: nothing is ignored forever.",
+      "type": "object",
+      "properties": {
+        "cve": {
+          "type": "string"
+        },
+        "product": {
+          "description": "Only for this product id (or stack item `name`); all items when empty.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "until": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "cve",
+        "reason",
+        "until"
+      ]
+    },
+    "Notify": {
+      "description": "Channels. Secrets (tokens, webhook URLs) never go here: they come from\nenvironment variables named in the docs (`UNPATCHED_TELEGRAM_TOKEN`, …).",
+      "type": "object",
+      "properties": {
+        "discord": {
+          "description": "Discord webhook (URL in `UNPATCHED_DISCORD_WEBHOOK`).",
+          "type": "boolean",
+          "default": false
+        },
+        "issues": {
+          "description": "GitHub Issues in the repository the Action runs in.",
+          "type": "boolean",
+          "default": true
+        },
+        "ntfy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ntfy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "slack": {
+          "description": "Slack incoming webhook (URL in `UNPATCHED_SLACK_WEBHOOK`).",
+          "type": "boolean",
+          "default": false
+        },
+        "telegram": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Telegram"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "webhook": {
+          "description": "Generic JSON webhook (URL in `UNPATCHED_WEBHOOK_URL`).",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Ntfy": {
+      "type": "object",
+      "properties": {
+        "server": {
+          "type": "string",
+          "default": "https://ntfy.sh"
+        },
+        "topic": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "topic"
+      ]
+    },
+    "StackItem": {
+      "description": "One thing you run. Give either `product` (a catalog id) or `purl` (a package).",
+      "type": "object",
+      "properties": {
+        "exposure": {
+          "$ref": "#/$defs/Exposure",
+          "default": "internal"
+        },
+        "name": {
+          "description": "Your label, e.g. \"Office firewall\". Tells instances apart.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "product": {
+          "description": "Catalog product id (`unpatched catalog list`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "purl": {
+          "description": "Package URL with version, e.g. `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "description": "Required with `product`; taken from the purl otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Telegram": {
+      "type": "object",
+      "properties": {
+        "chat": {
+          "description": "Chat id. The bot token comes from `UNPATCHED_TELEGRAM_TOKEN`.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "chat"
+      ]
+    },
+    "Thresholds": {
+      "type": "object",
+      "properties": {
+        "cvss_week": {
+          "description": "CVSS base score at or above which an affected finding is at least `week`.",
+          "type": "number",
+          "format": "float",
+          "default": 9.0
+        },
+        "epss_week": {
+          "description": "EPSS score at or above which an affected finding is at least `week`.",
+          "type": "number",
+          "format": "float",
+          "default": 0.05000000074505806
+        },
+        "stale_fail_days": {
+          "description": "Days after which a run fails because the data is too old.",
+          "type": "integer",
+          "format": "uint32",
+          "default": 7,
+          "minimum": 0
+        },
+        "stale_warn_days": {
+          "description": "Days after which the database counts as stale (warning).",
+          "type": "integer",
+          "format": "uint32",
+          "default": 3,
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -16,12 +16,21 @@ unpatched-notify.workspace = true
 unpatched-mcp.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+serde_norway.workspace = true
+schemars.workspace = true
 chrono.workspace = true
 clap.workspace = true
 miette.workspace = true
+thiserror.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+predicates.workspace = true
+insta.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true

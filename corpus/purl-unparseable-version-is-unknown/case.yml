@@ -1,0 +1,57 @@
+description: A package version the scheme cannot read is unknown, not guessed.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - purl: "pkg:pypi/django@not-a-version"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  signals:
+    CVE-2026-0805:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Django
+        product: Django
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+packages:
+  pkg:pypi/django@not-a-version:
+  - id: CVE-2026-0805
+    summary: Package flaw
+    published: '2026-10-01'
+    ranges:
+    - source: osv
+      product: purl:pkg:pypi/django
+      constraints:
+      - kind: range
+        start:
+          version: '3.2'
+          inclusive: true
+        end:
+          version: 3.2.25
+          inclusive: false
+      raw: ECOSYSTEM 3.2 .. fixed 3.2.25
+expect:
+- key: pkg-pypi-django/CVE-2026-0805
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-VERSION
+  - UNP-KEV
+notes_contain:
+- cannot be compared

@@ -1,0 +1,62 @@
+---
+source: crates/unpatched-notify/src/render.rs
+expression: markdown_summary(&r)
+---
+## unpatched
+
+6 findings to look at. 🟢 1,412 checked, nothing else affects you
+
+| Bucket | Findings |
+| --- | ---: |
+| 🔴 Fix today | 1 |
+| 🟡 This week | 2 |
+| ⚫ End of life | 1 |
+| ❔ Unknown | 1 |
+| ⚪ FYI | 1 |
+
+### 🔴 Fix today
+
+- **FortiOS 7.2.5 (Office firewall)**: CVE-2024-21762
+  - Why: In CISA KEV since 2024-02-09 · ransomware use: known · CISA due date 2024-02-16 · SSVC: exploitation is active · SSVC: automatable · EPSS 94.1% (percentile 100) · public exploit: fortios_sslvpnd · CVSS 9.8 · internet-facing
+  - Do: Upgrade to 7.2.7 or later (7.2.11 is current in this branch).
+  - Rules: `UNP-KEV`, `UNP-EXPOSED`
+
+### 🟡 This week
+
+- **Nextcloud 29.0.3**: CVE-2026-1001
+  - Why: EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
+  - Do: Upgrade to 29.0.8 or later.
+  - Rules: `UNP-EPSS`, `UNP-EXPOSED`
+- **Nextcloud 29.0.3**: CVE-2026-1002
+  - Why: EPSS 7.3% (percentile 91) · CVSS 7.5 · internet-facing
+  - Do: Upgrade to 29.0.6 or later.
+  - Rules: `UNP-EPSS`, `UNP-EXPOSED`
+
+### ⚫ End of life
+
+- **PostgreSQL 13.12**: past end of life
+  - Why: End of life
+  - Do: Upgrade to a supported release.
+  - Rules: `UNP-EOL`
+
+### ❔ Unknown
+
+- **Home Assistant 2024.10.1**: CVE-2026-0042
+  - Why: No usable version data yet
+  - Do: No source has version data for this yet. Read the advisory and check your version by hand.
+  - Rules: `UNP-UNKNOWN-NO-RANGES`
+
+### ⚪ FYI
+
+- **Redis 7.2.1**: CVE-2025-1111
+  - Why: CVSS 5.3
+  - Do: Upgrade to 7.2.4 or later.
+  - Rules: `UNP-AFFECTED`
+
+1 ignored on purpose (see unpatched.yml).
+
+Database: built 2026-11-22 02:41 UTC, 1 day old
+
+### Notes
+
+- The catalog entry for home-assistant has not been verified for 40 days.

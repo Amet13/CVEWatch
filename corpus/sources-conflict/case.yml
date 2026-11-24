@@ -1,0 +1,66 @@
+description: 'One source says affected, another says not: report it, with UNP-CONFLICT.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0001
+    summary: Flaw
+    published: '2026-10-01'
+    ranges:
+    - source: nvd
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: 7.2.0
+          inclusive: true
+        end:
+          version: 7.2.7
+          inclusive: false
+      raw: ''
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: 7.4.0
+          inclusive: true
+        end:
+          version: 7.4.3
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2026-0001:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Fortinet
+        product: FortiOS
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/CVE-2026-0001
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-CONFLICT
+  fixed_in: 7.2.7

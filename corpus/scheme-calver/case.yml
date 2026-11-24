@@ -1,0 +1,45 @@
+description: Calendar versions compare like dotted numbers.
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: home-assistant
+      version: "2024.10.1"
+data:
+  products:
+  - id: home-assistant
+    name: Home Assistant
+    vendor: HomeAssistant
+    kind: app
+    versioning: calver
+    match:
+      cpe:
+      - homeassistant:home-assistant
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0600
+    summary: HA flaw
+    published: '2026-10-01'
+    ranges:
+    - source: cve-org
+      product: home-assistant
+      constraints:
+      - kind: range
+        start:
+          version: 2024.1.0
+          inclusive: true
+        end:
+          version: 2024.11.0
+          inclusive: false
+      raw: ''
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: home-assistant/CVE-2026-0600
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 2024.11.0

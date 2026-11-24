@@ -1,0 +1,46 @@
+description: A PyPI package compared with PEP 440 rules (3.2.0 is before 3.2.25).
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - purl: "pkg:pypi/django@3.2.0"
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    checked: '2026-11-01'
+  vulns: []
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+packages:
+  pkg:pypi/django@3.2.0:
+  - id: CVE-2026-0802
+    summary: Package flaw
+    published: '2026-10-01'
+    ranges:
+    - source: osv
+      product: purl:pkg:pypi/django
+      constraints:
+      - kind: range
+        start:
+          version: '3.2'
+          inclusive: true
+        end:
+          version: 3.2.25
+          inclusive: false
+      raw: ECOSYSTEM 3.2 .. fixed 3.2.25
+expect:
+- key: pkg-pypi-django/CVE-2026-0802
+  bucket: fyi
+  verdict: affected
+  rules:
+  - UNP-AFFECTED
+  fixed_in: 3.2.25

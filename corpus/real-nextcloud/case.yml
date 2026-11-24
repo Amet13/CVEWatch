@@ -1,0 +1,95 @@
+description: 'Nextcloud 29.0.3 on the internet: two advisories this week, and the 29 branch is past its end of life.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: nextcloud
+      version: "29.0.3"
+      exposure: internet
+data:
+  products:
+  - id: nextcloud
+    name: Nextcloud
+    vendor: Nextcloud
+    kind: app
+    versioning: dotted
+    match:
+      cpe:
+      - nextcloud:nextcloud
+    checked: '2026-11-01'
+    eol: nextcloud
+  vulns:
+  - id: CVE-2024-22212
+    summary: Improper access control in Nextcloud Server
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 7.5
+    ranges:
+    - source: cve-org
+      product: nextcloud
+      constraints:
+      - kind: range
+        start:
+          version: 29.0.0
+          inclusive: true
+        end:
+          version: 29.0.4
+          inclusive: false
+      raw: ''
+  - id: CVE-2024-37882
+    summary: Missing rate limit in Nextcloud Server
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 5.3
+    ranges:
+    - source: nvd
+      product: nextcloud
+      constraints:
+      - kind: range
+        start:
+          version: 29.0.0
+          inclusive: true
+        end:
+          version: 29.0.6
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2024-22212:
+      epss:
+        score: 0.07
+        percentile: 0.9
+        date: '2026-11-23'
+  eol:
+    nextcloud:
+    - cycle: '29'
+      eol: '2026-04-01'
+      eol_reached: false
+      latest: 29.0.16
+      lts: false
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: nextcloud/CVE-2024-22212
+  bucket: week
+  verdict: affected
+  rules:
+  - UNP-EPSS
+  - UNP-EXPOSED
+  fixed_in: 29.0.4
+  latest_in_cycle: 29.0.16
+- key: nextcloud/CVE-2024-37882
+  bucket: week
+  verdict: affected
+  rules:
+  - UNP-EXPOSED
+  fixed_in: 29.0.6
+  latest_in_cycle: 29.0.16
+- key: nextcloud/eol
+  bucket: eol
+  verdict: affected
+  rules:
+  - UNP-EOL
