@@ -574,7 +574,7 @@ impl Run<'_> {
                     detail: r.detail,
                 })
                 .collect(),
-            references: vuln.references.iter().map(|r| r.url.clone()).collect(),
+            references: dedup_in_order(vuln.references.iter().map(|r| r.url.clone())),
             ignored: None,
         };
 
@@ -1268,3 +1268,9 @@ fn percent_decode(s: &str) -> String {
 
 #[cfg(test)]
 mod tests;
+
+/// Keep the first occurrence of each string, in order (sources repeat references).
+fn dedup_in_order(items: impl Iterator<Item = String>) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    items.filter(|s| seen.insert(s.clone())).collect()
+}

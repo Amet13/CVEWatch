@@ -6,11 +6,11 @@ language = "en"
 src = "docs/guide"
 
 [build]
-build-dir = "book"
+build-dir = "book/guide"
 create-missing = false
 
 [output.html]
-site-url = "/unpatched/"
+site-url = "/unpatched/guide/"
 git-repository-url = "https://github.com/Amet13/unpatched"
 edit-url-template = "https://github.com/Amet13/unpatched/edit/main/docs/guide/{path}"
 default-theme = "light"

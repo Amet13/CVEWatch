@@ -15,7 +15,7 @@ These work with every command, before or after its name:
 | `--db FILE` | The vulnerability database. Default `$UNPATCHED_DB`, else the cache folder. |
 | `--offline` | No network: no database download and no OSV lookups for packages. |
 | `-v`, `--verbose` | More detail: evidence in reports; `-v` info logs, `-vv` debug logs. |
-| `--quiet` | Print only what was asked for, and errors. Cannot be used with `-v`. |
+| `--quiet` | Print nothing on stdout except errors; a report still goes to `--output`. Cannot be used with `-v`. |
 | `--color WHEN` | `auto` (default), `always` or `never`. |
 
 ## Exit codes

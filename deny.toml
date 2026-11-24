@@ -10,7 +10,7 @@ yanked = "deny"
 # Add an id here only with a reason and a date to look at it again.
 ignore = [
     # chrono is unmaintained (not vulnerable). Moving to jiff waits for schemars
-    # to support jiff 1.x (it supports only jiff 0.2). Tracked in CHANGELOG/PLAN.
+    # to support jiff 1.x (it supports only jiff 0.2). Revisit when schemars supports jiff 1.x.
     { id = "RUSTSEC-2026-0543", reason = "unmaintained only; migration to jiff blocked on schemars jiff 1.x support" },
 ]
 

@@ -9,16 +9,16 @@
   <a href="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml"><img src="https://github.com/Amet13/unpatched/actions/workflows/build-db.yml/badge.svg?branch=main" alt="Daily database"></a>
   <a href="https://github.com/Amet13/unpatched/releases"><img src="https://img.shields.io/github/v/release/Amet13/unpatched?filter=v3*&amp;sort=semver&amp;label=release" alt="Latest release"></a>
   <a href="https://crates.io/crates/unpatched"><img src="https://img.shields.io/crates/v/unpatched?label=crates.io" alt="crates.io"></a>
-  <a href="https://amet13.github.io/unpatched/"><img src="https://img.shields.io/badge/docs-guide-ff6b35" alt="Docs"></a>
+  <a href="https://amet13.github.io/unpatched/"><img src="https://img.shields.io/badge/docs-guide-111111" alt="Docs"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/Amet13/unpatched"><img src="https://api.scorecard.dev/projects/github.com/Amet13/unpatched/badge" alt="OpenSSF Scorecard"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22a565" alt="MIT license"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-111111" alt="MIT license"></a>
 </p>
 
 <p align="center">
-  <a href="https://amet13.github.io/unpatched/start-github.html">Quick start</a> ·
+  <a href="https://amet13.github.io/unpatched/guide/start-github.html">Quick start</a> ·
   <a href="https://amet13.github.io/unpatched/">Guide</a> ·
-  <a href="https://amet13.github.io/unpatched/catalog.html">Supported products</a> ·
-  <a href="https://amet13.github.io/unpatched/with-an-agent.html">AI agents (MCP)</a>
+  <a href="https://amet13.github.io/unpatched/guide/catalog.html">Supported products</a> ·
+  <a href="https://amet13.github.io/unpatched/guide/with-an-agent.html">AI agents (MCP)</a>
 </p>
 
 You run software you did not write: a firewall, a VPN, a NAS, Nextcloud,
@@ -36,7 +36,7 @@ private repository.
 ## What you get
 
 The summary of a run, from the sample database in this repository (the
-[guide](https://amet13.github.io/unpatched/findings.html) shows the issue it
+[guide](https://amet13.github.io/unpatched/guide/findings.html) shows the issue it
 opens and the same report as JSON):
 
 <!-- generated:start example-check-markdown -->
@@ -83,7 +83,7 @@ Database: built 2026-11-23 12:00 UTC, 0 days old
 <!-- generated:end -->
 
 The two notes at the end are because the sample database holds only a few
-products. The real database has all of the [catalog](https://amet13.github.io/unpatched/catalog.html).
+products. The real database has all of the [catalog](https://amet13.github.io/unpatched/guide/catalog.html).
 
 ## Start in two files
 
@@ -127,7 +127,7 @@ Push, then run the workflow once from the Actions tab. Find product ids with
 entry (a `cve`, a `reason` and an `until` date) to `unpatched.yml`; every issue
 shows the lines to copy. The full walk-through, including secrets for
 Telegram, Slack and the others, is in
-[Start with GitHub](https://amet13.github.io/unpatched/start-github.html).
+[Start with GitHub](https://amet13.github.io/unpatched/guide/start-github.html).
 `unpatched init --github` writes both files for you.
 
 ## Install
@@ -142,13 +142,13 @@ Telegram, Slack and the others, is in
 | Docker | `docker run --rm -v "$PWD:/work" ghcr.io/amet13/unpatched` |
 
 Release archives for Linux, macOS and Windows have a `.sha256` file each and a
-GitHub build attestation. Details: [Start with the command line](https://amet13.github.io/unpatched/start-cli.html)
-and [Start with Docker](https://amet13.github.io/unpatched/start-docker.html).
+GitHub build attestation. Details: [Start with the command line](https://amet13.github.io/unpatched/guide/start-cli.html)
+and [Start with Docker](https://amet13.github.io/unpatched/guide/start-docker.html).
 
 ## What it is not
 
 - **Not a catalog of everything.** It knows named products (see the
-  [catalog](https://amet13.github.io/unpatched/catalog.html)). WordPress plugins
+  [catalog](https://amet13.github.io/unpatched/guide/catalog.html)). WordPress plugins
   and themes are not covered, and neither are operating-system packages unless
   you name them with a `purl`, like
   `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`.
@@ -159,7 +159,7 @@ and [Start with Docker](https://amet13.github.io/unpatched/start-docker.html).
 - **Not a network scanner.** It never looks at your hosts. You tell it what runs
   and in which version.
 - **Not a guarantee.** A quiet report means no source it reads says you are
-  affected. See [How accurate is it](https://amet13.github.io/unpatched/accuracy.html).
+  affected. See [How accurate is it](https://amet13.github.io/unpatched/guide/accuracy.html).
 
 ## Data
 
@@ -167,17 +167,17 @@ CVE.org records, NVD, CISA KEV, EPSS, OSV (packages only), endoflife.date and
 the CVE ids from Exploit-DB and Metasploit. All are open and need no key. A
 workflow in this repository builds one database a day and publishes it as a
 release asset. Licenses and attributions are in [NOTICE](NOTICE); the
-[data page](https://amet13.github.io/unpatched/data.html) says what happens when
+[data page](https://amet13.github.io/unpatched/guide/data.html) says what happens when
 a source fails.
 
 ## Guide
 
 [Guide](https://amet13.github.io/unpatched/) ·
-[Findings and rules](https://amet13.github.io/unpatched/findings.html) ·
-[Config reference](https://amet13.github.io/unpatched/config.html) ·
-[Catalog](https://amet13.github.io/unpatched/catalog.html) ·
-[FAQ](https://amet13.github.io/unpatched/faq.html) ·
-[Coming from CVEWatch](https://amet13.github.io/unpatched/migrate-from-cvewatch.html)
+[Findings and rules](https://amet13.github.io/unpatched/guide/findings.html) ·
+[Config reference](https://amet13.github.io/unpatched/guide/config.html) ·
+[Catalog](https://amet13.github.io/unpatched/guide/catalog.html) ·
+[FAQ](https://amet13.github.io/unpatched/guide/faq.html) ·
+[Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html)
 
 ## With an AI agent
 
@@ -185,8 +185,8 @@ a source fails.
 `explain`, `search_catalog`, `db_status`). The repository also ships skills
 (`set-up-unpatched`, `inventory-from-notes`, `plan-upgrades`,
 `explain-a-finding`), a Claude Code plugin and a Gemini CLI extension, and the
-site has [`llms.txt`](https://amet13.github.io/unpatched/llms.txt). See
-[With an agent](https://amet13.github.io/unpatched/with-an-agent.html).
+site has [`llms.txt`](https://amet13.github.io/unpatched/guide/llms.txt). See
+[With an agent](https://amet13.github.io/unpatched/guide/with-an-agent.html).
 
 ## Contributing
 
@@ -195,7 +195,7 @@ Wrong verdicts and new products are the most useful reports. See
 [MAINTAINING.md](MAINTAINING.md). Security problems: [SECURITY.md](SECURITY.md).
 
 This repository was CVEWatch, a Go tool. It is now `unpatched`, written in
-Rust; see [Coming from CVEWatch](https://amet13.github.io/unpatched/migrate-from-cvewatch.html).
+Rust; see [Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html).
 
 ## License
 

@@ -14,7 +14,7 @@ What is available:
 | Skills | Instructions for four jobs: set up, inventory, plan upgrades, explain. |
 | Plugin and extension | Claude Code plugin and Gemini CLI extension that install the skills and the server together. |
 | JSON report and schemas | `check --format json`, with `schema/report.schema.json`. Read this, not the text output. |
-| `llms.txt`, `llms-full.txt` | The guide, for a model: <https://amet13.github.io/unpatched/llms.txt> and <https://amet13.github.io/unpatched/llms-full.txt>. |
+| `llms.txt`, `llms-full.txt` | The guide, for a model: <https://amet13.github.io/unpatched/guide/llms.txt> and <https://amet13.github.io/unpatched/guide/llms-full.txt>. |
 
 All of them need the `unpatched` command on the `PATH` (see
 [Start with the command line](start-cli.md)), except the Docker form of the

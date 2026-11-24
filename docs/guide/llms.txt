@@ -6,26 +6,26 @@ It is not a scanner for code dependencies or container images; use OSV-Scanner o
 
 ## Guide
 
-- [What is unpatched](https://amet13.github.io/unpatched/index.html): What unpatched does, who it is for, and what it is not.
-- [Start with GitHub](https://amet13.github.io/unpatched/start-github.html): Set up unpatched in a private GitHub repository in five minutes: two files, a first manual run, optional chat channels.
-- [Start with the command line](https://amet13.github.io/unpatched/start-cli.html): Install the unpatched command, write unpatched.yml, run a check, and use the exit codes in scripts and cron.
-- [Start with Docker](https://amet13.github.io/unpatched/start-docker.html): Run unpatched from the ghcr.io image on a homelab server or NAS, on a schedule, with state kept in a mounted folder.
-- [Config reference](https://amet13.github.io/unpatched/config.html): Every key of unpatched.yml with type, default and meaning, and examples for the stack, ignore entries, thresholds and notifications.
-- [Findings and rules](https://amet13.github.io/unpatched/findings.html): What a finding is, the four verdicts, the five buckets, how to read a GitHub issue and the JSON report, and every rule id.
-- [Notifications](https://amet13.github.io/unpatched/notifications.html): Each way unpatched tells you (GitHub issues, Telegram, Slack, Discord, ntfy, webhook), its environment variable, an example message, and how state avoids repeats.
-- [Catalog](https://amet13.github.io/unpatched/catalog.html): The products unpatched knows (generated list with id, vendor, kind, version scheme and end of life tracking), how entries are checked, and how to ask for a new one.
-- [GitHub Action](https://amet13.github.io/unpatched/action.html): The amet13/unpatched Action: what it does, its inputs and outputs, permissions, and examples for pinning a version, dry runs and chat secrets.
-- [Command reference](https://amet13.github.io/unpatched/cli.html): Every unpatched command and option, from the program's own help, with the exit codes.
-- [With an agent](https://amet13.github.io/unpatched/with-an-agent.html): Use unpatched from an AI agent: the read-only MCP server and its tools, the four skills, the Claude Code plugin and Gemini CLI extension, the MCP Registry entry, and llms.txt.
-- [Data](https://amet13.github.io/unpatched/data.html): Every data source unpatched reads, how often the database is built, what happens when a source fails, how to verify the download, and the licenses.
-- [How accurate is it](https://amet13.github.io/unpatched/accuracy.html): How unpatched's verdicts are tested (the corpus, the catalog checks), and its honest limits. No measured accuracy numbers have been published yet.
-- [Privacy](https://amet13.github.io/unpatched/privacy.html): What leaves your machine when you run unpatched: the database download from GitHub and OSV queries for package items. There is no telemetry.
-- [FAQ](https://amet13.github.io/unpatched/faq.html): Answers to common questions: why not Dependabot, Trivy or OpenCVE, why a finding is unknown, why a product is unverified, public repositories, and schedule pauses.
-- [Coming from CVEWatch](https://amet13.github.io/unpatched/migrate-from-cvewatch.html): For people who used CVEWatch (the Go tool): what changed in unpatched, how old commands and config map to the new ones, and where the old versions are.
+- [What is unpatched](https://amet13.github.io/unpatched/guide/index.html): What unpatched does, who it is for, and what it is not.
+- [Start with GitHub](https://amet13.github.io/unpatched/guide/start-github.html): Set up unpatched in a private GitHub repository in five minutes: two files, a first manual run, optional chat channels.
+- [Start with the command line](https://amet13.github.io/unpatched/guide/start-cli.html): Install the unpatched command, write unpatched.yml, run a check, and use the exit codes in scripts and cron.
+- [Start with Docker](https://amet13.github.io/unpatched/guide/start-docker.html): Run unpatched from the ghcr.io image on a homelab server or NAS, on a schedule, with state kept in a mounted folder.
+- [Config reference](https://amet13.github.io/unpatched/guide/config.html): Every key of unpatched.yml with type, default and meaning, and examples for the stack, ignore entries, thresholds and notifications.
+- [Findings and rules](https://amet13.github.io/unpatched/guide/findings.html): What a finding is, the four verdicts, the five buckets, how to read a GitHub issue and the JSON report, and every rule id.
+- [Notifications](https://amet13.github.io/unpatched/guide/notifications.html): Each way unpatched tells you (GitHub issues, Telegram, Slack, Discord, ntfy, webhook), its environment variable, an example message, and how state avoids repeats.
+- [Catalog](https://amet13.github.io/unpatched/guide/catalog.html): The products unpatched knows (generated list with id, vendor, kind, version scheme and end of life tracking), how entries are checked, and how to ask for a new one.
+- [GitHub Action](https://amet13.github.io/unpatched/guide/action.html): The amet13/unpatched Action: what it does, its inputs and outputs, permissions, and examples for pinning a version, dry runs and chat secrets.
+- [Command reference](https://amet13.github.io/unpatched/guide/cli.html): Every unpatched command and option, from the program's own help, with the exit codes.
+- [With an agent](https://amet13.github.io/unpatched/guide/with-an-agent.html): Use unpatched from an AI agent: the read-only MCP server and its tools, the four skills, the Claude Code plugin and Gemini CLI extension, the MCP Registry entry, and llms.txt.
+- [Data](https://amet13.github.io/unpatched/guide/data.html): Every data source unpatched reads, how often the database is built, what happens when a source fails, how to verify the download, and the licenses.
+- [How accurate is it](https://amet13.github.io/unpatched/guide/accuracy.html): How unpatched's verdicts are tested (the corpus, the catalog checks), and its honest limits. No measured accuracy numbers have been published yet.
+- [Privacy](https://amet13.github.io/unpatched/guide/privacy.html): What leaves your machine when you run unpatched: the database download from GitHub and OSV queries for package items. There is no telemetry.
+- [FAQ](https://amet13.github.io/unpatched/guide/faq.html): Answers to common questions: why not Dependabot, Trivy or OpenCVE, why a finding is unknown, why a product is unverified, public repositories, and schedule pauses.
+- [Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html): For people who used CVEWatch (the Go tool): what changed in unpatched, how old commands and config map to the new ones, and where the old versions are.
 
 ## More
 
-- [Everything in one file](https://amet13.github.io/unpatched/llms-full.txt)
+- [Everything in one file](https://amet13.github.io/unpatched/guide/llms-full.txt)
 - [Source code](https://github.com/Amet13/unpatched)
 - [Config schema](https://github.com/Amet13/unpatched/blob/main/schema/unpatched.schema.json)
 - [Report schema](https://github.com/Amet13/unpatched/blob/main/schema/report.schema.json)

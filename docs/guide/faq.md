@@ -35,10 +35,12 @@ finding:
 - `UNP-UNKNOWN-NO-RANGES`: no source has version data yet. New CVEs often wait days
   or weeks for NVD analysis. The finding goes away, or becomes `affected`, when
   data arrives. Read the advisory and check your version by hand.
-- `UNP-UNKNOWN-VERSION`: your version, or a version in the data, cannot be read in
-  the product's version scheme. Check the version in `unpatched.yml` (a build
-  suffix, a typo, `latest`). If it is right, report it: the product may need a
-  better scheme.
+- `UNP-UNKNOWN-VERSION`: your version cannot be read in the product's version
+  scheme. Check the version in `unpatched.yml` (a build suffix, a typo,
+  `latest`); `unpatched catalog show <id>` shows the expected format.
+- `UNP-UNKNOWN-DATA`: a version in a source's data cannot be read, or the data
+  cannot place your release. Your version is fine: read the advisory and check
+  it by hand.
 - `UNP-UNVERIFIED-PRODUCT`: the catalog's names for the product match nothing in the
   database, so an empty result would not mean you are safe.
 - `UNP-STALE-DATA`: the database is old.

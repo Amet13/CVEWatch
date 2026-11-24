@@ -38,11 +38,11 @@ description: Explain why unpatched reports a finding or a verdict (affected, fix
    - `signals`: `kev` (CISA Known Exploited, with date and ransomware flag),
      `epss` (chance of exploitation in the next 30 days), `exploits`
      (public exploit code), `ssvc_exploitation`.
-   - `fixed_in` and `latest_in_cycle`: where to upgrade.
+   - `fixed_in`, `fixed_after`, `fix_other_train` and `latest_in_cycle`: where to upgrade.
 3. Explain each rule id with `unpatched explain UNP-KEV` (and so on). The ids:
    `UNP-KEV`, `UNP-SSVC-ACTIVE`, `UNP-EXPLOIT-EXPOSED`, `UNP-EPSS`, `UNP-CVSS`,
    `UNP-EXPOSED`, `UNP-AFFECTED`, `UNP-EOL`, `UNP-UNKNOWN-NO-RANGES`,
-   `UNP-UNKNOWN-VERSION`, `UNP-CONFLICT`, `UNP-UNVERIFIED-PRODUCT`,
+   `UNP-UNKNOWN-VERSION`, `UNP-UNKNOWN-DATA`, `UNP-CONFLICT`, `UNP-UNVERIFIED-PRODUCT`,
    `UNP-IGNORED`, `UNP-IGNORE-EXPIRED`, `UNP-STALE-DATA`.
 4. If sources disagree (`UNP-CONFLICT`), say which source says what. The tool
    reports the item when in doubt.

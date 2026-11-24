@@ -22,7 +22,7 @@ use serde_json::Value;
 
 const START: &str = "<!-- generated:start ";
 const END: &str = "<!-- generated:end -->";
-const SITE: &str = "https://amet13.github.io/unpatched/";
+const SITE: &str = "https://amet13.github.io/unpatched/guide/";
 
 /// The clock for every example, so the output never changes with the date.
 const NOW: &str = "2026-11-24T00:00:00Z";

@@ -6,3 +6,4 @@ dist
 .unpatched
 *.sqlite
 *.sqlite.zst
+site

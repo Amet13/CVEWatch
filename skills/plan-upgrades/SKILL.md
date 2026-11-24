@@ -16,7 +16,7 @@ Read `findings` (open) and `items`. Ignore `ignored` unless the user asks.
 `findings` holds only what needs a look: each has a `verdict` of `affected` or
 `unknown`, never `not-affected` (those are only counted in `summary`). Each
 finding has: `item`, `product`, `version`, `exposure`, `vuln`, `title`,
-`verdict`, `bucket`, `rules`, `fixed_in`, `latest_in_cycle`, `signals`,
+`verdict`, `bucket`, `rules`, `fixed_in`, `fixed_after`, `fix_other_train`, `latest_in_cycle`, `signals`,
 `evidence`. Each entry of `items` is one stack item with `counts` per bucket,
 `upgrade_to`, `fixes` (how many affected findings that upgrade clears), `of`
 (how many are affected), `unfixed` and `eol`.
@@ -28,8 +28,8 @@ finding has: `item`, `product`, `version`, `exposure`, `vuln`, `title`,
 3. Bucket `eol`: the release cycle no longer gets fixes. It needs a move to a
    newer cycle, which is a bigger job: plan it, do not just patch.
 4. Bucket `unknown`: the data cannot say yet. Do not call these safe. Say what
-   is missing (`rules` has `UNP-UNKNOWN-NO-RANGES`, `UNP-UNKNOWN-VERSION` or
-   `UNP-UNVERIFIED-PRODUCT`) and what the user can check.
+   is missing (`rules` has `UNP-UNKNOWN-NO-RANGES`, `UNP-UNKNOWN-VERSION`,
+   `UNP-UNKNOWN-DATA` or `UNP-UNVERIFIED-PRODUCT`) and what the user can check.
 5. Bucket `fyi`: affected, low urgency. Batch it into the next planned upgrade.
 
 Inside a bucket, put internet-facing items (`exposure: internet`) first.

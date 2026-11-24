@@ -213,7 +213,6 @@ finding.
       "evidence": [ ... ],
       "references": [
         "https://fortiguard.com/psirt/FG-IR-24-015",
-        "https://fortiguard.com/psirt/FG-IR-24-015",
         "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2024-21762"
       ]
     },

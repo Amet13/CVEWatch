@@ -78,6 +78,7 @@ fn clean_usage(text: &str) -> String {
 }
 
 fn main() -> ExitCode {
+    quiet_on_broken_pipe();
     let cli = match Cli::try_parse() {
         Ok(c) => c,
         Err(e) => {
@@ -154,4 +155,23 @@ fn main() -> ExitCode {
             ExitCode::from(f.code)
         }
     }
+}
+
+/// `unpatched check | head` closes stdout early, and `println!` then panics with
+/// "failed printing to stdout: Broken pipe". Exit quietly instead, like other
+/// command-line tools; every other panic keeps the default report.
+fn quiet_on_broken_pipe() {
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let payload = info.payload();
+        let msg = payload
+            .downcast_ref::<String>()
+            .map(String::as_str)
+            .or_else(|| payload.downcast_ref::<&str>().copied())
+            .unwrap_or("");
+        if msg.contains("Broken pipe") || msg.contains("os error 32") {
+            std::process::exit(0);
+        }
+        default_hook(info);
+    }));
 }

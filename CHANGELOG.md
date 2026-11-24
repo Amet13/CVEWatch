@@ -49,8 +49,6 @@ History: versions 1.x and 2.x were CVEWatch, a Go command-line tool. It is not d
 - CNA keys in the catalog can have `summary_starts`, so a CNA that files every product under one name (Nextcloud's `security-advisories`) only counts for the product the description is about.
 - A database that holds a source this build does not know is refused ("needs a newer unpatched", exit code 3) instead of silently dropping the findings.
 
-### Changed
-
 - NVD ranges: the CPE `update` field is joined to the version (`8.5` + `p1` is 8.5p1, Ivanti `22.7` + `r2.4` is 22.7R2.4); other updates (`cumulative_update_23`, `update2`) are kept as unplaced, so a version that could match is `unknown`, never `not-affected`. CPE version `-` (not applicable) no longer means all versions: it gave WordPress core the flaws of its plugins.
 - An affected verdict that rests only on "all versions" evidence is `unknown` (`UNP-UNKNOWN-NO-RANGES`), and is shown only when the signals would make it `now` or `week`. It is never `now` or `week` itself.
 - `9.8p1` matches the bound `9.8` (OpenSSH has no plain 9.8): `<= 9.8` includes it.

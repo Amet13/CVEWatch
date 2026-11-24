@@ -64,6 +64,10 @@ rules too, so you see every reason. Thresholds can be changed in
 For an affected finding, `fixed_in` is the lowest version that fixes it, taken
 from the upper bound of the affected range. `latest_in_cycle` is the newest
 release in your release cycle from endoflife.date, shown when it is newer.
+When a source only gives an inclusive upper bound ("up to 9.8"), `fixed_after`
+holds that bound and the advice reads "upgrade to a release after 9.8". When
+your release branch has no fix in the data but a newer one does,
+`fix_other_train` names it and the advice says so.
 
 ## Read a GitHub issue
 
@@ -202,7 +206,6 @@ second finding):
       "evidence": [ ... ],
       "references": [
         "https://fortiguard.com/psirt/FG-IR-24-015",
-        "https://fortiguard.com/psirt/FG-IR-24-015",
         "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2024-21762"
       ]
     },
@@ -224,7 +227,7 @@ second finding):
 
 `summary` counts the findings per bucket, plus `ignored` and `not_affected`. Each
 finding has its `key` (stable across runs), `verdict`, `bucket`, `rules`,
-`fixed_in`, `latest_in_cycle`, `cvss`, `signals` (KEV, EPSS, SSVC, exploits),
+`fixed_in`, `fixed_after`, `fix_other_train`, `latest_in_cycle`, `cvss`, `signals` (KEV, EPSS, SSVC, exploits),
 `evidence` per source and `references`. `notes` lists problems with the run
 itself: an unknown product id, a stale database, a version that cannot be
 compared.
