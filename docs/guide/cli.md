@@ -64,8 +64,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -95,9 +95,9 @@ Options:
       --exit-code        Exit with 1 when something has to be fixed today
       --offline          Use no network: no database download and no package (OSV) lookups
       --notify           Also send the findings to the configured channels (issues, chat)
-  -v, --verbose...       More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --dry-run          With --notify: send and write nothing; print what would happen
-      --quiet            Print only what was asked for, and errors
+  -v, --verbose...       More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --dry-run          With --notify: send and write nothing; print each message and what would be written
+      --quiet            Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>     When to use colour [default: auto] [possible values: auto, always, never]
       --github           Keep delivery state and issues in GitHub (automatic inside GitHub Actions)
       --allow-stale      Do not fail when the database is older than `stale_fail_days`
@@ -118,8 +118,8 @@ Options:
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --force          Overwrite files that exist
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -130,17 +130,18 @@ Options:
 ```text
 Show the evidence: a rule id, a CVE, or a finding key
 
-Usage: unpatched explain [OPTIONS] <TARGET>
+Usage: unpatched explain [OPTIONS] [TARGET]
 
 Arguments:
-  <TARGET>  `UNP-KEV`, `CVE-2024-21762` or a finding key such as `office-firewall/CVE-2024-21762`
+  [TARGET]  `UNP-KEV`, `CVE-2024-21762` or a finding key such as `office-firewall/CVE-2024-21762`
 
 Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
+      --rules          List every rule id with its title, and stop
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -160,8 +161,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -179,8 +180,8 @@ Options:
       --kind <KIND>    Only this kind of product [possible values: appliance, app, os, database, server, library, desktop, cms]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -200,8 +201,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -218,8 +219,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -236,8 +237,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -258,8 +259,8 @@ Options:
       --nvd-years <A..B>  NVD years to read, like `2018..2026` (default: all)
       --offline           Use no network: no database download and no package (OSV) lookups
       --nvd-cache <DIR>   Keep downloaded NVD feeds here between builds
-  -v, --verbose...        More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet             Print only what was asked for, and errors
+  -v, --verbose...        More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet             Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>      When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help              Print help
   -V, --version           Print version
@@ -276,8 +277,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -294,8 +295,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -315,8 +316,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version

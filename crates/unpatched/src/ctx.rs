@@ -1,5 +1,6 @@
 //! What every command shares: the global options, the config file and the database.
 
+use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
@@ -274,12 +275,13 @@ pub fn suggestion_text(id: &str) -> String {
     let mut text = String::from("Not in the catalog. ");
     if !s.is_empty() {
         let list: Vec<String> = s.iter().map(|e| format!("{} ({})", e.id, e.name)).collect();
-        text.push_str(&format!("Did you mean: {}? ", list.join(", ")));
+        let _ = write!(text, "Did you mean: {}? ", list.join(", "));
     }
-    text.push_str(&format!(
+    let _ = write!(
+        text,
         "For OS packages use a purl, e.g. `{PURL_EXAMPLE}`. \
          To ask for a product: {NEW_PRODUCT_URL}"
-    ));
+    );
     text
 }
 

@@ -259,8 +259,10 @@ impl Tools {
             .and_then(|n| n.to_str())
             .unwrap_or_default()
             .to_ascii_lowercase();
-        let named_right =
-            name.starts_with("unpatched") && (name.ends_with(".yml") || name.ends_with(".yaml"));
+        let named_right = name.starts_with("unpatched")
+            && Path::new(&name)
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("yml") || e.eq_ignore_ascii_case("yaml"));
         if named_right && wanted.starts_with(&cwd) {
             return Ok(wanted);
         }
@@ -402,7 +404,17 @@ impl Tools {
                 });
                 Ok(Output { text, data })
             }
-            Some(cve) => answer_for_cve(db, &config, entry, &version, exposure, &cve, now, raw),
+            Some(cve) => {
+                let ask = Ask {
+                    entry,
+                    version: &version,
+                    exposure,
+                    cve: &cve,
+                    now,
+                    raw,
+                };
+                answer_for_cve(db, &config, ask)
+            }
         }
     }
 
@@ -667,16 +679,26 @@ impl Dataset for OneVuln<'_> {
     }
 }
 
-fn answer_for_cve(
-    db: &Db,
-    config: &Config,
-    entry: &CatalogEntry,
-    version: &str,
+/// One question to `is_affected` about one CVE.
+#[derive(Clone, Copy)]
+struct Ask<'a> {
+    entry: &'a CatalogEntry,
+    version: &'a str,
     exposure: Exposure,
-    cve: &str,
+    cve: &'a str,
     now: DateTime<Utc>,
     raw: bool,
-) -> ToolResult {
+}
+
+fn answer_for_cve(db: &Db, config: &Config, ask: Ask<'_>) -> ToolResult {
+    let Ask {
+        entry,
+        version,
+        exposure,
+        cve,
+        now,
+        raw,
+    } = ask;
     let base = |verdict: &str, reason: &str| {
         json!({
             "product": entry.id,

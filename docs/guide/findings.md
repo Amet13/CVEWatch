@@ -79,7 +79,7 @@ database):
 <!-- generated:start example-issue -->
 
 ```markdown
-🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
 
 This item is marked as internet-facing.
 
@@ -90,6 +90,15 @@ This item is marked as internet-facing.
 ---
 
 unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
+
+To accept this risk, add to unpatched.yml:
+
+```yaml
+ignore:
+  - cve: CVE-…
+    reason: …
+    until: YYYY-MM-DD
+```
 
 <!-- unpatched:item=office-firewall -->
 ```

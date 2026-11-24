@@ -41,7 +41,7 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub offline: bool,
 
-    /// More detail (evidence in reports, `-v` info logs, `-vv` debug logs).
+    /// More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs).
     #[arg(short, long, global = true, action = clap::ArgAction::Count)]
     pub verbose: u8,
 
@@ -138,7 +138,7 @@ pub struct CheckArgs {
     #[arg(long)]
     pub notify: bool,
 
-    /// With --notify: send and write nothing; print what would happen.
+    /// With --notify: send and write nothing; print each message and what would be written.
     #[arg(long, requires = "notify")]
     pub dry_run: bool,
 

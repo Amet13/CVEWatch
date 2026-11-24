@@ -28,10 +28,10 @@ opens and the same report as JSON):
 $ unpatched check --format markdown
 ## unpatched
 
-2 findings to look at. 🟢 1 checked, nothing else affects you
+2 to act on (1 today, 1 end of life). 🟢 1 vulnerability checked against your versions: not affected
 
-- 🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
-- ⚫ Nextcloud 29.0.3  1 eol  →  upgrade to a supported release
+- 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+- ⚫ Nextcloud 29.0.3  1 end of life  →  upgrade to a supported release
 
 | Bucket | Findings |
 | --- | ---: |

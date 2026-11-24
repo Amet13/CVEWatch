@@ -293,10 +293,13 @@ pub fn channels_from_config(config: &Config) -> Result<Vec<Box<dyn Channel>>> {
     channels_with(config, |k| std::env::var(k).ok())
 }
 
+/// The channels of a dry run, and the names of the secrets that were missing.
+pub type DryRunChannels = (Vec<Box<dyn Channel>>, Vec<&'static str>);
+
 /// The enabled channels for a dry run: a missing secret does not stop it. The
 /// channel gets a placeholder (it is never used to send), and the names of the
 /// missing variables come back so the caller can warn.
-pub fn channels_for_dry_run(config: &Config) -> Result<(Vec<Box<dyn Channel>>, Vec<&'static str>)> {
+pub fn channels_for_dry_run(config: &Config) -> Result<DryRunChannels> {
     let missing = std::cell::RefCell::new(Vec::new());
     let channels = channels_with(config, |k| {
         let set = std::env::var(k).ok().filter(|v| !v.trim().is_empty());

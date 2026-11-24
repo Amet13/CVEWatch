@@ -90,8 +90,10 @@ compare. Your output uses live data. The stack is the template from above.
 
 ```text
 $ unpatched check
-🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
-⚫ Nextcloud 29.0.3  1 eol  →  upgrade to a supported release
+2 to act on (1 today, 1 end of life)
+
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+⚫ Nextcloud 29.0.3  1 end of life  →  upgrade to a supported release
 
 🔴 Fix today (1)
 
@@ -109,7 +111,7 @@ $ unpatched check
     Do    Upgrade to a supported release.
     Rule  UNP-EOL · verdict affected
 
-🟢 1 checked, nothing else affects you
+🟢 1 vulnerability checked against your versions: not affected
 Database: built 2026-11-23 12:00 UTC, 0 days old
 Note: stack[2]: the database has no data for product "postgresql" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
 Note: stack[3]: the database has no data for product "home-assistant" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.

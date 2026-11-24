@@ -279,7 +279,22 @@ note. Closing an issue yourself means "I know"; unpatched does not reopen it,
 and lists it under "Closed but still affected" in the status issue.
 
 If the first run reports `unknown product`, the id in `unpatched.yml` is not in
-the catalog. Read the message: it suggests close matches.
+the catalog. Read the message: it suggests close matches, and says what to do for
+an operating-system package (use a purl).
+
+**Accept a risk you know about.** Every issue ends with the lines to add to
+`unpatched.yml`; the next run moves the finding out of the issue and lists it as
+ignored until the date you set:
+
+```yaml
+ignore:
+  - cve: CVE-2024-21762
+    reason: "The SSL VPN is switched off"
+    until: 2027-01-31
+```
+
+The report notes an entry that matches nothing or has expired. More in
+[the config](config.md#ignore-entries).
 
 ## Private repository, secrets and settings
 
@@ -305,7 +320,8 @@ run the workflow by hand again, or run `unpatched check` on your machine
 
 ## Test without side effects
 
-Run the Action with `dry-run: true` to print what would happen and send nothing:
+Run the Action with `dry-run: true` to print what would happen (each message
+once, with its channel) and send nothing:
 
 ```yaml
       - uses: amet13/unpatched@v3
@@ -414,8 +430,10 @@ compare. Your output uses live data. The stack is the template from above.
 
 ```text
 $ unpatched check
-🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
-⚫ Nextcloud 29.0.3  1 eol  →  upgrade to a supported release
+2 to act on (1 today, 1 end of life)
+
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+⚫ Nextcloud 29.0.3  1 end of life  →  upgrade to a supported release
 
 🔴 Fix today (1)
 
@@ -433,7 +451,7 @@ $ unpatched check
     Do    Upgrade to a supported release.
     Rule  UNP-EOL · verdict affected
 
-🟢 1 checked, nothing else affects you
+🟢 1 vulnerability checked against your versions: not affected
 Database: built 2026-11-23 12:00 UTC, 0 days old
 Note: stack[2]: the database has no data for product "postgresql" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
 Note: stack[3]: the database has no data for product "home-assistant" yet. Run `unpatched db update`; if the id may be wrong, `unpatched catalog list` shows the ids.
@@ -454,8 +472,19 @@ the text. `sarif` is for code-scanning tools; uploading it to GitHub's Security
 tab needs GitHub Advanced Security on private repositories, so unpatched does not
 do it for you.
 
-With `--verbose` (or `-v`) the text and Markdown reports include the evidence of
-each source.
+The text and Markdown reports start with the counts
+(`87 to act on (14 today, 69 this week, ...), 228 FYI`) and show FYI findings
+only as a count per item, plus a line `228 FYI not shown: run with -v or --format
+json`. With `--verbose` (or `-v`) they list the FYI findings too and include the
+evidence of each source. The JSON always has everything.
+
+`--quiet` prints nothing on stdout, so a script or cron job stays silent; errors
+still go to stderr and the exit code is the same. If you give `--output FILE`, the
+report is still written there:
+
+```sh
+unpatched check --quiet --format json --output report.json
+```
 
 The same report as `--format json`. Parts are cut out for this page and marked
 with `...`: the database sources, the long `title` and `evidence`, and the second
@@ -572,8 +601,10 @@ finding that says the data is old.
 ## Send messages from the command line
 
 `--notify` sends the findings to the channels in `unpatched.yml`. Outside GitHub
-Actions it uses the local state file to avoid repeats. `--dry-run` prints what
-would be sent and sends nothing. Secrets come from environment variables. See
+Actions it uses the local state file to avoid repeats. `--dry-run` prints each
+message that would be sent (the channel, then its text) and what would be
+written, and sends and writes nothing. A missing secret is only a warning in a
+dry run. Secrets come from environment variables. See
 [Notifications](notifications.md).
 
 ```sh
@@ -581,10 +612,17 @@ export UNPATCHED_NTFY_TOKEN=...   # only if your ntfy topic needs one
 unpatched check --notify
 ```
 
-A cron entry that runs it every morning:
+A cron entry that runs it every morning (`--quiet` keeps cron from mailing you
+the report on stdout; errors still reach you):
 
 ```text
 17 6 * * *  cd /home/me/stack && unpatched check --notify --quiet
+```
+
+To keep a copy of the report as well:
+
+```text
+17 6 * * *  cd /home/me/stack && unpatched check --notify --quiet --format json --output report.json
 ```
 
 `--github` makes the command keep issues and state in a GitHub repository (it
@@ -624,7 +662,9 @@ This rule puts an affected finding in: Fix today (now).
 
 With a stack file, `explain CVE-...` also shows what the CVE means for your
 items, and `explain <item>/<CVE>` explains one finding by its key (the key is in
-the JSON report and in the hidden marker of each issue).
+the JSON report and in the hidden marker of each issue). It ends with the lines
+to add to `unpatched.yml` to accept the risk. `unpatched explain --rules` lists
+every rule id.
 
 Show a catalog entry, the names it matches in each source:
 
@@ -957,8 +997,9 @@ versions that YAML could read as numbers (`"15.4"`).
 
 **`exposure`** is `internet` (reachable from the internet: VPN portals, web
 apps, mail servers) or `internal`, the default. It changes the bucket: an
-affected, internet-facing item is at least "fix this week", and with a public
-exploit it is "fix today". Mark only what really is reachable.
+affected internet-facing finding with CVSS ≥ 7.0 (`cvss_week_exposed`) is at
+least this week; with a public exploit it is fix today, whatever the score.
+Mark only what really is reachable.
 
 ## Ignore entries
 
@@ -982,6 +1023,9 @@ ignore:
   note.
 - When the date has passed, the finding is back in its bucket with the rule
   `UNP-IGNORE-EXPIRED`, and the issue is reopened.
+- The report has a note for an entry that does nothing: `ignore[2]: CVE-2099-1
+  matches no finding. Check the id or remove it.` (the number counts from 0), or
+  `ignore[1] expired on 2020-01-01; the finding is back.`
 
 ## Thresholds
 
@@ -1000,7 +1044,7 @@ thresholds:
   least "this week" (rule `UNP-EPSS`). EPSS is the estimated probability of
   exploitation in the next 30 days, from 0 to 1.
 - `cvss_week`: the same for the CVSS base score (rule `UNP-CVSS`).
-- `cvss_week_exposed`: the CVSS base score at or above which an internet-facing item's finding is `week` (rule `UNP-EXPOSED`, default 7.0).
+- `cvss_week_exposed`: the CVSS base score at or above which an affected internet-facing finding is at least `week` (rule `UNP-EXPOSED`, default 7.0). With a public exploit it is `now`, whatever the score.
 - `stale_warn_days`: when the database is older than this, the report has a
   finding that says so (rule `UNP-STALE-DATA`).
 - `stale_fail_days`: when it is older than this, the run stops with exit code 3.
@@ -1056,8 +1100,7 @@ problems with the data are findings too.
 Every source is judged on its own, then the verdicts are combined. One source
 saying `affected` is enough. `not-affected` needs evidence: having no data is
 never "not affected". When sources disagree the finding is reported and the rule
-`UNP-CONFLICT` is added, so you can read the evidence and decide. The reasoning is
-in the decision record ADR-0006.
+`UNP-CONFLICT` is added, so you can read the evidence and decide.
 
 An `unknown` is not shown for every vulnerability that lacks data: that would
 bury the report. It is shown only when the signals would have made it "fix today"
@@ -1068,18 +1111,36 @@ with no version range yet). The reason is given in the finding.
 
 The bucket is decided by evidence of exploitation first, not by severity.
 
+The report says the bucket in words, and the JSON keeps short ids. They mean
+the same:
+
+| JSON (`bucket`) | In the text report, issues and chat | Meaning |
+| --- | --- | --- |
+| `now` | today | Fix today |
+| `week` | this week | Fix this week |
+| `eol` | end of life | The release is past its end of life |
+| `unknown` | unknown | The data cannot say yet |
+| `fyi` | FYI | Affected, low urgency |
+
+The first line of a report counts what you can act on, then the FYI findings:
+`87 to act on (14 today, 69 this week, 3 end of life, 1 unknown), 228 FYI`.
+"To act on" is everything except FYI. The line "990 vulnerabilities checked
+against your versions: not affected" counts the vulnerabilities that were
+compared with your versions and found not to affect you; it does not count the
+findings above.
+
 | Bucket | Label | When (for an `affected` finding) |
 | --- | --- | --- |
 | `now` | Fix today | In CISA KEV, or CISA SSVC says exploitation is active, or a public exploit exists (Exploit-DB or Metasploit) and the item is `exposure: internet`. |
 | `week` | Fix this week | EPSS at or above `epss_week` (default 0.05), or CVSS at or above `cvss_week` (default 9.0), or the item is `exposure: internet` and CVSS is at or above `cvss_week_exposed` (default 7.0). Exposure alone is not enough, and an unknown CVSS score does not count. |
-| `fyi` | FYI | Any other affected finding. No issue is opened for it; it is listed in the status issue and the digest. |
+| `fyi` | FYI | Any other affected finding. No issue is opened for it. The text and Markdown reports and the status issue show only a count per item; `-v` and `--format json` list them. |
 | `eol` | End of life | The release cycle of the item is past its end of life (endoflife.date). One finding per item, not one per CVE. |
 | `unknown` | Unknown | An `unknown` verdict that would have been `now` or `week` if confirmed, or a data problem (product not found, stale database). |
 
 The first matching bucket wins, from the top. A `now` finding lists the `week`
 rules too, so you see every reason. Thresholds can be changed in
 [the config](config.md#thresholds); the other conditions cannot. The reasoning
-(why not CVSS) is in ADR-0008.
+(why not CVSS) is in the comments of `crates/unpatched-core/src/matching.rs`.
 
 For an affected finding, `fixed_in` is the lowest version that fixes it, taken
 from the upper bound of the affected range. `latest_in_cycle` is the newest
@@ -1098,7 +1159,7 @@ database):
 
 
 ```markdown
-🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
+🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
 
 This item is marked as internet-facing.
 
@@ -1110,12 +1171,23 @@ This item is marked as internet-facing.
 
 unpatched keeps this issue up to date and closes it once the item has nothing left to fix (when the version in unpatched.yml is fixed).
 
+To accept this risk, add to unpatched.yml:
+
+```yaml
+ignore:
+  - cve: CVE-…
+    reason: …
+    until: YYYY-MM-DD
+```
+
 <!-- unpatched:item=office-firewall -->
 ```
 
 
 - The first line is the recommendation for the item: counts per bucket and the
-  smallest version that fixes the most findings (`fixes 48 of 50`).
+  smallest version that fixes the most findings. It says whether that upgrade
+  clears everything (`fixes all 11`) or not (`fixes 61 of 110; 49 have no fix
+  on 7.2`). FYI findings are only counted, not listed.
 - Then one section per bucket lists its findings: id, a one-sentence title, why
   it is in that bucket, and what to do. A long list stops after about 60 entries
   with "...and N more (run `unpatched check` for all)".
@@ -1132,9 +1204,9 @@ issue.
 ## The status issue
 
 One issue called **unpatched status** (label `unpatched:status`, pinned when
-GitHub allows it) is rewritten on every run. It has the count per bucket, the
-open findings with links to their issues, FYI findings, issues you closed that
-are still affected, notes, the date of the database and the time of the last run.
+GitHub allows it) is rewritten on every run. It has the count per bucket
+(FYI only as a count), the open findings with links to their issues, issues
+you closed that are still affected, notes, the date of the database and the time of the last run.
 It also holds a hidden block with what was already sent to chat channels, so
 messages are not repeated. Do not delete it: the next run would make a new one
 and may repeat messages once. More in [Notifications](notifications.md#how-state-works).
@@ -1234,6 +1306,23 @@ finding has its `key` (stable across runs), `verdict`, `bucket`, `rules`,
 itself: an unknown product id, a stale database, a version that cannot be
 compared.
 
+## Accept a risk
+
+Every issue, and `unpatched explain <finding key>`, ends with how to accept the
+risk on purpose. Add this to `unpatched.yml`:
+
+```yaml
+ignore:
+  - cve: CVE-2024-21762
+    reason: "The SSL VPN is switched off"
+    until: 2027-01-31
+```
+
+`until` is required. The report tells you when an entry does nothing:
+`ignore[2]: CVE-2099-1 matches no finding. Check the id or remove it.` and
+`ignore[1] expired on 2020-01-01; the finding is back.` More in
+[the config](config.md#ignore-entries).
+
 ## Explain a finding
 
 ```sh
@@ -1243,8 +1332,14 @@ unpatched explain office-firewall/CVE-2024-21762  # one finding of your stack, w
 ```
 
 The finding key is `<item>/<vulnerability>`, where the item is your `name`
-(lowercased, spaces become `-`) or the product id. Examples are on
+(lowercased, spaces become `-`) or the product id. `unpatched explain --rules`
+lists every rule id. Examples are on
 [Start with the command line](start-cli.md#look-closer).
+
+The examples on this page come from a small sample database
+(`fixtures/smoke/unpatched-db.sqlite`) and the date 2026-11-24. The issue
+example above comes from the renderer's own test fixture, so its CVE text and
+numbers differ from the other examples.
 
 ## Every rule
 
@@ -1380,7 +1475,7 @@ unpatched · 1 to fix today
 
 🔴 Fix today  FortiOS 7.2.5 (Office firewall): CVE-2024-21762, exploited, upgrade to 7.2.7+
 
-🟢 1,412 checked, nothing else affects you
+🟢 1,412 vulnerabilities checked against your versions: not affected
 Database: built 2026-11-22 02:41 UTC, 1 day old
 https://example.com/r
 ```
@@ -1393,13 +1488,13 @@ digest, and a footer that says it is still running:
 ```text
 unpatched · week 48
 
-🔴  FortiOS 7.2.5 (Office firewall): 1 now → upgrade to 7.2.7 (fixes 1 of 1)
-🟡  Nextcloud 29.0.3: 2 week → upgrade to 29.0.8 (fixes 2 of 2)
-⚫  PostgreSQL 13.12: 1 eol → upgrade to a supported release
+🔴  FortiOS 7.2.5 (Office firewall): 1 today → upgrade to 7.2.7 (fixes it)
+🟡  Nextcloud 29.0.3: 2 this week → upgrade to 29.0.8 (fixes all 2)
+⚫  PostgreSQL 13.12: 1 end of life → upgrade to a supported release
 ❔  Home Assistant 2024.10.1: 1 unknown
-⚪  Redis 7.2.1: 1 fyi → upgrade to 7.2.4 (fixes 1 of 1)
+⚪  Redis 7.2.1: 1 FYI → upgrade to 7.2.4 (fixes it)
 
-🟢 1,412 checked, nothing else affects you
+🟢 1,412 vulnerabilities checked against your versions: not affected
 Database: built 2026-11-22 02:41 UTC, 1 day old
 ```
 
@@ -1457,6 +1552,19 @@ stack:
 Find an id with `unpatched search <words>` (it matches the id, name, vendor and
 aliases such as `fortigate`) or `unpatched catalog list`. `unpatched catalog show <id>`
 prints the whole entry.
+
+## What is not covered
+
+The catalog covers named products: appliances, servers, apps and the like.
+It does **not** cover:
+
+- **WordPress plugins and themes.** `wordpress` is the core only.
+- **Operating-system packages**, other than ones you name with a `purl`. There
+  is no `debian`, `ubuntu` or `windows` product. Write the package as a purl,
+  for example `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`; it is
+  looked up in OSV. unpatched does not discover packages for you.
+- Libraries and anything else that is not listed below, unless you give it as a
+  `purl`.
 
 ## Supported products
 
@@ -1588,7 +1696,9 @@ are in [CONTRIBUTING.md](https://github.com/Amet13/unpatched/blob/main/CONTRIBUT
 A person checks every new entry before it is merged.
 
 For a library or an operating system package that is not a catalog product, use a
-`purl` in your stack instead: those are looked up in OSV and need no catalog entry.
+`purl` in your stack instead: those are looked up in OSV and need no catalog entry
+(for example `pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`). WordPress
+plugins and themes are not covered either way.
 See the [config reference](config.md#the-stack).
 
 ---
@@ -1782,8 +1892,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1813,9 +1923,9 @@ Options:
       --exit-code        Exit with 1 when something has to be fixed today
       --offline          Use no network: no database download and no package (OSV) lookups
       --notify           Also send the findings to the configured channels (issues, chat)
-  -v, --verbose...       More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --dry-run          With --notify: send and write nothing; print what would happen
-      --quiet            Print only what was asked for, and errors
+  -v, --verbose...       More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --dry-run          With --notify: send and write nothing; print each message and what would be written
+      --quiet            Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>     When to use colour [default: auto] [possible values: auto, always, never]
       --github           Keep delivery state and issues in GitHub (automatic inside GitHub Actions)
       --allow-stale      Do not fail when the database is older than `stale_fail_days`
@@ -1836,8 +1946,8 @@ Options:
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --force          Overwrite files that exist
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1848,17 +1958,18 @@ Options:
 ```text
 Show the evidence: a rule id, a CVE, or a finding key
 
-Usage: unpatched explain [OPTIONS] <TARGET>
+Usage: unpatched explain [OPTIONS] [TARGET]
 
 Arguments:
-  <TARGET>  `UNP-KEV`, `CVE-2024-21762` or a finding key such as `office-firewall/CVE-2024-21762`
+  [TARGET]  `UNP-KEV`, `CVE-2024-21762` or a finding key such as `office-firewall/CVE-2024-21762`
 
 Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
+      --rules          List every rule id with its title, and stop
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1878,8 +1989,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1897,8 +2008,8 @@ Options:
       --kind <KIND>    Only this kind of product [possible values: appliance, app, os, database, server, library, desktop, cms]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1918,8 +2029,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1936,8 +2047,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1954,8 +2065,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -1976,8 +2087,8 @@ Options:
       --nvd-years <A..B>  NVD years to read, like `2018..2026` (default: all)
       --offline           Use no network: no database download and no package (OSV) lookups
       --nvd-cache <DIR>   Keep downloaded NVD feeds here between builds
-  -v, --verbose...        More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet             Print only what was asked for, and errors
+  -v, --verbose...        More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet             Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>      When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help              Print help
   -V, --version           Print version
@@ -1994,8 +2105,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -2012,8 +2123,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -2033,8 +2144,8 @@ Options:
       --config <FILE>  Your stack and settings [default: unpatched.yml]
       --db <FILE>      The vulnerability database (default: $UNPATCHED_DB, else the cache directory) [env: UNPATCHED_DB=]
       --offline        Use no network: no database download and no package (OSV) lookups
-  -v, --verbose...     More detail (evidence in reports, `-v` info logs, `-vv` debug logs)
-      --quiet          Print only what was asked for, and errors
+  -v, --verbose...     More detail (FYI findings and evidence in reports, `-v` info logs, `-vv` debug logs)
+      --quiet          Print nothing on stdout except errors. A report still goes to --output
       --color <WHEN>   When to use colour [default: auto] [possible values: auto, always, never]
   -h, --help           Print help
   -V, --version        Print version
@@ -2073,15 +2184,21 @@ issue is opened.
 
 | Tool | Arguments | What it returns |
 | --- | --- | --- |
-| `check_stack` | `config_path` (optional) | The report for `unpatched.yml`: findings by urgency with verdict, rules, evidence and `fixed_in`. Packages are looked up in OSV unless the server runs with `--offline`. |
-| `is_affected` | `product`, `version`, `cve` (optional), `exposure` (optional) | An answer for one product at one version, without a config file. With `cve` it always gives a verdict (`affected`, `not-affected` or `unknown`) with evidence. |
-| `explain` | `id` | A CVE or advisory id (summary, CVSS, affected ranges per source, exploitation signals) or a rule id such as `UNP-KEV`. |
+| `check_stack` | `config_path`, `bucket`, `limit`, `include_evidence` (all optional) | The report for `unpatched.yml`. It always has `summary` (counts) and `items` (the upgrade that helps most, per stack item). `findings` lists, by default, only the `now`, `week`, `eol` and `unknown` buckets, at most 50, without evidence; ask for `fyi` with `bucket`, for more with `limit`, and for the evidence and references with `include_evidence`. Packages are looked up in OSV unless the server runs with `--offline`. |
+| `is_affected` | `product`, `version`, `cve` (optional), `exposure` (optional), `include_raw` (optional) | An answer for one product at one version, without a config file. With `cve` it always gives a verdict (`affected`, `not-affected` or `unknown`) with evidence. A source's own text is cut to about 200 characters unless `include_raw` is true. |
+| `explain` | `id`, `include_raw` (optional) | A CVE or advisory id (summary, CVSS, affected ranges per source, exploitation signals), a rule id such as `UNP-KEV`, or a finding key such as `office-firewall/CVE-2024-21762` (judged with the server's `unpatched.yml`). |
 | `search_catalog` | `text` | Catalog product ids by name, vendor or alias, with the version scheme and endoflife slug. |
 | `db_status` | none | When the database was built, its age, whether it is stale, and the state of each source. Run this before trusting an answer. |
 
-A tool that fails because of its input (an unknown product, a missing database)
-answers with an error that the model can read and fix; it is not a protocol
-error. `is_affected` needs an exact version: the instructions tell the agent to
+A tool that fails because of its input (an unknown product, an argument it does
+not have, a missing database) answers with an error that the model can read and
+fix; it is not a protocol error.
+
+`check_stack` reads only the server's own config file, or a file named
+`unpatched*.yml` or `unpatched*.yaml` under the folder the server runs in (links
+are followed first, so a link cannot point elsewhere). Any other `config_path` is
+refused, and an error about a config file never repeats what the file says, only
+the line and column. `is_affected` needs an exact version: the instructions tell the agent to
 ask you, not to guess.
 
 Options before `mcp` apply to the server: `unpatched --config path/to/unpatched.yml --db path/to/db.sqlite --offline mcp`.
@@ -2475,7 +2592,9 @@ template and the entry will be checked. See [Catalog](catalog.md).
 
 The catalog is checked by hand, so it grows by request. See
 [Ask for a product](catalog.md#ask-for-a-product). For a library or an operating
-system package you can use a `purl` today.
+system package you can use a `purl` today, like
+`pkg:deb/debian/openssl@3.0.11-1~deb12u1?distro=bookworm`. WordPress plugins and
+themes are not covered.
 
 ## Why did it flag something that does not apply to me?
 

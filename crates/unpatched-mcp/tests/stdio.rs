@@ -289,7 +289,8 @@ fn check_stack_buckets_and_limit() {
     let default = get(json!({}));
     let d = default["structuredContent"]["findings"].as_array().unwrap();
     assert!(d.iter().all(|f| f["bucket"] != "fyi"), "{d:?}");
-    let fyi = all["structuredContent"]["summary"]["fyi"].as_u64().unwrap() as usize;
+    let fyi =
+        usize::try_from(all["structuredContent"]["summary"]["fyi"].as_u64().unwrap()).unwrap();
     assert_eq!(d.len(), total - fyi);
     // The summary is always the full count.
     assert_eq!(
