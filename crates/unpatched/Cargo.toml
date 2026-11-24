@@ -8,6 +8,10 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
+readme = "README.md"
+keywords = ["vulnerability", "cve", "security", "homelab", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+include = ["src/**/*", "templates/**/*", "README.md", "LICENSE"]
 
 [dependencies]
 unpatched-core.workspace = true

@@ -8,6 +8,10 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 authors.workspace = true
+readme = "README.md"
+keywords = ["vulnerability", "cve", "nvd", "osv", "security"]
+categories = ["development-tools", "parser-implementations"]
+include = ["src/**/*", "README.md", "LICENSE"]
 
 [dependencies]
 unpatched-core.workspace = true
