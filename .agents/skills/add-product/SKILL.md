@@ -37,10 +37,12 @@ evidence, not a guess. Read `AGENTS.md` and `CONTEXT.md` first. Look at
 5. **Set `kind`** (`appliance`, `app`, `os`, `database`, `library`, `desktop`),
    `aliases` (names people type), `homepage`, and `checked:` with today's date.
 6. **Build and verify.**
+
    ```sh
    cargo xtask catalog build
    cargo xtask catalog verify     # network: checks cpe, KEV and eol keys
    ```
+
    Fix every failure. Add a line for the new entry to `catalog/VERIFIED.md`:
    the CVE ids you took `cna` keys from, and the verify numbers. Never edit
    `crates/unpatched-catalog/src/catalog.generated.json` by hand.

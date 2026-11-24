@@ -52,24 +52,28 @@ lives in `unpatched.yml` in a private repository.
    repository secrets (`UNPATCHED_TELEGRAM_TOKEN`, `UNPATCHED_SLACK_WEBHOOK`,
    `UNPATCHED_DISCORD_WEBHOOK`, `UNPATCHED_WEBHOOK_URL`) in the GitHub
    settings. Do not ask them to paste a secret into the chat.
-7. Write `.github/workflows/unpatched.yml`:
+7. Write `.github/workflows/unpatched.yml`. Prefer `unpatched init --github`,
+   which writes the current template. By hand, it is:
 
    ```yaml
    on:
      schedule: [{ cron: "17 6 * * *" }]
      workflow_dispatch:
-   permissions: { contents: write, issues: write }
+   permissions: { contents: read, issues: write }
    jobs:
      check:
        runs-on: ubuntu-latest
        steps:
          - uses: actions/checkout@v5
-         - uses: amet13/unpatched@v1
-           with:
-             telegram-token: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
+           with: { persist-credentials: false }
+         - uses: amet13/unpatched@v0
+           env:
+             UNPATCHED_TELEGRAM_TOKEN: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
    ```
 
-   Drop the `with:` block when no channel needs a secret.
+   Secrets go in `env:`, only for the channels turned on in `unpatched.yml`.
+   Drop the `env:` block when no channel needs a secret. The Action never
+   commits to the repository, so it needs no `contents: write`.
 8. Validate offline: `unpatched check --offline --format json`. If it fails
    with an unknown product or a bad version, fix `unpatched.yml` and run it
    again. If the database is missing, run `unpatched db update` first.

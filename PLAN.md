@@ -30,7 +30,7 @@ Date: 2026-11-23.
 - Free on crates.io (checked 2026-11-23). The GitHub repos using the name are
   unrelated (Minecraft mods).
 - It reads well in use: `unpatched check`, `unpatched.yml`,
-  `uses: amet13/unpatched@v1`, "Unpatched: 1 to fix today".
+  `uses: amet13/unpatched@v0`, "Unpatched: 1 to fix today".
 
 Alternatives (all free on crates.io, no notable GitHub projects):
 
@@ -137,15 +137,15 @@ databases and CMSs.
    on:
      schedule: [{ cron: "17 6 * * *" }]
      workflow_dispatch:
-   permissions: { contents: write, issues: write }
+   permissions: { contents: read, issues: write }
    jobs:
      check:
        runs-on: ubuntu-latest
        steps:
          - uses: actions/checkout@v5
-         - uses: amet13/unpatched@v1
-           with:
-             telegram-token: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
+         - uses: amet13/unpatched@v0
+           env:
+             UNPATCHED_TELEGRAM_TOKEN: ${{ secrets.UNPATCHED_TELEGRAM_TOKEN }}
    ```
 3. The result is GitHub Issues, one per finding, with a label for the bucket.
    GitHub emails you, closing an issue means "done", and you get an audit trail

@@ -342,3 +342,28 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+
+  # CUSTOM: move the major tag (v0, v1, …) to this release, so workflows that use
+  # `amet13/unpatched@v0` get the newest stable release. Prereleases do not move it.
+  move-major-tag:
+    needs:
+      - plan
+      - announce
+    if: ${{ !fromJson(needs.plan.outputs.val).announcement_is_prerelease }}
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ fromJson(needs.plan.outputs.val).announcement_tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Move the major tag
+        run: |
+          case "$TAG" in v[0-9]*.*) ;; *) echo "::notice::$TAG is not vX.Y.Z; no major tag moved."; exit 0 ;; esac
+          major="${TAG%%.*}"
+          git tag -f "$major" "$TAG^{commit}"
+          git push -f origin "refs/tags/$major"
+          echo "::notice::$major now points to $TAG"
