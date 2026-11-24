@@ -1,0 +1,76 @@
+description: 'FortiOS 7.2.5 is affected and the only fix in the data is 7.4.10: the advice says there is no fix on the 7.2 branch instead of ''Upgrade to 7.4.10''.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: fortios
+      version: "7.2.5"
+      exposure: internet
+data:
+  products:
+  - id: fortios
+    name: FortiOS
+    vendor: Fortinet
+    kind: appliance
+    versioning: dotted
+    match:
+      cpe:
+      - fortinet:fortios
+    eol: fortios
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2026-0200
+    summary: 'FortiOS: improper access control'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.8
+    ranges:
+    - source: cve-org
+      product: fortios
+      constraints:
+      - kind: range
+        start:
+          version: '7.0.0'
+          inclusive: true
+        end:
+          version: '7.4.10'
+          inclusive: false
+      raw: ''
+  signals:
+    CVE-2026-0200:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: Fortinet
+        product: FortiOS
+  eol:
+    fortios:
+    - cycle: '7.2'
+      release_date: '2023-03-31'
+      eol: '2027-03-31'
+      eol_reached: false
+      latest: 7.2.12
+      lts: false
+    - cycle: '7.4'
+      release_date: '2023-05-11'
+      eol: '2027-05-11'
+      eol_reached: false
+      latest: 7.4.11
+      lts: false
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: fortios/CVE-2026-0200
+  bucket: now
+  verdict: affected
+  rules:
+  - UNP-KEV
+  - UNP-CVSS
+  - UNP-EXPOSED
+  fixed_in: 7.4.10
+  advice_contains: No fix on the 7.2 branch in the data; the first fixed release is 7.4.10

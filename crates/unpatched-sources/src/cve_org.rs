@@ -1231,6 +1231,52 @@ mod tests {
     }
 
     #[test]
+    fn cna_key_with_a_description_condition() {
+        // Nextcloud files every app under `security-advisories`. Only records
+        // about the server (by the description) count for the server product.
+        let key = |starts: &[&str]| {
+            let e = unpatched_core::CatalogEntry {
+                id: "nextcloud".into(),
+                name: "Nextcloud Server".into(),
+                vendor: "Nextcloud".into(),
+                kind: unpatched_core::ProductKind::Server,
+                versioning: unpatched_core::Scheme::Dotted,
+                keys: unpatched_core::MatchKeys {
+                    cna: vec![unpatched_core::catalog::CnaKey {
+                        vendor: "nextcloud".into(),
+                        product: "security-advisories".into(),
+                        summary_starts: starts.iter().map(|s| (*s).to_owned()).collect(),
+                    }],
+                    ..Default::default()
+                },
+                eol: None,
+                aliases: vec![],
+                homepage: None,
+                version_hint: None,
+                checked: chrono::NaiveDate::from_ymd_opt(2026, 11, 1).unwrap(),
+            };
+            CatalogIndex::from_catalog(&[e])
+        };
+        let idx = key(&["Nextcloud Server is a self hosted personal cloud system."]);
+        // CVE-2024-22212 is about the Global Site Selector app: no server range.
+        let app = rec("CVE-2024-22212");
+        assert!(app.summary.starts_with("Nextcloud Global Site Selector"));
+        assert!(app.to_vulnerability(&idx).ranges.is_empty());
+        // A record that starts like a server advisory is kept.
+        let server = parse_cve_record(
+            br#"{"cveMetadata":{"cveId":"CVE-2024-37315","state":"PUBLISHED"},
+            "containers":{"cna":{"descriptions":[{"lang":"en","value":"Nextcloud Server is a self hosted personal cloud system. An attacker can restore older versions."}],
+            "affected":[{"vendor":"nextcloud","product":"security-advisories","versions":[{"version":">= 26.0.0, < 26.0.12","status":"affected"}]}]}}}"#,
+        )
+        .unwrap();
+        let v = server.to_vulnerability(&idx);
+        assert_eq!(v.ranges.len(), 1);
+        assert_eq!(v.ranges[0].product, "nextcloud");
+        // Without a condition the old behaviour (every record counts) stays possible.
+        assert_eq!(app.to_vulnerability(&key(&[])).ranges.len(), 1);
+    }
+
+    #[test]
     fn same_product_entries_merge_only_when_safe() {
         let r = parse_cve_record(
             br#"{"cveMetadata":{"cveId":"CVE-2020-1","state":"PUBLISHED"},

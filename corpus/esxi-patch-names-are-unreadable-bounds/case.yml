@@ -1,0 +1,85 @@
+description: 'VMware writes ESXi fixes as ESXi80U2sb-23305545 and NVD lists 8.0:update2; neither can be placed in the version order, so the verdict is unknown and says the data is at fault.'
+now: '2026-11-24T00:00:00Z'
+config: |
+  version: 1
+  stack:
+    - product: esxi
+      version: "8.0.2"
+      exposure: internet
+data:
+  products:
+  - id: esxi
+    name: VMware ESXi
+    vendor: Broadcom
+    kind: os
+    versioning: dotted
+    match:
+      cpe:
+      - vmware:esxi
+    checked: '2026-11-01'
+  vulns:
+  - id: CVE-2024-22252
+    summary: 'VMware ESXi: use-after-free in the XHCI USB controller'
+    published: '2026-10-01'
+    cvss:
+      version: '3.1'
+      score: 9.3
+    ranges:
+    - source: cve-org
+      product: esxi
+      constraints:
+      - kind: range
+        start:
+          version: '8.0'
+          inclusive: true
+        end:
+          version: 'ESXi80U2sb-23305545'
+          inclusive: false
+      - kind: range
+        start:
+          version: '8.0'
+          inclusive: true
+        end:
+          version: 'ESXi80U1d-23299997'
+          inclusive: false
+      - kind: range
+        start:
+          version: '7.0'
+          inclusive: true
+        end:
+          version: 'ESXi70U3p-23307199'
+          inclusive: false
+      raw: ''
+    - source: nvd
+      product: esxi
+      constraints:
+      - kind: exact
+        version: '8.0:update2'
+      - kind: exact
+        version: '8.0:update1'
+      - kind: exact
+        version: '7.0:update3o'
+      raw: ''
+  signals:
+    CVE-2024-22252:
+      kev:
+        date_added: '2026-10-05'
+        due_date: '2026-10-26'
+        known_ransomware: false
+        required_action: Apply updates per vendor instructions.
+        vendor_project: VMware
+        product: ESXi
+  info:
+    schema_version: 1
+    built_at: '2026-11-23T12:00:00Z'
+    sources: []
+expect:
+- key: esxi/CVE-2024-22252
+  bucket: unknown
+  verdict: unknown
+  rules:
+  - UNP-UNKNOWN-DATA
+  - UNP-KEV
+  - UNP-CVSS
+  - UNP-EXPOSED
+  advice_contains: A version in the CVE.org data cannot be read

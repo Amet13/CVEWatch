@@ -136,6 +136,28 @@ mod tests {
     }
 
     #[test]
+    fn portable_release_suffix_matches_the_bound() {
+        // OpenSSH has no 9.8, only 9.8p1; "up to and including 9.8" includes it.
+        let d = Scheme::Dotted;
+        let upto = range(Some(("8.6", true)), Some(("9.8", true)));
+        assert!(constraint_matches(&d, &upto, "9.8p1").unwrap());
+        assert!(constraint_matches(&d, &upto, "9.7p1").unwrap());
+        assert!(!constraint_matches(&d, &upto, "9.9p1").unwrap());
+        // `< 9.8` does not include 9.8p1, and `>= 8.6` does include 8.6p1.
+        let before = range(None, Some(("9.8", false)));
+        assert!(!constraint_matches(&d, &before, "9.8p1").unwrap());
+        assert!(constraint_matches(&d, &before, "9.7p2").unwrap());
+        assert!(constraint_matches(&d, &range(Some(("8.6", true)), None), "8.6p1").unwrap());
+        // A bound with its own suffix, or a plain letter suffix, is compared as written.
+        let p2 = range(None, Some(("9.8p2", true)));
+        assert!(constraint_matches(&d, &p2, "9.8p1").unwrap());
+        assert!(!constraint_matches(&d, &p2, "9.8p3").unwrap());
+        let openssl = range(None, Some(("1.1.1", true)));
+        assert!(!constraint_matches(&d, &openssl, "1.1.1w").unwrap());
+        assert!(!constraint_matches(&d, &openssl, "1.1.1p").unwrap());
+    }
+
+    #[test]
     fn range_edges() {
         let d = Scheme::Dotted;
         let r = range(Some(("7.2.0", true)), Some(("7.2.6", false)));

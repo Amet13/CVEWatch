@@ -47,6 +47,8 @@ struct Expect {
     /// A version, or `none`. Not checked when left out.
     fixed_after: Option<String>,
     title_contains: Option<String>,
+    /// Text that `Finding::advice()` must contain. Not checked when left out.
+    advice_contains: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -155,6 +157,12 @@ fn check_expect(e: &Expect, f: &Finding, problems: &mut Vec<String>) {
             Some("none") if got.is_none() => {}
             Some(w) if got.as_deref() == Some(w) => {}
             Some(w) => bad(what, w.to_owned(), format!("{got:?}")),
+        }
+    }
+    if let Some(t) = &e.advice_contains {
+        let advice = f.advice().unwrap_or_default();
+        if !advice.contains(t.as_str()) {
+            bad("advice", format!("to contain {t:?}"), format!("{advice:?}"));
         }
     }
     if let Some(t) = &e.title_contains
