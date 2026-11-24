@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use super::out;
 use crate::cli::InitArgs;
-use crate::ctx::{Ctx, suggest};
+use crate::ctx::{Ctx, PURL_EXAMPLE, suggest, suggestion_text};
 use crate::error::{Failure, Res};
 
 const CONFIG_TEMPLATE: &str = include_str!("../../templates/unpatched.yml");
@@ -120,7 +120,7 @@ pub fn interactive(input: &mut dyn BufRead, output: &mut dyn Write) -> std::io::
             if !answer.contains('@') {
                 writeln!(
                     output,
-                    "A package URL needs a version: pkg:type/name@version"
+                    "A package URL needs a version after @. Example: {PURL_EXAMPLE}"
                 )?;
                 continue;
             }
@@ -138,7 +138,7 @@ pub fn interactive(input: &mut dyn BufRead, output: &mut dyn Write) -> std::io::
         } else {
             let found = suggest(&answer);
             if found.is_empty() {
-                writeln!(output, "No product matches {answer:?}. Try another name.")?;
+                writeln!(output, "{} Or try another name.", suggestion_text(&answer))?;
                 continue;
             }
             for (i, e) in found.iter().enumerate() {
@@ -156,21 +156,37 @@ pub fn interactive(input: &mut dyn BufRead, output: &mut dyn Write) -> std::io::
                 None => continue,
             }
         };
+        let example = scheme_example(&entry.versioning);
         let version = loop {
-            let Some(v) = ask(input, output, &format!("Version of {}: ", entry.name))? else {
+            let Some(v) = ask(
+                input,
+                output,
+                &format!("Version of {} (for example {example}): ", entry.name),
+            )?
+            else {
                 break None;
             };
-            if !v.is_empty() {
-                break Some(v);
+            if v.is_empty() {
+                continue;
             }
+            if v.contains(char::is_whitespace) {
+                writeln!(
+                    output,
+                    "A version has no spaces. Type only the version number you run, like {example}."
+                )?;
+                continue;
+            }
+            if let Err(e) = entry.versioning.validate(&v) {
+                writeln!(
+                    output,
+                    "{e}. Type the version the way {} writes it, like {example}.",
+                    entry.name
+                )?;
+                continue;
+            }
+            break Some(v);
         };
         let Some(version) = version else { break };
-        if let Err(e) = entry.versioning.validate(&version) {
-            writeln!(
-                output,
-                "Note: {e}. unpatched will report this item as unknown until the version is fixed."
-            )?;
-        }
         let internet = ask(input, output, "Reachable from the internet? [y/N]: ")?
             .is_some_and(|a| matches!(a.to_ascii_lowercase().as_str(), "y" | "yes"));
         let name = ask(input, output, "Your label for it (optional): ")?.filter(|n| !n.is_empty());
@@ -183,6 +199,20 @@ pub fn interactive(input: &mut dyn BufRead, output: &mut dyn Write) -> std::io::
         });
     }
     Ok(render(&items))
+}
+
+/// A version that works with a scheme, for messages.
+fn scheme_example(s: &unpatched_core::Scheme) -> &'static str {
+    use unpatched_core::Scheme;
+    match s {
+        Scheme::Dotted => "7.2.5",
+        Scheme::Semver => "1.4.2",
+        Scheme::Calver => "2024.10.1",
+        Scheme::Debian => "3.0.11-1~deb12u1",
+        Scheme::Rpm => "3.0.7-27.el9",
+        Scheme::Apk => "3.1.4-r0",
+        Scheme::Pep440 => "2.31.0",
+    }
 }
 
 fn quote(s: &str) -> String {

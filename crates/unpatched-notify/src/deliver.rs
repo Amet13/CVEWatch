@@ -50,6 +50,8 @@ pub struct SentMessage {
     pub event: Event,
     /// How many findings (or resolved keys) the message carried.
     pub items: usize,
+    /// The message as plain text; only set in a dry run.
+    pub preview: Option<String>,
 }
 
 #[derive(Debug)]
@@ -161,11 +163,9 @@ pub fn deliver_collect(
             let msg = msg.with_report_url(opts.report_url.clone());
             let items = msg.findings.len().max(msg.resolved.len());
             let event = msg.event;
+            let mut preview = None;
             if opts.dry_run {
-                planned.push(format!(
-                    "send {} to {name} ({items} item(s))",
-                    event.as_str()
-                ));
+                preview = Some(msg.render(crate::message::Dialect::Plain, usize::MAX));
             } else if let Err(e) = ch.send(&msg) {
                 errors.push(format!("{name}: {e}"));
                 continue;
@@ -174,6 +174,7 @@ pub fn deliver_collect(
                 channel: name.clone(),
                 event,
                 items,
+                preview,
             });
             match event {
                 Event::Alert => {
@@ -506,11 +507,14 @@ mod tests {
         let out = deliver(&sample_report(), &config(), &store, &[ch], &o).unwrap();
         assert!(got.lock().unwrap().is_empty());
         assert!(!store.path().exists());
-        assert!(
-            out.planned
-                .iter()
-                .any(|p| p.starts_with("send alert to slack"))
-        );
+        assert!(out.sent.iter().any(|m| {
+            m.channel == "slack"
+                && m.event == Event::Alert
+                && m.preview
+                    .as_deref()
+                    .is_some_and(|t| t.contains("unpatched"))
+        }));
+        assert!(!out.planned.iter().any(|p| p.starts_with("send ")));
         assert!(out.planned.iter().any(|p| p.contains("save")));
     }
 

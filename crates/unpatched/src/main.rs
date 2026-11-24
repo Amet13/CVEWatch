@@ -19,12 +19,43 @@ fn no_color() -> bool {
     std::env::var_os("NO_COLOR").is_some_and(|v| !v.is_empty())
 }
 
+/// clap writes the global options you passed (`--db <FILE>`) into the usage
+/// line of an error as if they were required. Take them out again.
+fn clean_usage(text: &str) -> String {
+    const GLOBALS: [&str; 7] = [
+        " --config <FILE>",
+        " --db <FILE>",
+        " --offline",
+        " --quiet",
+        " --color <WHEN>",
+        " --now <TIME>",
+        " --verbose",
+    ];
+    text.lines()
+        .map(|line| {
+            let mut line = line.to_owned();
+            if line.trim_start().starts_with("Usage:") {
+                for g in GLOBALS {
+                    line = line.replace(g, "");
+                }
+            }
+            line
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n"
+}
+
 fn main() -> ExitCode {
     let cli = match Cli::try_parse() {
         Ok(c) => c,
         Err(e) => {
             let code = e.exit_code();
-            let _ = e.print();
+            if e.use_stderr() {
+                eprint!("{}", clean_usage(&e.render().to_string()));
+            } else {
+                let _ = e.print();
+            }
             return ExitCode::from(u8::try_from(code).unwrap_or(2));
         }
     };

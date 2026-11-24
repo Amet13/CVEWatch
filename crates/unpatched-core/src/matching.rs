@@ -91,6 +91,7 @@ pub fn evaluate(
         not_affected: 0,
         keys_used: HashMap::new(),
         items: Vec::new(),
+        ignore_hits: vec![IgnoreHit::default(); config.ignore.len()],
     };
     let info = data.info();
     run.check_freshness(info.as_ref(), now);
@@ -110,6 +111,17 @@ struct Run<'a> {
     not_affected: usize,
     keys_used: HashMap<String, usize>,
     items: Vec<ItemInfo>,
+    /// What each `ignore` entry did, in config order.
+    ignore_hits: Vec<IgnoreHit>,
+}
+
+/// What one `ignore` entry matched during the run.
+#[derive(Debug, Clone, Copy, Default)]
+struct IgnoreHit {
+    /// It hid a finding.
+    active: bool,
+    /// It matched a finding but had run out.
+    expired: bool,
 }
 
 /// A stack item that was checked, kept to build its [`ItemSummary`].
@@ -193,10 +205,15 @@ impl Run<'_> {
                     return;
                 };
                 let Some(version) = item.version.clone().filter(|v| !v.trim().is_empty()) else {
-                    self.notes
-                        .push(format!("{at}: product {id:?} needs a version."));
+                    self.notes.push(format!(
+                        "{at}: add version: \"…\" (the version you run) to {id:?}. See `unpatched catalog show {id}` for the format."
+                    ));
                     return;
                 };
+                if !entry.id.eq_ignore_ascii_case(id.trim()) {
+                    self.notes
+                        .push(format!("{at}: {} is an alias of {}.", id.trim(), entry.id));
+                }
                 let display = item.name.clone().unwrap_or_else(|| entry.id.clone());
                 let key = self.unique_key(&slug(&display));
                 cycles = self.data.eol_cycles(&entry.id);
@@ -223,7 +240,8 @@ impl Run<'_> {
             (None, Some(purl)) => {
                 let Some(parts) = parse_purl(purl) else {
                     self.notes.push(format!(
-                        "{at}: {purl:?} is not a package URL (pkg:type/name@version)."
+                        "{at}: {purl:?} is not a package URL. Write it like {}.",
+                        crate::config::PURL_EXAMPLE
                     ));
                     return;
                 };
@@ -526,7 +544,13 @@ impl Run<'_> {
             ignored: None,
         };
 
-        match find_ignore(&self.config.ignore, vuln, target, self.today) {
+        match find_ignore(
+            &self.config.ignore,
+            vuln,
+            target,
+            self.today,
+            &mut self.ignore_hits,
+        ) {
             IgnoreMatch::None => self.findings.push(finding),
             IgnoreMatch::Expired => {
                 finding.rules.push(RuleId::IgnoreExpired);
@@ -557,7 +581,28 @@ impl Run<'_> {
         s
     }
 
+    /// Notes for `ignore` entries that did nothing: a wrong id, or one that ran out.
+    fn ignore_notes(&mut self) {
+        for (i, (ig, hit)) in self.config.ignore.iter().zip(&self.ignore_hits).enumerate() {
+            if hit.active {
+                continue;
+            }
+            if hit.expired {
+                self.notes.push(format!(
+                    "ignore[{i}] expired on {}; the finding is back.",
+                    ig.until
+                ));
+            } else {
+                self.notes.push(format!(
+                    "ignore[{i}]: {} matches no finding. Check the id or remove it.",
+                    ig.cve.trim()
+                ));
+            }
+        }
+    }
+
     fn finish(mut self, db: Option<DbInfo>, now: DateTime<Utc>) -> Report {
+        self.ignore_notes();
         let order = |f: &Finding| (f.bucket, f.item.clone(), f.vuln.clone(), f.key.clone());
         self.findings.sort_by_key(order);
         self.ignored.sort_by_key(order);
@@ -1016,10 +1061,11 @@ fn find_ignore<'a>(
     vuln: &Vulnerability,
     target: &Target,
     today: NaiveDate,
+    hits: &mut [IgnoreHit],
 ) -> IgnoreMatch<'a> {
     let mut expired = false;
     let mut active: Option<&Ignore> = None;
-    for ig in ignores {
+    for (index, ig) in ignores.iter().enumerate() {
         let cve_ok = ig.cve.trim().eq_ignore_ascii_case(&vuln.id)
             || vuln
                 .aliases
@@ -1038,10 +1084,12 @@ fn find_ignore<'a>(
             continue;
         }
         if ig.until >= today {
+            hits[index].active = true;
             if active.is_none_or(|a| ig.until > a.until) {
                 active = Some(ig);
             }
         } else {
+            hits[index].expired = true;
             expired = true;
         }
     }

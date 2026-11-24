@@ -12,7 +12,9 @@ use unpatched_core::{
     Signals, Verdict, Vulnerability, evaluate,
 };
 use unpatched_db::Db;
-use unpatched_notify::render::{action, bucket_emoji, bucket_label, source_name, subject, why};
+use unpatched_notify::render::{
+    action, bucket_emoji, bucket_label, ignore_snippet, source_name, subject, why,
+};
 
 use super::out;
 use crate::ctx::{Ctx, load_config, read_config_text};
@@ -77,6 +79,17 @@ fn effect(id: RuleId) -> &'static str {
         RuleId::IgnoreExpired => "is added when an ignore entry ran out",
         RuleId::StaleData => "makes a finding in: Unknown about the database itself",
     }
+}
+
+/// Every rule id with its title and what it does.
+pub fn rules_list() -> String {
+    let rows: Vec<Vec<String>> = all_rules()
+        .into_iter()
+        .map(|r| vec![r.id.code().to_owned(), r.title.to_owned()])
+        .collect();
+    let mut s = super::table(&rows);
+    s.push_str("\nRun `unpatched explain <rule id>` for what a rule means.\n");
+    s
 }
 
 fn explain_rule(id: RuleId) -> String {
@@ -240,10 +253,17 @@ fn vuln_text(v: &Vulnerability, sig: &Signals) -> String {
             let _ = writeln!(s, "    source says: {}", one_line(&r.raw));
         }
     }
-    if !v.references.is_empty() {
+    let mut seen = std::collections::HashSet::new();
+    let urls: Vec<&str> = v
+        .references
+        .iter()
+        .map(|r| r.url.as_str())
+        .filter(|u| seen.insert(*u))
+        .collect();
+    if !urls.is_empty() {
         s.push_str("\nReferences\n");
-        for r in &v.references {
-            let _ = writeln!(s, "  {}", r.url);
+        for u in urls {
+            let _ = writeln!(s, "  {u}");
         }
     }
     s
@@ -303,12 +323,32 @@ fn is_concerned(db: &Db, item: &StackItem, v: &Vulnerability) -> bool {
     v.ranges.iter().any(|r| r.product == entry.id)
 }
 
+/// The item's key label in a report: its `name`, else the catalog id, else the package.
 fn item_label(item: &StackItem) -> String {
     item.name
         .clone()
-        .or_else(|| item.product.clone())
-        .or_else(|| item.purl.clone())
+        .or_else(|| {
+            item.product
+                .as_deref()
+                .map(|p| unpatched_catalog::get(p).map_or_else(|| p.to_owned(), |e| e.id.clone()))
+        })
+        .or_else(|| {
+            item.purl
+                .as_deref()
+                .map(|p| p.split(['@', '?']).next().unwrap_or(p).to_owned())
+        })
         .unwrap_or_default()
+}
+
+/// The item as the report names it: "FortiOS 7.2.5 (Office firewall)".
+fn item_title(item: &StackItem) -> String {
+    let label = item_label(item);
+    let version = item.version.as_deref().unwrap_or_default();
+    match item.product.as_deref().and_then(unpatched_catalog::get) {
+        Some(e) if e.id == label => format!("{} {version}", e.name),
+        Some(e) => format!("{} {version} ({label})", e.name),
+        None => format!("{label} {version}").trim_end().to_owned(),
+    }
 }
 
 fn judge(
@@ -357,7 +397,8 @@ fn judge(
         }
         return s;
     }
-    for n in &real.notes {
+    // The `ignore` notes are about the whole file, not this one item.
+    for n in real.notes.iter().filter(|n| !n.starts_with("ignore[")) {
         let _ = writeln!(s, "    Note: {n}");
     }
     let Some(entry) = item.product.as_deref().and_then(|p| db.product(p)) else {
@@ -414,6 +455,11 @@ fn finding_lines(f: &Finding, ignored: bool) -> String {
     let _ = writeln!(s, "    Do:      {}", action(f));
     if let Some(i) = &f.ignored {
         let _ = writeln!(s, "    Ignored: {} (until {})", i.reason, i.until);
+    } else if let Some(cve) = &f.vuln {
+        let _ = writeln!(s, "    To accept this risk, add to unpatched.yml:");
+        for line in ignore_snippet(cve).lines() {
+            let _ = writeln!(s, "      {line}");
+        }
     }
     for e in &f.evidence {
         let _ = writeln!(
@@ -476,12 +522,7 @@ fn explain_vuln(ctx: &Ctx, id: &str, only_item: Option<&str>) -> Res<u8> {
                 );
                 continue;
             }
-            let _ = writeln!(
-                s,
-                "  {} {}",
-                item_label(item),
-                item.version.as_deref().unwrap_or_default()
-            );
+            let _ = writeln!(s, "  {}", item_title(item));
             s.push_str(&judge(&db, &config, item, &v, ctx.now));
         }
         if !not_concerned.is_empty() {

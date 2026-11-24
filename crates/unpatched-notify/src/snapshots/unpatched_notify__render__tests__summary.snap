@@ -4,13 +4,13 @@ expression: markdown_summary(&r)
 ---
 ## unpatched
 
-6 findings to look at. 🟢 1,412 checked, nothing else affects you
+5 to act on (1 today, 2 this week, 1 end of life, 1 unknown), 1 FYI. 🟢 1,412 vulnerabilities checked against your versions: not affected
 
-- 🔴 FortiOS 7.2.5 (Office firewall)  1 now  →  upgrade to 7.2.7 (fixes 1 of 1)
-- 🟡 Nextcloud 29.0.3  2 week  →  upgrade to 29.0.8 (fixes 2 of 2)
-- ⚫ PostgreSQL 13.12  1 eol  →  upgrade to a supported release
+- 🔴 FortiOS 7.2.5 (Office firewall)  1 today  →  upgrade to 7.2.7 (fixes it)
+- 🟡 Nextcloud 29.0.3  2 this week  →  upgrade to 29.0.8 (fixes all 2)
+- ⚫ PostgreSQL 13.12  1 end of life  →  upgrade to a supported release
 - ❔ Home Assistant 2024.10.1  1 unknown
-- ⚪ Redis 7.2.1  1 fyi  →  upgrade to 7.2.4 (fixes 1 of 1)
+- ⚪ Redis 7.2.1  1 FYI  →  upgrade to 7.2.4 (fixes it)
 
 | Bucket | Findings |
 | --- | ---: |
@@ -52,12 +52,7 @@ expression: markdown_summary(&r)
   - Do: No source has version data for this yet. Read the advisory and check your version by hand.
   - Rules: `UNP-UNKNOWN-NO-RANGES`
 
-### ⚪ FYI
-
-- **Redis 7.2.1**: CVE-2025-1111
-  - Why: CVSS 5.3
-  - Do: Upgrade to 7.2.4 or later.
-  - Rules: `UNP-AFFECTED`
+1 FYI not shown: run with -v or --format json
 
 1 ignored on purpose (see unpatched.yml).
 

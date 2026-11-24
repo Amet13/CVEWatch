@@ -49,10 +49,7 @@ fn rows(entries: &[&CatalogEntry]) -> String {
 pub fn search(text: &str) -> u8 {
     let found = unpatched_catalog::search(text);
     if found.is_empty() {
-        out(&format!(
-            "No product matches {text:?}. {}\n",
-            suggestion_text(text)
-        ));
+        out(&format!("{}\n", suggestion_text(text)));
         return 0;
     }
     out(&rows(&found));
