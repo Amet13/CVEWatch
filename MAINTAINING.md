@@ -58,7 +58,7 @@ Do these once. The workflows cannot do them for you.
 
 1. **Optional: delete the stray tags `rm` and `tm`** (Code → Tags → the tag → Delete).
    Nothing depends on it: the workflows and the Action only read `v3` and later
-   version tags, and the Go releases (up to `v2.6.1`) stay as they are.
+   version tags.
 2. **Turn on Issues and Dependabot alerts:** Settings → General → Features → Issues,
    and Settings → Code security → Dependabot alerts. The watchdog and `build-db` report
    problems as issues; with Issues off they only warn in the run's summary.

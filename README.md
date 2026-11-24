@@ -174,8 +174,7 @@ a source fails.
 [Findings and rules](https://amet13.github.io/unpatched/guide/findings.html) ·
 [Config reference](https://amet13.github.io/unpatched/guide/config.html) ·
 [Catalog](https://amet13.github.io/unpatched/guide/catalog.html) ·
-[FAQ](https://amet13.github.io/unpatched/guide/faq.html) ·
-[Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html)
+[FAQ](https://amet13.github.io/unpatched/guide/faq.html)
 
 ## With an AI agent
 
@@ -191,9 +190,6 @@ site has [`llms.txt`](https://amet13.github.io/unpatched/guide/llms.txt). See
 Wrong verdicts and new products are the most useful reports. See
 [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and
 [MAINTAINING.md](MAINTAINING.md). Security problems: [SECURITY.md](SECURITY.md).
-
-This repository was CVEWatch, a Go tool. It is now `unpatched`, written in
-Rust; see [Coming from CVEWatch](https://amet13.github.io/unpatched/guide/migrate-from-cvewatch.html).
 
 ## License
 

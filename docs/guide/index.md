@@ -81,4 +81,3 @@ The list of what you run never leaves your repository. See [Privacy](privacy.md)
 
 - New here: [Start with GitHub](start-github.md).
 - Something looks wrong: [Findings and rules](findings.md) and the [FAQ](faq.md).
-- Was a CVEWatch user: [Coming from CVEWatch](migrate-from-cvewatch.md).
