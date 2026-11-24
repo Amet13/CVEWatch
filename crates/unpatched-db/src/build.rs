@@ -38,6 +38,9 @@ pub struct BuildOptions {
     /// Tests: read every source from this directory (laid out like the
     /// repository's `fixtures/`) instead of the network.
     pub offline_fixtures: Option<PathBuf>,
+    /// Fail, and write nothing, when any source failed (the daily build uses this, so
+    /// a partial database is never published).
+    pub strict: bool,
     /// Build time to record. Default: now. Fixed in tests so output is reproducible.
     pub built_at: Option<DateTime<Utc>>,
 }
@@ -287,6 +290,21 @@ pub fn build(opts: &BuildOptions, catalog: &[CatalogEntry], http: &Http) -> Resu
     if opts.built_at.is_some() {
         for s in &mut statuses {
             s.fetched_at = built_at;
+        }
+    }
+
+    if opts.strict {
+        let failed: Vec<String> = statuses
+            .iter()
+            .filter(|s| !s.ok)
+            .map(|s| format!("{:?}: {}", s.source, s.note.as_deref().unwrap_or("failed")))
+            .collect();
+        if !failed.is_empty() {
+            return Err(DbError::Other(format!(
+                "--strict: {} source(s) failed ({}). Run `unpatched db sources-health` and try again later",
+                failed.len(),
+                failed.join("; ")
+            )));
         }
     }
 

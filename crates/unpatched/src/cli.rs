@@ -204,7 +204,11 @@ pub enum DbCommand {
     /// Download the latest prebuilt database now.
     Update,
     /// Show what is in the database and how old it is.
-    Info,
+    Info {
+        /// Print the counts and the sources as JSON.
+        #[arg(long)]
+        json: bool,
+    },
     /// Build the database from the sources (slow; CI does this daily).
     Build {
         /// Where to write. A name ending in `.zst` is compressed.
@@ -219,6 +223,9 @@ pub enum DbCommand {
         /// Keep downloaded NVD feeds here between builds.
         #[arg(long, value_name = "DIR")]
         nvd_cache: Option<PathBuf>,
+        /// Fail, and write nothing, when any source failed (CI uses this).
+        #[arg(long)]
+        strict: bool,
     },
     /// Ask every source for one known item; fails when any source fails.
     SourcesHealth,

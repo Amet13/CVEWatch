@@ -3,7 +3,7 @@
 use std::fmt::Write as _;
 use std::ops::RangeInclusive;
 
-use unpatched_core::SourceStatus;
+use unpatched_core::{SourceId, SourceStatus};
 use unpatched_db::BuildOptions;
 use unpatched_notify::render::source_name;
 
@@ -15,13 +15,14 @@ use crate::error::{Failure, Res};
 pub fn run(ctx: &Ctx, cmd: DbCommand) -> Res<u8> {
     match cmd {
         DbCommand::Update => update(ctx),
-        DbCommand::Info => info(ctx),
+        DbCommand::Info { json } => info(ctx, json),
         DbCommand::Build {
             out,
             cvelist,
             nvd_years,
             nvd_cache,
-        } => build(ctx, out, cvelist, nvd_years.as_deref(), nvd_cache),
+            strict,
+        } => build(ctx, out, cvelist, nvd_years.as_deref(), nvd_cache, strict),
         DbCommand::SourcesHealth => health(ctx),
     }
 }
@@ -56,7 +57,7 @@ fn status_line(s: &SourceStatus) -> Vec<String> {
     ]
 }
 
-fn info(ctx: &Ctx) -> Res<u8> {
+fn info(ctx: &Ctx, json: bool) -> Res<u8> {
     if !ctx.db.is_file() {
         return Err(Failure::data(
             format!("there is no database at {}", ctx.db.display()),
@@ -71,6 +72,23 @@ fn info(ctx: &Ctx) -> Res<u8> {
     })?;
     let info = db.info();
     let age = (ctx.now - info.built_at).num_days().max(0);
+    if json {
+        let kev = info
+            .sources
+            .iter()
+            .find(|s| s.source == SourceId::Kev)
+            .map_or(0, |s| s.records);
+        let doc = serde_json::json!({
+            "schema_version": info.schema_version,
+            "built_at": info.built_at,
+            "products": db.products().len(),
+            "vulnerabilities": db.vuln_ids().len(),
+            "kev": kev,
+            "sources": info.sources,
+        });
+        out(&format!("{doc}\n"));
+        return Ok(0);
+    }
     let products = db.products();
     let verified = products.iter().filter(|(_, v)| *v).count();
     let mut s = String::new();
@@ -117,6 +135,7 @@ fn build(
     cvelist: Option<std::path::PathBuf>,
     years: Option<&str>,
     nvd_cache: Option<std::path::PathBuf>,
+    strict: bool,
 ) -> Res<u8> {
     ctx.require_online("`db build`")?;
     let nvd_years = years.map(parse_years).transpose()?;
@@ -126,6 +145,7 @@ fn build(
         nvd_years,
         nvd_cache_dir: nvd_cache,
         out: out_file,
+        strict,
         ..BuildOptions::default()
     };
     let sum = unpatched_db::build(&opts, unpatched_catalog::all(), &http).map_err(|e| {
