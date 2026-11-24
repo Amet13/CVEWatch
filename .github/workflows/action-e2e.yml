@@ -1,0 +1,49 @@
+# Runs the Action the way users do: it downloads the released binary (`version:`),
+# checks its SHA-256 and runs it on Linux, macOS and Windows, against the frozen fixture
+# database with --offline (no network after the download). release.yml calls this after
+# the GitHub release exists and waits for it before it moves the major tag (v3).
+# By hand: Actions -> action-e2e -> Run workflow, with a version like v3.0.0.
+name: action-e2e
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: The release to download and run, like v3.0.0
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The release to download and run, like v3.0.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: action (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use the template as the stack
+        shell: bash
+        run: cp templates/github/unpatched.yml unpatched.yml
+      - name: Run the action from this commit with the released binary
+        uses: ./
+        with:
+          version: ${{ inputs.version }}
+          config: unpatched.yml
+          db: fixtures/smoke/unpatched-db.sqlite
+          dry-run: "true"
+          # The fixture database is frozen, so it is always old: allow that.
+          args: --offline --allow-stale

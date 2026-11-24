@@ -25,7 +25,7 @@ on:
       - OpenSSF Scorecard
     types: [completed]
   schedule:
-    - cron: "41 * * * *"
+    - cron: "13 * * * *"
   workflow_dispatch:
 
 permissions:

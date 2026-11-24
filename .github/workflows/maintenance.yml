@@ -6,6 +6,9 @@
 #           when the next run is clean.
 #   bench   3rd of the month: `cargo xtask bench` (accuracy against held-out cases),
 #           as a pull request. Skipped with a notice when xtask has no bench task yet.
+#   toolchain  Thursdays: opens one issue, "A newer Rust is out", when the stable Rust
+#           is newer than the version pinned in rust-toolchain.toml. MAINTAINING.md says
+#           how to bump it. The issue closes itself once the pin catches up.
 # Pull requests are merged by automerge.yml when CI passes; issues close themselves
 # when the next run finds nothing. watchdog.yml reports a failed run.
 name: maintenance
@@ -14,12 +17,13 @@ on:
   schedule:
     - cron: "37 7 * * 3"
     - cron: "17 4 3 * *"
+    - cron: "11 6 * * 4"
   workflow_dispatch:
     inputs:
       task:
         description: Task to run
         type: choice
-        options: [health, bench]
+        options: [health, bench, toolchain]
 
 permissions:
   contents: read
@@ -45,7 +49,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
-          toolchain: stable
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
       - name: Check the catalog and the sources
         env:
@@ -106,7 +110,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
-          toolchain: stable
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@2201cc584a476d1b508be977bbe4b7d1c7a52e9c # v2.9.3
       - name: Is there a bench task?
         id: has
@@ -130,3 +134,44 @@ jobs:
             echo "Merged by automerge.yml when CI passes."
           } > "$RUNNER_TEMP/body.md"
           bash .github/scripts/automation-pr.sh bench "bench: monthly results" "$RUNNER_TEMP/body.md"
+
+  toolchain:
+    name: toolchain
+    if: github.event.schedule == '11 6 * * 4' || inputs.task == 'toolchain'
+    concurrency:
+      group: maintenance-toolchain
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Is the pinned Rust the newest stable?
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          pinned="$(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)"
+          latest="$(curl --proto '=https' --tlsv1.2 -sSf https://static.rust-lang.org/dist/channel-rust-stable.toml |
+            awk '/^\[pkg\.rust\]/ { on = 1; next } on && /^version = / { split($0, v, "\""); split(v[2], w, " "); print w[1]; exit }')"
+          echo "pinned: $pinned, latest stable: $latest"
+          if [ -z "$latest" ]; then
+            echo "::error::Could not read the latest stable Rust version."
+            exit 1
+          fi
+          : > "$RUNNER_TEMP/body.md"
+          if [ "$pinned" != "$latest" ] && [ "$(printf '%s\n%s\n' "$pinned" "$latest" | sort -V | tail -n 1)" = "$latest" ]; then
+            {
+              echo "Rust $latest is out. This repository builds with $pinned (\`rust-toolchain.toml\`)."
+              echo
+              echo "To update, see \"Bumping Rust\" in MAINTAINING.md: change the version in"
+              echo "\`rust-toolchain.toml\` and in the workflows, in one pull request."
+              echo
+              echo "This issue closes itself when the pin catches up."
+            } > "$RUNNER_TEMP/body.md"
+          fi
+          bash .github/scripts/issue.sh "A newer Rust is out" "$RUNNER_TEMP/body.md"

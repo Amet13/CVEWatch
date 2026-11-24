@@ -55,6 +55,8 @@ concurrency:
 jobs:
   # Run 'dist plan' (or host) to determine what tasks we need to do
   plan:
+    # CUSTOM: only on pull requests and on tags (a manual run on a branch has no release to plan).
+    if: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') }}
     runs-on: "ubuntu-latest"
     outputs:
       val: ${{ steps.plan.outputs.manifest }}
@@ -84,8 +86,15 @@ jobs:
       # (PRs run on the *source* but secrets are usually on the *target* -- that's *good*
       # but also really annoying to build CI around when it needs secrets to work right.)
       - id: plan
+        env:
+          # CUSTOM: the tag goes through the environment, never into the script text.
+          TAG_FLAG: ${{ !github.event.pull_request && format('--tag={0}', github.ref_name) || '' }}
         run: |
-          dist ${{ (!github.event.pull_request && format('host --steps=create --tag={0}', github.ref_name)) || 'plan' }} --output-format=json > plan-dist-manifest.json
+          if [ -n "$TAG_FLAG" ]; then
+            dist host --steps=create "$TAG_FLAG" --output-format=json > plan-dist-manifest.json
+          else
+            dist plan --output-format=json > plan-dist-manifest.json
+          fi
           echo "dist ran successfully"
           cat plan-dist-manifest.json
           echo "manifest=$(jq -c "." plan-dist-manifest.json)" >> "$GITHUB_OUTPUT"
@@ -139,6 +148,17 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
+      # CUSTOM: build with the Rust version pinned in rust-toolchain.toml, not whatever
+      # the runner image has. Bump it in rust-toolchain.toml (see MAINTAINING.md).
+      - name: Install the pinned Rust
+        shell: bash
+        env:
+          TARGETS: ${{ join(matrix.targets, ' ') }}
+        run: |
+          version="$(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)"
+          rustup toolchain install "$version" --profile minimal
+          for target in $TARGETS; do rustup target add --toolchain "$version" "$target"; done
+          rustc "+$version" --version
       - name: Install dist
         run: ${{ matrix.install_dist.run }}
       # Get the dist-manifest
@@ -152,9 +172,13 @@ jobs:
         run: |
           ${{ matrix.packages_install }}
       - name: Build artifacts
+        shell: bash
+        env:
+          TAG_FLAG: ${{ needs.plan.outputs.tag-flag }}
         run: |
           # Actually do builds and make zips and whatnot
-          dist build ${{ needs.plan.outputs.tag-flag }} --print=linkage --output-format=json ${{ matrix.dist_args }} > dist-manifest.json
+          # shellcheck disable=SC2086
+          dist build $TAG_FLAG --print=linkage --output-format=json ${{ matrix.dist_args }} > dist-manifest.json
           echo "dist ran successfully"
       - name: Attest
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
@@ -210,8 +234,11 @@ jobs:
           merge-multiple: true
       - id: cargo-dist
         shell: bash
+        env:
+          TAG_FLAG: ${{ needs.plan.outputs.tag-flag }}
         run: |
-          dist build ${{ needs.plan.outputs.tag-flag }} --output-format=json "--artifacts=global" > dist-manifest.json
+          # shellcheck disable=SC2086
+          dist build $TAG_FLAG --output-format=json "--artifacts=global" > dist-manifest.json
           echo "dist ran successfully"
 
           # Parse out what we just built and upload it to scratch storage
@@ -260,8 +287,11 @@ jobs:
           merge-multiple: true
       - id: host
         shell: bash
+        env:
+          TAG_FLAG: ${{ needs.plan.outputs.tag-flag }}
         run: |
-          dist host ${{ needs.plan.outputs.tag-flag }} --steps=upload --steps=release --output-format=json > dist-manifest.json
+          # shellcheck disable=SC2086
+          dist host $TAG_FLAG --steps=upload --steps=release --output-format=json > dist-manifest.json
           echo "artifacts uploaded and released successfully"
           cat dist-manifest.json
           echo "manifest=$(jq -c "." dist-manifest.json)" >> "$GITHUB_OUTPUT"
@@ -288,11 +318,12 @@ jobs:
           ANNOUNCEMENT_TITLE: "${{ fromJson(steps.host.outputs.manifest).announcement_title }}"
           ANNOUNCEMENT_BODY: "${{ fromJson(steps.host.outputs.manifest).announcement_github_body }}"
           RELEASE_COMMIT: "${{ github.sha }}"
+          RELEASE_TAG: "${{ needs.plan.outputs.tag }}"
         run: |
           # Write and read notes from a file to avoid quoting breaking things
           echo "$ANNOUNCEMENT_BODY" > $RUNNER_TEMP/notes.txt
 
-          gh release create "${{ needs.plan.outputs.tag }}" --target "$RELEASE_COMMIT" $PRERELEASE_FLAG --title "$ANNOUNCEMENT_TITLE" --notes-file "$RUNNER_TEMP/notes.txt" artifacts/*
+          gh release create "$RELEASE_TAG" --target "$RELEASE_COMMIT" $PRERELEASE_FLAG --title "$ANNOUNCEMENT_TITLE" --notes-file "$RUNNER_TEMP/notes.txt" artifacts/*
 
   custom-publish-crates:
     needs:
@@ -302,11 +333,11 @@ jobs:
     uses: ./.github/workflows/publish-crates.yml
     with:
       plan: ${{ needs.plan.outputs.val }}
-    secrets: inherit
-    # publish jobs get escalated permissions
+    # CUSTOM: only the one secret the job needs, not `secrets: inherit`.
+    secrets:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
     permissions:
       "contents": "read"
-      "id-token": "write"
 
   custom-publish-docker:
     needs:
@@ -316,7 +347,6 @@ jobs:
     uses: ./.github/workflows/publish-docker.yml
     with:
       plan: ${{ needs.plan.outputs.val }}
-    secrets: inherit
     # publish jobs get escalated permissions
     permissions:
       "attestations": "write"
@@ -343,13 +373,31 @@ jobs:
           persist-credentials: false
           submodules: recursive
 
-  # CUSTOM: move the major tag (v3, v4, …) to this release, so workflows that use
-  # `amet13/unpatched@v3` get the newest stable release. Prereleases do not move it.
+  # CUSTOM: the Action downloads the release it is told to run. Run it from the release
+  # itself on Linux, macOS and Windows (action-e2e.yml), so a broken asset is noticed
+  # before the major tag moves.
+  action-e2e:
+    needs:
+      - plan
+      - host
+    if: ${{ always() && needs.host.result == 'success' }}
+    uses: ./.github/workflows/action-e2e.yml
+    with:
+      version: ${{ fromJson(needs.plan.outputs.val).announcement_tag }}
+    permissions:
+      "contents": "read"
+
+  # CUSTOM: move the major tag (v3, v4, ...) to this release, so workflows that use
+  # `amet13/unpatched@v3` get the newest stable release. It needs only the GitHub release
+  # and the action test: a crates.io or Docker problem must not hold the tag back.
+  # Prereleases do not move it, and neither does an older release (a v3.0.5 rebuilt
+  # after v3.1.0 leaves v3 where it is).
   move-major-tag:
     needs:
       - plan
-      - announce
-    if: ${{ !fromJson(needs.plan.outputs.val).announcement_is_prerelease }}
+      - host
+      - action-e2e
+    if: ${{ always() && needs.host.result == 'success' && needs.action-e2e.result == 'success' && !fromJson(needs.plan.outputs.val).announcement_is_prerelease }}
     runs-on: "ubuntu-latest"
     timeout-minutes: 5
     permissions:
@@ -364,6 +412,12 @@ jobs:
         run: |
           case "$TAG" in v[0-9]*.*) ;; *) echo "::notice::$TAG is not vX.Y.Z; no major tag moved."; exit 0 ;; esac
           major="${TAG%%.*}"
+          # The newest stable tag of this major version, by version order.
+          newest="$(git tag --list "$major.*" | grep -v -- '-' | sort -V | tail -n 1)"
+          if [ "$newest" != "$TAG" ]; then
+            echo "::notice::$TAG is older than $newest; $major stays where it is."
+            exit 0
+          fi
           git tag -f "$major" "$TAG^{commit}"
           git push -f origin "refs/tags/$major"
           echo "::notice::$major now points to $TAG"
