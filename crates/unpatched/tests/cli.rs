@@ -115,6 +115,15 @@ fn check_sarif() {
     let v: serde_json::Value = serde_json::from_str(&out).unwrap();
     assert_eq!(v["version"], "2.1.0");
     assert_eq!(v["runs"][0]["results"][0]["level"], "error");
+    assert_eq!(
+        v["runs"][0]["tool"]["driver"]["version"],
+        env!("CARGO_PKG_VERSION")
+    );
+    // The tool version changes with every release; the snapshot must not.
+    let out = out.replace(
+        &format!("\"version\": \"{}\"", env!("CARGO_PKG_VERSION")),
+        "\"version\": \"[version]\"",
+    );
     insta::assert_snapshot!("check_sarif", out);
 }
 
