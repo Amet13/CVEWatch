@@ -4,7 +4,7 @@ members = ["crates/*", "xtask"]
 default-members = ["crates/*"]
 
 [workspace.package]
-version = "3.0.0"
+version = "3.0.1"
 edition = "2024"
 rust-version = "1.90"
 license = "MIT"
@@ -15,12 +15,12 @@ homepage = "https://amet13.github.io/unpatched/"
 authors = ["Amet Umierov"]
 
 [workspace.dependencies]
-unpatched-core = { path = "crates/unpatched-core", version = "3.0.0" }
-unpatched-sources = { path = "crates/unpatched-sources", version = "3.0.0" }
-unpatched-db = { path = "crates/unpatched-db", version = "3.0.0" }
-unpatched-catalog = { path = "crates/unpatched-catalog", version = "3.0.0" }
-unpatched-notify = { path = "crates/unpatched-notify", version = "3.0.0" }
-unpatched-mcp = { path = "crates/unpatched-mcp", version = "3.0.0" }
+unpatched-core = { path = "crates/unpatched-core", version = "3.0.1" }
+unpatched-sources = { path = "crates/unpatched-sources", version = "3.0.1" }
+unpatched-db = { path = "crates/unpatched-db", version = "3.0.1" }
+unpatched-catalog = { path = "crates/unpatched-catalog", version = "3.0.1" }
+unpatched-notify = { path = "crates/unpatched-notify", version = "3.0.1" }
+unpatched-mcp = { path = "crates/unpatched-mcp", version = "3.0.1" }
 
 anyhow = "1"
 thiserror = "2"
