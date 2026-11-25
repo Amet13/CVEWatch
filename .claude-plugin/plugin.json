@@ -1,7 +1,7 @@
 {
   "name": "unpatched",
   "displayName": "unpatched",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Skills and an MCP server that tell you when software you run is affected by a vulnerability: set up unpatched, build the inventory, plan upgrades, explain findings. Needs the unpatched CLI on PATH.",
   "author": {
     "name": "Amet Umierov",

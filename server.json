@@ -3,7 +3,7 @@
   "name": "io.github.Amet13/unpatched",
   "title": "unpatched",
   "description": "Is the software you run affected by a vulnerability? Verdicts with evidence and fixed versions",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "websiteUrl": "https://amet13.github.io/unpatched/",
   "repository": {
     "url": "https://github.com/Amet13/unpatched",
@@ -12,7 +12,7 @@
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/amet13/unpatched:3.0.0",
+      "identifier": "ghcr.io/amet13/unpatched:3.0.1",
       "transport": {
         "type": "stdio"
       },

@@ -2226,7 +2226,7 @@ checksum = "ca718471876992059f251e33aafc334346ada08042b7661dd1fe313a9bced557"
 
 [[package]]
 name = "unpatched"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "assert_cmd",
  "chrono",
@@ -2252,7 +2252,7 @@ dependencies = [
 
 [[package]]
 name = "unpatched-catalog"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "chrono",
  "serde_json",
@@ -2261,7 +2261,7 @@ dependencies = [
 
 [[package]]
 name = "unpatched-core"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "chrono",
  "insta",
@@ -2276,7 +2276,7 @@ dependencies = [
 
 [[package]]
 name = "unpatched-db"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "chrono",
  "dirs",
@@ -2298,7 +2298,7 @@ dependencies = [
 
 [[package]]
 name = "unpatched-mcp"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2315,7 +2315,7 @@ dependencies = [
 
 [[package]]
 name = "unpatched-notify"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "chrono",
  "hex",
@@ -2332,7 +2332,7 @@ dependencies = [
 
 [[package]]
 name = "unpatched-sources"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "chrono",
  "csv",

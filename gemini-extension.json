@@ -1,6 +1,6 @@
 {
   "name": "unpatched",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Tells you when software you run is affected by a vulnerability, which version to upgrade to, and whether it is exploited. Needs the unpatched CLI on PATH.",
   "mcpServers": {
     "unpatched": {
