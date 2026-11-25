@@ -250,7 +250,7 @@ expression: out
               }
             }
           ],
-          "version": "3.0.0"
+          "version": "[version]"
         }
       }
     }
